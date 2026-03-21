@@ -1,0 +1,12 @@
+[66729955ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:4324/@id/astro/runtime/client/dev-toolbar/entrypoint.js:0
+[66729955ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:4324/@vite/client:0
+[66729955ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:4324/src/components/ui/DateRangePicker.astro?astro&type=script&index=0&lang.ts:0
+[66729955ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:4324/src/styles/global.css:0
+[66729955ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:4324/src/components/common/Header.astro?astro&type=script&index=0&lang.ts:0
+[66729955ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:4324/src/components/tours/TourCard.astro?astro&type=script&index=0&lang.ts:0
+[66729963ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:4324/favicon.ico:0
+[66729964ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:4324/favicon.svg:0
+[68356092ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://findtourin.vercel.app/:0
+[68356375ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://findtourin.vercel.app/favicon.ico:0
+[68451403ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://findtourin.vercel.app/:0
+[68453131ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ chrome-error://chromewebdata/:0

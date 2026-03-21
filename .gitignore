@@ -26,3 +26,4 @@ drizzle/
 
 # jetbrains setting folder
 .idea/
+.vercel

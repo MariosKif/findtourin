@@ -1,5 +1,6 @@
 ---
 import { COUNTRIES, CATEGORIES } from '../../lib/search';
+import Autocomplete from '../ui/Autocomplete.astro';
 
 interface Props {
   tour?: {
@@ -91,96 +92,54 @@ function formatDateForInput(date: Date | null | undefined): string {
     <h3 class="mb-4 text-lg font-semibold text-gray-900">Departure Location</h3>
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
       {/* Departure Country */}
-      <div class="flex flex-col gap-1.5">
-        <label for="tour-departure-country" class="text-sm font-medium text-gray-700">Departure Country</label>
-        <div class="relative">
-          <select
-            id="tour-departure-country"
-            name="departureCountry"
-            class="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 pr-10 text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
-          >
-            <option value="">No departure location</option>
-            {COUNTRIES.map((c) => (
-              <option value={c} selected={c === tour?.departureCountry}>{c}</option>
-            ))}
-          </select>
-          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-            <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
-      </div>
+      <Autocomplete
+        id="tour-departure-country"
+        name="departureCountry"
+        label="Departure Country"
+        placeholder="e.g. Greece"
+        value={tour?.departureCountry || ''}
+        items={COUNTRIES}
+      />
 
       {/* Departure City */}
-      <div class="flex flex-col gap-1.5">
-        <label for="tour-departure-city" class="text-sm font-medium text-gray-700">Departure City</label>
-        <input
-          id="tour-departure-city"
-          type="text"
-          name="departureCity"
-          value={tour?.departureCity || ''}
-          placeholder="e.g. Athens"
-          class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
-        />
-      </div>
+      <Autocomplete
+        id="tour-departure-city"
+        name="departureCity"
+        label="Departure City"
+        placeholder="e.g. Athens"
+        value={tour?.departureCity || ''}
+        apiUrl="/api/cities?field=departureCity"
+        dependsOn="tour-departure-country"
+      />
     </div>
   </div>
 
   {/* Destination Country + City row */}
   <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
     {/* Destination Country */}
-    <div class="flex flex-col gap-1.5">
-      <label for="tour-country" class="text-sm font-medium text-gray-700">
-        Destination Country <span class="text-red-500">*</span>
-      </label>
-      <div class="relative">
-        <select
-          id="tour-country"
-          name="country"
-          required
-          class:list={[
-            'w-full appearance-none rounded-lg border bg-white px-4 py-2.5 pr-10 text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0',
-            errors.country
-              ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
-              : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200',
-          ]}
-        >
-          <option value="">Select a country</option>
-          {COUNTRIES.map((c) => (
-            <option value={c} selected={c === tour?.country}>{c}</option>
-          ))}
-        </select>
-        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-          <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </div>
-      {errors.country && <p class="text-sm text-red-600">{errors.country}</p>}
-    </div>
+    <Autocomplete
+      id="tour-country"
+      name="country"
+      label="Destination Country"
+      placeholder="Select a country"
+      value={tour?.country || ''}
+      required
+      error={errors.country}
+      items={COUNTRIES}
+    />
 
     {/* Destination City */}
-    <div class="flex flex-col gap-1.5">
-      <label for="tour-city" class="text-sm font-medium text-gray-700">
-        Destination City <span class="text-red-500">*</span>
-      </label>
-      <input
-        id="tour-city"
-        type="text"
-        name="city"
-        value={tour?.city || ''}
-        required
-        placeholder="e.g. Santorini"
-        class:list={[
-          'w-full rounded-lg border px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0',
-          errors.city
-            ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
-            : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200',
-        ]}
-      />
-      {errors.city && <p class="text-sm text-red-600">{errors.city}</p>}
-    </div>
+    <Autocomplete
+      id="tour-city"
+      name="city"
+      label="Destination City"
+      placeholder="e.g. Santorini"
+      value={tour?.city || ''}
+      required
+      error={errors.city}
+      apiUrl="/api/cities?field=city"
+      dependsOn="tour-country"
+    />
   </div>
 
   {/* Price + Currency row */}

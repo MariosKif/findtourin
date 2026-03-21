@@ -1,0 +1,196 @@
+---
+interface Props {
+  id: string;
+  name: string;
+  label?: string;
+  placeholder?: string;
+  value?: string;
+  required?: boolean;
+  error?: string;
+  items?: readonly string[] | string[];
+  apiUrl?: string;
+  dependsOn?: string;
+  class?: string;
+}
+
+const {
+  id,
+  name,
+  label,
+  placeholder,
+  value = '',
+  required = false,
+  error,
+  items,
+  apiUrl,
+  dependsOn,
+  class: className,
+} = Astro.props;
+
+const componentId = `ac-${id}`;
+---
+
+<div class:list={["flex flex-col gap-1.5", className]}>
+  {label && (
+    <label for={id} class="text-sm font-medium text-gray-700">
+      {label}{required && <span class="text-red-500"> *</span>}
+    </label>
+  )}
+  <div class="relative" id={componentId} data-items={items ? JSON.stringify(items) : undefined} data-api-url={apiUrl} data-depends-on={dependsOn}>
+    <input
+      id={id}
+      type="text"
+      name={name}
+      value={value}
+      required={required}
+      placeholder={placeholder}
+      autocomplete="off"
+      class:list={[
+        'w-full rounded-lg border px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0',
+        error
+          ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+          : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200',
+      ]}
+    />
+    <div class="ac-dropdown hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-100 bg-white shadow-lg z-50">
+    </div>
+  </div>
+  {error && <p class="text-sm text-red-600">{error}</p>}
+</div>
+
+<script>
+  function initAutocomplete() {
+    document.querySelectorAll<HTMLDivElement>('[id^="ac-"]').forEach((container) => {
+      const input = container.querySelector('input') as HTMLInputElement;
+      const dropdown = container.querySelector('.ac-dropdown') as HTMLDivElement;
+      if (!input || !dropdown || input.dataset.acInit) return;
+      input.dataset.acInit = '1';
+
+      const staticItems: string[] = container.dataset.items ? JSON.parse(container.dataset.items) : [];
+      const apiUrl = container.dataset.apiUrl || '';
+      const dependsOnId = container.dataset.dependsOn || '';
+
+      let suggestions: string[] = staticItems;
+      let highlightIdx = -1;
+      let debounceTimer: ReturnType<typeof setTimeout>;
+
+      function render(filtered: string[]) {
+        if (filtered.length === 0) {
+          dropdown.innerHTML = '<div class="px-4 py-2.5 text-sm text-gray-400">No results</div>';
+        } else {
+          dropdown.innerHTML = filtered.map((item, i) =>
+            `<div class="ac-item px-4 py-2.5 text-sm cursor-pointer transition-colors ${i === highlightIdx ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'}" data-idx="${i}">${highlight(item, input.value)}</div>`
+          ).join('');
+        }
+        dropdown.classList.remove('hidden');
+      }
+
+      function highlight(text: string, query: string): string {
+        if (!query) return text;
+        const idx = text.toLowerCase().indexOf(query.toLowerCase());
+        if (idx === -1) return text;
+        return text.slice(0, idx) + '<span class="font-semibold text-primary-600">' + text.slice(idx, idx + query.length) + '</span>' + text.slice(idx + query.length);
+      }
+
+      function filter(): string[] {
+        const q = input.value.toLowerCase();
+        if (!q) return suggestions.slice(0, 20);
+        return suggestions.filter(s => s.toLowerCase().includes(q));
+      }
+
+      function close() {
+        dropdown.classList.add('hidden');
+        highlightIdx = -1;
+      }
+
+      function select(value: string) {
+        input.value = value;
+        close();
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      async function fetchSuggestions() {
+        if (!apiUrl) return;
+        let url = apiUrl;
+        if (dependsOnId) {
+          const depEl = document.getElementById(dependsOnId) as HTMLInputElement;
+          const depVal = depEl?.value || '';
+          if (!depVal) { suggestions = []; return; }
+          url += (url.includes('?') ? '&' : '?') + 'country=' + encodeURIComponent(depVal);
+        }
+        try {
+          const res = await fetch(url);
+          if (res.ok) suggestions = await res.json();
+        } catch { /* ignore */ }
+      }
+
+      // Input events
+      input.addEventListener('focus', () => {
+        const filtered = filter();
+        if (filtered.length > 0 || input.value) render(filtered);
+      });
+
+      input.addEventListener('input', () => {
+        highlightIdx = -1;
+        if (apiUrl) {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(async () => {
+            await fetchSuggestions();
+            render(filter());
+          }, 200);
+        } else {
+          render(filter());
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        const items = dropdown.querySelectorAll('.ac-item');
+        if (dropdown.classList.contains('hidden') || items.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          highlightIdx = Math.min(highlightIdx + 1, items.length - 1);
+          render(filter());
+          items[highlightIdx]?.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          highlightIdx = Math.max(highlightIdx - 1, 0);
+          render(filter());
+        } else if (e.key === 'Enter' && highlightIdx >= 0) {
+          e.preventDefault();
+          const item = items[highlightIdx] as HTMLElement;
+          select(item.textContent || '');
+        } else if (e.key === 'Escape') {
+          close();
+        }
+      });
+
+      // Dropdown click
+      dropdown.addEventListener('click', (e) => {
+        const item = (e.target as HTMLElement).closest('.ac-item') as HTMLElement;
+        if (item) select(item.textContent || '');
+      });
+
+      // Click outside
+      document.addEventListener('click', (e) => {
+        if (!container.contains(e.target as Node)) close();
+      });
+
+      // If this is an API-based autocomplete, fetch when the dependency changes
+      if (dependsOnId) {
+        const depEl = document.getElementById(dependsOnId);
+        depEl?.addEventListener('change', async () => {
+          input.value = '';
+          await fetchSuggestions();
+        });
+        // Initial fetch if dependency already has a value
+        if ((depEl as HTMLInputElement)?.value) {
+          fetchSuggestions();
+        }
+      }
+    });
+  }
+
+  initAutocomplete();
+  document.addEventListener('astro:after-swap', initAutocomplete);
+</script>

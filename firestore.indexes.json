@@ -1,0 +1,14 @@
+{
+  "indexes": [
+    { "collectionGroup": "tours", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "tours", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "price", "order": "ASCENDING" }] },
+    { "collectionGroup": "tours", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "price", "order": "DESCENDING" }] },
+    { "collectionGroup": "tours", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "name", "order": "ASCENDING" }] },
+    { "collectionGroup": "tours", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "category", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "tours", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "country", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "tours", "fields": [{ "fieldPath": "agencyId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "favourites", "fields": [{ "fieldPath": "userId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "ASCENDING" }] },
+    { "collectionGroup": "payments", "fields": [{ "fieldPath": "agencyId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }] },
+    { "collectionGroup": "payments", "fields": [{ "fieldPath": "agencyId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+  ]
+}

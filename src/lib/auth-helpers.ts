@@ -1,7 +1,5 @@
-import { createSupabaseServerClient } from './supabase';
-import { db } from './db';
-import { profiles } from './db/schema';
-import { eq } from 'drizzle-orm';
+import { adminAuth } from './firebase';
+import { usersCol, docToObj, type UserDoc } from './firestore';
 import type { AstroCookies } from 'astro';
 
 interface AuthContext {
@@ -10,18 +8,14 @@ interface AuthContext {
 }
 
 export async function getAuthenticatedUser(context: AuthContext) {
-  const supabase = createSupabaseServerClient(context);
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const sessionCookie = context.cookies.get('session')?.value;
+  if (!sessionCookie) return null;
 
-  if (error || !user) return null;
-
-  const [profile] = await db
-    .select()
-    .from(profiles)
-    .where(eq(profiles.id, user.id))
-    .limit(1);
-
-  if (!profile) return null;
-
-  return profile;
+  try {
+    const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
+    const userDoc = await usersCol().doc(decoded.uid).get();
+    return docToObj<UserDoc>(userDoc);
+  } catch {
+    return null;
+  }
 }

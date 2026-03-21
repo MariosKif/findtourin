@@ -14,6 +14,7 @@ declare namespace App {
       avatarUrl?: string | null;
       isVerified?: boolean;
       stripeCustomerId?: string | null;
+      createdAt?: string;
     };
   }
 }

@@ -1,54 +1,29 @@
 ---
-import Layout from './Layout.astro';
-import AccountSidebar from '../components/account/AccountSidebar.astro';
+import PublicLayout from './PublicLayout.astro';
+import AccountTabNav from '../components/account/AccountTabNav.astro';
+import Toast from '../components/ui/Toast.astro';
 
 interface Props {
   title?: string;
 }
 
 const { title = 'My Account' } = Astro.props;
-const user = Astro.locals.user;
 ---
 
-<Layout title={title} noIndex={true}>
-  <div class="flex min-h-screen bg-gray-50">
-    <AccountSidebar user={user} />
+<PublicLayout title={title} noIndex={true}>
+  <div class="bg-gray-50 min-h-[calc(100vh-4rem)]">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <h1 class="text-3xl font-bold text-gray-900 font-heading">{title}</h1>
+      <p class="mt-1 text-gray-500">Manage your account and preferences</p>
 
-    <div class="flex-1 lg:ml-64">
-      <!-- Top Bar -->
-      <header class="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900">{title}</h1>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="text-sm text-gray-600">{user?.name}</span>
-            <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-sm font-semibold">
-              {user?.name?.charAt(0).toUpperCase() || 'U'}
-            </div>
-          </div>
-        </div>
-      </header>
+      <div class="mt-6">
+        <AccountTabNav />
+      </div>
 
-      <!-- Main Content -->
-      <main class="p-4 sm:p-6 lg:p-8">
+      <div class="mt-8">
         <slot />
-      </main>
+      </div>
     </div>
   </div>
-
-  <!-- Mobile sidebar toggle -->
-  <script>
-    const sidebarToggle = document.getElementById('sidebar-toggle');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebar-overlay');
-
-    function toggleSidebar() {
-      sidebar?.classList.toggle('-translate-x-full');
-      sidebarOverlay?.classList.toggle('hidden');
-    }
-
-    sidebarToggle?.addEventListener('click', toggleSidebar);
-    sidebarOverlay?.addEventListener('click', toggleSidebar);
-  </script>
-</Layout>
+  <Toast />
+</PublicLayout>

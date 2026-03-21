@@ -1,7 +1,5 @@
 import type { APIRoute } from 'astro';
-import { db } from '../../../lib/db';
-import { tours } from '../../../lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { toursCol, Timestamp } from '../../../lib/firestore';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
 import { searchTours, type SearchParams } from '../../../lib/search';
 import { slugify } from '../../../lib/utils';
@@ -44,13 +42,8 @@ export const GET: APIRoute = async ({ request }) => {
 export const POST: APIRoute = async (context) => {
   try {
     const user = await getAuthenticatedUser(context);
-    if (!user) {
-      return json({ error: 'Unauthorized' }, 401);
-    }
-
-    if (user.role !== 'agency' && user.role !== 'admin') {
-      return json({ error: 'Forbidden: agency or admin role required' }, 403);
-    }
+    if (!user) return json({ error: 'Unauthorized' }, 401);
+    if (user.role !== 'agency' && user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
 
     const body = await context.request.json();
     const { name, description, country, city, price, currency, category,
@@ -58,48 +51,45 @@ export const POST: APIRoute = async (context) => {
             durationDays, maxParticipants, departureCountry, departureCity } = body;
 
     if (!name || !description || !country || !city || !price || !category) {
-      return json({ error: 'Missing required fields: name, description, country, city, price, category' }, 400);
+      return json({ error: 'Missing required fields' }, 400);
     }
 
-    // Generate slug with random suffix if duplicate
     let slug = slugify(name);
-    const existing = await db
-      .select({ id: tours.id })
-      .from(tours)
-      .where(eq(tours.slug, slug))
-      .limit(1);
-
-    if (existing.length > 0) {
-      const suffix = Math.random().toString(36).substring(2, 8);
-      slug = `${slug}-${suffix}`;
+    const existing = await toursCol().where('slug', '==', slug).limit(1).get();
+    if (!existing.empty) {
+      slug = `${slug}-${Math.random().toString(36).substring(2, 8)}`;
     }
 
-    const [tour] = await db
-      .insert(tours)
-      .values({
-        agencyId: user.id,
-        name,
-        slug,
-        description,
-        country,
-        city,
-        price: String(price),
-        currency: currency || 'EUR',
-        category,
-        departureCountry: departureCountry || null,
-        departureCity: departureCity || null,
-        contactEmail: contactEmail || null,
-        contactPhone: contactPhone || null,
-        contactWebsite: contactWebsite || null,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-        durationDays: durationDays || null,
-        maxParticipants: maxParticipants || null,
-        status: 'pending_payment',
-      })
-      .returning();
+    const now = Timestamp.now();
+    const tourData = {
+      agencyId: user.id,
+      name,
+      slug,
+      description,
+      country,
+      city,
+      price: Number(price),
+      currency: currency || 'EUR',
+      category,
+      departureCountry: departureCountry || null,
+      departureCity: departureCity || null,
+      contactEmail: contactEmail || null,
+      contactPhone: contactPhone || null,
+      contactWebsite: contactWebsite || null,
+      startDate: startDate ? Timestamp.fromDate(new Date(startDate)) : null,
+      endDate: endDate ? Timestamp.fromDate(new Date(endDate)) : null,
+      durationDays: durationDays || null,
+      maxParticipants: maxParticipants || null,
+      status: 'pending_payment',
+      stripePaymentId: null,
+      images: [],
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    return json(tour, 201);
+    const docRef = await toursCol().add(tourData);
+
+    return json({ id: docRef.id, ...tourData }, 201);
   } catch (error) {
     console.error('Error creating tour:', error);
     return json({ error: 'Failed to create tour' }, 500);

@@ -1,6 +1,4 @@
-import { db } from './db';
-import { tours, tourImages } from './db/schema';
-import { eq, and, ilike, or, sql, desc, asc, count, gte, lte } from 'drizzle-orm';
+import { toursCol, docsToArray, type TourDoc } from './firestore';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -22,133 +20,93 @@ export interface SearchParams {
 
 export async function searchTours(params: SearchParams) {
   const page = params.page || 1;
-  const offset = (page - 1) * ITEMS_PER_PAGE;
-  const conditions = [eq(tours.status, 'active')];
+
+  let query: FirebaseFirestore.Query = toursCol().where('status', '==', 'active');
+
+  if (params.category) {
+    query = query.where('category', '==', params.category);
+  }
+
+  if (params.country) {
+    query = query.where('country', '==', params.country);
+  }
+
+  if (params.city) {
+    query = query.where('city', '==', params.city);
+  }
+
+  if (params.departureCountry) {
+    query = query.where('departureCountry', '==', params.departureCountry);
+  }
+
+  if (params.departureCity) {
+    query = query.where('departureCity', '==', params.departureCity);
+  }
+
+  switch (params.sort) {
+    case 'price_asc':
+      query = query.orderBy('price', 'asc');
+      break;
+    case 'price_desc':
+      query = query.orderBy('price', 'desc');
+      break;
+    case 'name':
+      query = query.orderBy('name', 'asc');
+      break;
+    case 'newest':
+    default:
+      query = query.orderBy('createdAt', 'desc');
+  }
+
+  const snapshot = await query.get();
+  let allTours = docsToArray<TourDoc>(snapshot);
 
   if (params.q) {
-    const searchTerm = `%${params.q}%`;
-    conditions.push(
-      or(
-        ilike(tours.name, searchTerm),
-        ilike(tours.description, searchTerm),
-        ilike(tours.country, searchTerm),
-        ilike(tours.city, searchTerm),
-        ilike(tours.category, searchTerm),
-        ilike(tours.departureCountry, searchTerm),
-        ilike(tours.departureCity, searchTerm),
-      )!
+    const q = params.q.toLowerCase();
+    allTours = allTours.filter(t =>
+      t.name.toLowerCase().includes(q) ||
+      t.description.toLowerCase().includes(q) ||
+      t.country.toLowerCase().includes(q) ||
+      t.city.toLowerCase().includes(q) ||
+      t.category.toLowerCase().includes(q) ||
+      (t.departureCountry || '').toLowerCase().includes(q) ||
+      (t.departureCity || '').toLowerCase().includes(q)
     );
   }
 
   if (params.destination) {
-    const destTerm = `%${params.destination}%`;
-    conditions.push(
-      or(
-        ilike(tours.country, destTerm),
-        ilike(tours.city, destTerm),
-      )!
+    const dest = params.destination.toLowerCase();
+    allTours = allTours.filter(t =>
+      t.country.toLowerCase().includes(dest) ||
+      t.city.toLowerCase().includes(dest)
     );
-  }
-
-  if (params.departureCountry) {
-    const depCountryTerm = `%${params.departureCountry}%`;
-    conditions.push(
-      or(
-        ilike(tours.departureCountry, depCountryTerm),
-        ilike(tours.departureCity, depCountryTerm),
-      )!
-    );
-  }
-
-  if (params.departureCity) {
-    conditions.push(ilike(tours.departureCity, `%${params.departureCity}%`));
-  }
-
-  if (params.country) {
-    conditions.push(ilike(tours.country, params.country));
-  }
-
-  if (params.city) {
-    conditions.push(ilike(tours.city, params.city));
-  }
-
-  if (params.category) {
-    conditions.push(eq(tours.category, params.category));
   }
 
   if (params.minPrice !== undefined) {
-    conditions.push(sql`${tours.price}::numeric >= ${params.minPrice}`);
+    allTours = allTours.filter(t => t.price >= params.minPrice!);
   }
-
   if (params.maxPrice !== undefined) {
-    conditions.push(sql`${tours.price}::numeric <= ${params.maxPrice}`);
+    allTours = allTours.filter(t => t.price <= params.maxPrice!);
   }
 
   if (params.dateFrom) {
-    conditions.push(gte(tours.startDate, new Date(params.dateFrom)));
+    const fromDate = new Date(params.dateFrom);
+    allTours = allTours.filter(t => t.startDate && new Date(t.startDate as any) >= fromDate);
   }
-
   if (params.dateTo) {
-    conditions.push(lte(tours.startDate, new Date(params.dateTo)));
+    const toDate = new Date(params.dateTo);
+    allTours = allTours.filter(t => t.startDate && new Date(t.startDate as any) <= toDate);
   }
 
-  const where = and(...conditions);
-
-  let orderBy;
-  switch (params.sort) {
-    case 'price_asc':
-      orderBy = asc(sql`${tours.price}::numeric`);
-      break;
-    case 'price_desc':
-      orderBy = desc(sql`${tours.price}::numeric`);
-      break;
-    case 'name':
-      orderBy = asc(tours.name);
-      break;
-    case 'newest':
-    default:
-      orderBy = desc(tours.createdAt);
-  }
-
-  const [results, totalResult] = await Promise.all([
-    db
-      .select()
-      .from(tours)
-      .where(where)
-      .orderBy(orderBy)
-      .limit(ITEMS_PER_PAGE)
-      .offset(offset),
-    db
-      .select({ total: count() })
-      .from(tours)
-      .where(where),
-  ]);
-
-  const total = totalResult[0]?.total || 0;
+  const total = allTours.length;
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+  const offset = (page - 1) * ITEMS_PER_PAGE;
+  const paginatedTours = allTours.slice(offset, offset + ITEMS_PER_PAGE);
 
-  // Fetch first image for each tour
-  const tourIds = results.map((t) => t.id);
-  const images = tourIds.length
-    ? await db
-        .select()
-        .from(tourImages)
-        .where(sql`${tourImages.tourId} IN ${tourIds}`)
-        .orderBy(asc(tourImages.position))
-    : [];
-
-  const imagesByTour = new Map<string, typeof images>();
-  for (const img of images) {
-    if (!imagesByTour.has(img.tourId)) {
-      imagesByTour.set(img.tourId, []);
-    }
-    imagesByTour.get(img.tourId)!.push(img);
-  }
-
-  const toursWithImages = results.map((tour) => ({
+  const toursWithImages = paginatedTours.map(tour => ({
     ...tour,
-    images: imagesByTour.get(tour.id) || [],
-    thumbnail: imagesByTour.get(tour.id)?.[0]?.url || null,
+    images: tour.images || [],
+    thumbnail: tour.images?.[0]?.url || null,
   }));
 
   return {
@@ -162,18 +120,9 @@ export async function searchTours(params: SearchParams) {
 }
 
 export const CATEGORIES = [
-  'Adventure',
-  'Cultural',
-  'Food & Wine',
-  'Nature',
-  'City Tours',
-  'Beach & Island',
-  'Historical',
-  'Wildlife',
-  'Hiking & Trekking',
-  'Photography',
-  'Wellness & Spa',
-  'Cruise',
+  'Adventure', 'Cultural', 'Food & Wine', 'Nature', 'City Tours',
+  'Beach & Island', 'Historical', 'Wildlife', 'Hiking & Trekking',
+  'Photography', 'Wellness & Spa', 'Cruise',
 ] as const;
 
 export const COUNTRIES = [

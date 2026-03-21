@@ -1,10 +1,21 @@
 import Stripe from 'stripe';
+import { adminDb } from './firebase';
 
 export const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-01-27.acacia',
 });
 
-export const LISTING_FEE_CENTS = Number(import.meta.env.LISTING_FEE_CENTS || process.env.LISTING_FEE_CENTS || 4900);
+async function getListingFeeCents(): Promise<number> {
+  try {
+    const doc = await adminDb.collection('config').doc('pricing').get();
+    if (doc.exists) {
+      return doc.data()?.listingFeeCents ?? 4900;
+    }
+  } catch {
+    // Fallback if Firestore is unavailable
+  }
+  return 4900;
+}
 
 export async function createCheckoutSession(params: {
   tourId: string;
@@ -13,6 +24,8 @@ export async function createCheckoutSession(params: {
   successUrl: string;
   cancelUrl: string;
 }) {
+  const listingFeeCents = await getListingFeeCents();
+
   return stripe.checkout.sessions.create({
     mode: 'payment',
     customer_email: params.agencyEmail,
@@ -24,7 +37,7 @@ export async function createCheckoutSession(params: {
             name: `Listing Fee: ${params.tourName}`,
             description: 'One-time fee to publish your tour listing on FindToursIn',
           },
-          unit_amount: LISTING_FEE_CENTS,
+          unit_amount: listingFeeCents,
         },
         quantity: 1,
       },

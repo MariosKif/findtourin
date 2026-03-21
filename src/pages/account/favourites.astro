@@ -8,7 +8,7 @@ const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
 
 // Get favourited tours with their first image
-const favSnapshot = await favouritesCol().where('userId', '==', user.id).orderBy('createdAt', 'asc').get();
+const favSnapshot = await favouritesCol().where('userId', '==', user.id).get();
 const tourIds = favSnapshot.docs.map(doc => doc.data().tourId);
 
 const allTours: any[] = [];

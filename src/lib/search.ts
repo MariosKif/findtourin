@@ -1,4 +1,4 @@
-import { toursCol, docsToArray, type TourDoc } from './firestore';
+import { toursCol, favouritesCol, docsToArray, type TourDoc } from './firestore';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -103,10 +103,27 @@ export async function searchTours(params: SearchParams) {
   const offset = (page - 1) * ITEMS_PER_PAGE;
   const paginatedTours = allTours.slice(offset, offset + ITEMS_PER_PAGE);
 
+  // Get favourite counts for paginated tours
+  const favouriteCounts = new Map<string, number>();
+  await Promise.all(
+    paginatedTours.map(async (tour) => {
+      try {
+        const snapshot = await favouritesCol()
+          .where('tourId', '==', tour.id)
+          .count()
+          .get();
+        favouriteCounts.set(tour.id, snapshot.data().count);
+      } catch {
+        favouriteCounts.set(tour.id, 0);
+      }
+    })
+  );
+
   const toursWithImages = paginatedTours.map(tour => ({
     ...tour,
     images: tour.images || [],
     thumbnail: tour.images?.[0]?.url || null,
+    favouriteCount: favouriteCounts.get(tour.id) || 0,
   }));
 
   return {

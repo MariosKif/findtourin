@@ -1,5 +1,5 @@
 import { adminDb } from './firebase';
-import { Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
 // Collection references
 export const usersCol = () => adminDb.collection('users');
@@ -53,6 +53,7 @@ export interface TourDoc {
   status: string;
   stripePaymentId?: string | null;
   images: TourImage[];
+  viewCount?: number;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -103,4 +104,4 @@ export function docsToArray<T>(snapshot: FirebaseFirestore.QuerySnapshot): (T & 
   return snapshot.docs.map(doc => docToObj<T>(doc)!);
 }
 
-export { Timestamp };
+export { FieldValue, Timestamp };

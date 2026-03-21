@@ -4,7 +4,7 @@ import PublicLayout from '../../layouts/PublicLayout.astro';
 import TourGallery from '../../components/tours/TourGallery.astro';
 import TourInfo from '../../components/tours/TourInfo.astro';
 import AgencyContactCard from '../../components/tours/AgencyContactCard.astro';
-import { toursCol, usersCol, docToObj, type TourDoc, type UserDoc } from '../../lib/firestore';
+import { toursCol, usersCol, docToObj, FieldValue, type TourDoc, type UserDoc } from '../../lib/firestore';
 import { getDemoTourBySlug, DEMO_AGENCY, DEMO_REVIEWS } from '../../lib/demo-tours';
 
 const { slug } = Astro.params;
@@ -27,6 +27,13 @@ if (!tour || tour.status !== 'active') {
   const demoTour = getDemoTourBySlug(slug);
   if (!demoTour) return Astro.redirect('/tours');
   tour = demoTour;
+}
+
+// Increment view count (fire-and-forget)
+if (tour?.id && !tour.id.startsWith('demo-')) {
+  toursCol().doc(tour.id).update({
+    viewCount: FieldValue.increment(1),
+  }).catch(() => {});
 }
 
 try {

@@ -34,6 +34,8 @@ export const DEMO_TOURS = [
     rating: 4.8,
     reviewCount: 234,
     bookingCount: 412,
+    viewCount: 1842,
+    favouriteCount: 156,
   },
   {
     id: 'demo-2',
@@ -64,6 +66,8 @@ export const DEMO_TOURS = [
     rating: 4.9,
     reviewCount: 189,
     bookingCount: 305,
+    viewCount: 1523,
+    favouriteCount: 112,
   },
   {
     id: 'demo-3',
@@ -94,6 +98,8 @@ export const DEMO_TOURS = [
     rating: 4.7,
     reviewCount: 156,
     bookingCount: 278,
+    viewCount: 2105,
+    favouriteCount: 189,
   },
   {
     id: 'demo-4',
@@ -124,6 +130,8 @@ export const DEMO_TOURS = [
     rating: 4.6,
     reviewCount: 98,
     bookingCount: 156,
+    viewCount: 967,
+    favouriteCount: 78,
   },
   {
     id: 'demo-5',
@@ -154,6 +162,8 @@ export const DEMO_TOURS = [
     rating: 4.8,
     reviewCount: 210,
     bookingCount: 340,
+    viewCount: 1678,
+    favouriteCount: 134,
   },
   // Africa
   {

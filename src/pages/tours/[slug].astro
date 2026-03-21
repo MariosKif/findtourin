@@ -4,9 +4,7 @@ import PublicLayout from '../../layouts/PublicLayout.astro';
 import TourGallery from '../../components/tours/TourGallery.astro';
 import TourInfo from '../../components/tours/TourInfo.astro';
 import AgencyContactCard from '../../components/tours/AgencyContactCard.astro';
-import { db } from '../../lib/db';
-import { tours, tourImages, profiles } from '../../lib/db/schema';
-import { eq, asc } from 'drizzle-orm';
+import { toursCol, usersCol, docToObj, type TourDoc, type UserDoc } from '../../lib/firestore';
 import { getDemoTourBySlug, DEMO_AGENCY, DEMO_REVIEWS } from '../../lib/demo-tours';
 
 const { slug } = Astro.params;
@@ -17,7 +15,10 @@ let images: any[] = [];
 let agency: any;
 
 try {
-  tour = await db.select().from(tours).where(eq(tours.slug, slug)).then(r => r[0]);
+  const snapshot = await toursCol().where('slug', '==', slug).limit(1).get();
+  if (!snapshot.empty) {
+    tour = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+  }
 } catch {
   // DB unavailable — fall through to demo lookup
 }
@@ -29,12 +30,12 @@ if (!tour || tour.status !== 'active') {
 }
 
 try {
-  const [dbImages, dbAgency] = await Promise.all([
-    db.select().from(tourImages).where(eq(tourImages.tourId, tour.id)).orderBy(asc(tourImages.position)),
-    db.select().from(profiles).where(eq(profiles.id, tour.agencyId)).then(r => r[0]),
-  ]);
-  images = dbImages;
-  agency = dbAgency;
+  // Images are now stored in the tour document
+  images = tour.images || [];
+  if (tour.agencyId) {
+    const agencyDoc = await usersCol().doc(tour.agencyId).get();
+    agency = docToObj<UserDoc>(agencyDoc);
+  }
 } catch {
   // DB unavailable — use demo defaults
 }

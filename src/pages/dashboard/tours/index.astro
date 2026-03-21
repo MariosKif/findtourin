@@ -3,18 +3,13 @@ export const prerender = false;
 import DashboardLayout from '../../../layouts/DashboardLayout.astro';
 import ListingsTable from '../../../components/dashboard/ListingsTable.astro';
 import Button from '../../../components/ui/Button.astro';
-import { db } from '../../../lib/db';
-import { tours } from '../../../lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { toursCol } from '../../../lib/firestore';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
 
-const userTours = await db
-  .select()
-  .from(tours)
-  .where(eq(tours.agencyId, user.id))
-  .orderBy(desc(tours.createdAt));
+const snapshot = await toursCol().where('agencyId', '==', user.id).orderBy('createdAt', 'desc').get();
+const userTours = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 ---
 
 <DashboardLayout title="My Listings">

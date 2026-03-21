@@ -2,28 +2,36 @@
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import BillingHistory from '../../components/dashboard/BillingHistory.astro';
-import { db } from '../../lib/db';
-import { payments, tours } from '../../lib/db/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { paymentsCol, toursCol } from '../../lib/firestore';
 import { formatPrice } from '../../lib/utils';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
 
-const userPayments = await db
-  .select({
-    id: payments.id,
-    amount: payments.amount,
-    currency: payments.currency,
-    status: payments.status,
-    createdAt: payments.createdAt,
-    tourName: tours.name,
-    tourId: payments.tourId,
-  })
-  .from(payments)
-  .leftJoin(tours, eq(payments.tourId, tours.id))
-  .where(eq(payments.agencyId, user.id))
-  .orderBy(desc(payments.createdAt));
+const paymentsSnapshot = await paymentsCol().where('agencyId', '==', user.id).orderBy('createdAt', 'desc').get();
+
+const userPayments: any[] = [];
+for (const doc of paymentsSnapshot.docs) {
+  const data = doc.data();
+  let tourName = null;
+  if (data.tourId) {
+    try {
+      const tourDoc = await toursCol().doc(data.tourId).get();
+      if (tourDoc.exists) {
+        tourName = tourDoc.data()?.name || null;
+      }
+    } catch {}
+  }
+  userPayments.push({
+    id: doc.id,
+    amount: data.amount,
+    currency: data.currency,
+    status: data.status,
+    createdAt: data.createdAt?.toDate?.()?.toISOString?.() || data.createdAt,
+    tourName,
+    tourId: data.tourId,
+  });
+}
 
 const totalSpent = userPayments
   .filter((p) => p.status === 'completed')

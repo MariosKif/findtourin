@@ -2,49 +2,30 @@
 export const prerender = false;
 import AccountLayout from '../../layouts/AccountLayout.astro';
 import TourCard from '../../components/tours/TourCard.astro';
-import { db } from '../../lib/db';
-import { favourites, tours, tourImages } from '../../lib/db/schema';
-import { eq, asc } from 'drizzle-orm';
+import { favouritesCol, toursCol, docToObj, type TourDoc, type FavouriteDoc } from '../../lib/firestore';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
 
 // Get favourited tours with their first image
-const userFavourites = await db
-  .select({
-    id: tours.id,
-    name: tours.name,
-    slug: tours.slug,
-    description: tours.description,
-    country: tours.country,
-    city: tours.city,
-    departureCountry: tours.departureCountry,
-    departureCity: tours.departureCity,
-    price: tours.price,
-    currency: tours.currency,
-    category: tours.category,
-    durationDays: tours.durationDays,
-  })
-  .from(favourites)
-  .innerJoin(tours, eq(favourites.tourId, tours.id))
-  .where(eq(favourites.userId, user.id))
-  .orderBy(asc(favourites.createdAt));
+const favSnapshot = await favouritesCol().where('userId', '==', user.id).orderBy('createdAt', 'asc').get();
+const tourIds = favSnapshot.docs.map(doc => doc.data().tourId);
 
-// Get thumbnails for all favourited tours
-const tourIds = userFavourites.map(t => t.id);
-const allImages = tourIds.length > 0
-  ? await db
-      .select({ tourId: tourImages.tourId, url: tourImages.url })
-      .from(tourImages)
-      .where(eq(tourImages.position, 0))
-  : [];
-
-const imageMap = new Map(allImages.map(img => [img.tourId, img.url]));
-
-const toursWithThumbnails = userFavourites.map(t => ({
-  ...t,
-  thumbnail: imageMap.get(t.id) || null,
-}));
+const allTours: any[] = [];
+if (tourIds.length > 0) {
+  const chunks = [];
+  for (let i = 0; i < tourIds.length; i += 10) {
+    chunks.push(tourIds.slice(i, i + 10));
+  }
+  for (const chunk of chunks) {
+    const snapshot = await toursCol().where('__name__', 'in', chunk).get();
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      allTours.push({ id: doc.id, ...data, thumbnail: data.images?.[0]?.url || null });
+    });
+  }
+}
+const toursWithThumbnails = allTours;
 ---
 
 <AccountLayout title="Favourites">

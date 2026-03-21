@@ -2,31 +2,41 @@
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import Badge from '../../components/ui/Badge.astro';
-import { db } from '../../lib/db';
-import { tours, profiles } from '../../lib/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { toursCol, usersCol, docsToArray, type TourDoc } from '../../lib/firestore';
 import { formatDate, formatPrice } from '../../lib/utils';
 
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
 
-const allTours = await db
-  .select({
-    id: tours.id,
-    name: tours.name,
-    slug: tours.slug,
-    status: tours.status,
-    category: tours.category,
-    country: tours.country,
-    price: tours.price,
-    currency: tours.currency,
-    createdAt: tours.createdAt,
-    agencyName: profiles.name,
-    agencyEmail: profiles.email,
-  })
-  .from(tours)
-  .leftJoin(profiles, eq(tours.agencyId, profiles.id))
-  .orderBy(desc(tours.createdAt));
+const toursArray = docsToArray<TourDoc>(await toursCol().get())
+  .sort((a, b) => {
+    const aDate = a.createdAt ? new Date(a.createdAt as any).getTime() : 0;
+    const bDate = b.createdAt ? new Date(b.createdAt as any).getTime() : 0;
+    return bDate - aDate;
+  });
+
+// Batch-fetch agency profiles for unique agencyIds
+const agencyIds = [...new Set(toursArray.map(t => t.agencyId).filter(Boolean))];
+const agencyMap = new Map<string, any>();
+const agencyChunks = [];
+for (let i = 0; i < agencyIds.length; i += 10) {
+  agencyChunks.push(agencyIds.slice(i, i + 10));
+}
+for (const chunk of agencyChunks) {
+  const snapshot = await usersCol().where('__name__', 'in', chunk).get();
+  snapshot.docs.forEach(doc => {
+    agencyMap.set(doc.id, doc.data());
+  });
+}
+
+const allTours = toursArray.map(t => {
+  const agency = agencyMap.get(t.agencyId);
+  return {
+    ...t,
+    agencyName: agency?.name || null,
+    agencyEmail: agency?.email || null,
+  };
+});
 
 const statusVariant: Record<string, string> = {
   active: 'success',

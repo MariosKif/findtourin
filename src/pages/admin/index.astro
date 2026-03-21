@@ -1,19 +1,21 @@
 ---
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
-import { db } from '../../lib/db';
-import { profiles, tours, payments } from '../../lib/db/schema';
-import { count, eq, sql } from 'drizzle-orm';
+import { usersCol, toursCol, paymentsCol } from '../../lib/firestore';
 
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
 
-const [userCount, tourCount, activeCount, revenue] = await Promise.all([
-  db.select({ total: count() }).from(profiles).then(r => r[0]?.total || 0),
-  db.select({ total: count() }).from(tours).then(r => r[0]?.total || 0),
-  db.select({ total: count() }).from(tours).where(eq(tours.status, 'active')).then(r => r[0]?.total || 0),
-  db.select({ total: sql<number>`COALESCE(SUM(${payments.amount}), 0)` }).from(payments).where(eq(payments.status, 'completed')).then(r => r[0]?.total || 0),
+const [usersSnapshot, toursSnapshot, paymentsSnapshot] = await Promise.all([
+  usersCol().get(),
+  toursCol().get(),
+  paymentsCol().where('status', '==', 'completed').get(),
 ]);
+
+const userCount = usersSnapshot.size;
+const tourCount = toursSnapshot.size;
+const activeCount = toursSnapshot.docs.filter(doc => doc.data().status === 'active').length;
+const revenue = paymentsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
 ---
 
 <DashboardLayout title="Admin Dashboard">

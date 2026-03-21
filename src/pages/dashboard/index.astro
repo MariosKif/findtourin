@@ -5,9 +5,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import StatsCards from '../../components/dashboard/StatsCards.astro';
 import ListingsTable from '../../components/dashboard/ListingsTable.astro';
 import Badge from '../../components/ui/Badge.astro';
-import { db } from '../../lib/db';
-import { tours, payments } from '../../lib/db/schema';
-import { eq, desc, count, sql } from 'drizzle-orm';
+import { toursCol, paymentsCol } from '../../lib/firestore';
 import { formatPrice, formatDate } from '../../lib/utils';
 
 const user = Astro.locals.user;
@@ -16,37 +14,26 @@ if (!user) {
   return Astro.redirect('/auth/login');
 }
 
-// Count tours by status
-const tourCounts = await db
-  .select({
-    status: tours.status,
-    count: count(),
-  })
-  .from(tours)
-  .where(eq(tours.agencyId, user.id))
-  .groupBy(tours.status);
+// Fetch all user's tours and count by status in JS
+const toursSnapshot = await toursCol().where('agencyId', '==', user.id).get();
+const allUserTours = toursSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-const totalListings = tourCounts.reduce((sum, row) => sum + row.count, 0);
-const activeListings = tourCounts.find((r) => r.status === 'active')?.count || 0;
-const pendingPayment = tourCounts.find((r) => r.status === 'pending_payment')?.count || 0;
+const totalListings = allUserTours.length;
+const activeListings = allUserTours.filter(t => t.status === 'active').length;
+const pendingPayment = allUserTours.filter(t => t.status === 'pending_payment').length;
 
 // Total spent
-const spentResult = await db
-  .select({
-    total: sql<number>`COALESCE(SUM(${payments.amount}), 0)`,
+const paymentsSnapshot = await paymentsCol().where('agencyId', '==', user.id).where('status', '==', 'completed').get();
+const totalSpent = paymentsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+
+// Recent listings (sort in JS, take 5)
+const recentTours = allUserTours
+  .sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() || 0;
+    const bTime = b.createdAt?.toMillis?.() || 0;
+    return bTime - aTime;
   })
-  .from(payments)
-  .where(eq(payments.agencyId, user.id));
-
-const totalSpent = Number(spentResult[0]?.total || 0);
-
-// Recent listings
-const recentTours = await db
-  .select()
-  .from(tours)
-  .where(eq(tours.agencyId, user.id))
-  .orderBy(desc(tours.createdAt))
-  .limit(5);
+  .slice(0, 5);
 
 const stats = [
   { label: 'Total Listings', value: totalListings, icon: 'listings' },

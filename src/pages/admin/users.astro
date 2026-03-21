@@ -2,26 +2,18 @@
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import Badge from '../../components/ui/Badge.astro';
-import { db } from '../../lib/db';
-import { profiles } from '../../lib/db/schema';
-import { desc } from 'drizzle-orm';
+import { usersCol, docsToArray, type UserDoc } from '../../lib/firestore';
 import { formatDate } from '../../lib/utils';
 
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
 
-const allUsers = await db
-  .select({
-    id: profiles.id,
-    email: profiles.email,
-    name: profiles.name,
-    role: profiles.role,
-    isVerified: profiles.isVerified,
-    companyName: profiles.companyName,
-    createdAt: profiles.createdAt,
-  })
-  .from(profiles)
-  .orderBy(desc(profiles.createdAt));
+const allUsers = docsToArray<UserDoc>(await usersCol().get())
+  .sort((a, b) => {
+    const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bDate - aDate;
+  });
 ---
 
 <DashboardLayout title="Manage Users">

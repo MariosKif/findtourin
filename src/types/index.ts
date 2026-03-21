@@ -1,15 +1,13 @@
-import type { InferSelectModel } from 'drizzle-orm';
-import type { profiles, tours, tourImages, payments, contactMessages, favourites } from '../lib/db/schema';
+import type { UserDoc, TourDoc, TourImage, PaymentDoc, ContactMessageDoc, FavouriteDoc } from '../lib/firestore';
 
-export type User = InferSelectModel<typeof profiles>;
-export type Tour = InferSelectModel<typeof tours>;
-export type TourImage = InferSelectModel<typeof tourImages>;
-export type Payment = InferSelectModel<typeof payments>;
-export type ContactMessage = InferSelectModel<typeof contactMessages>;
-export type Favourite = InferSelectModel<typeof favourites>;
+export type User = UserDoc & { id: string };
+export type Tour = TourDoc & { id: string };
+export type { TourImage };
+export type Payment = PaymentDoc & { id: string };
+export type ContactMessage = ContactMessageDoc & { id: string };
+export type Favourite = FavouriteDoc & { id: string };
 
 export type TourWithImages = Tour & {
-  images: TourImage[];
   thumbnail: string | null;
 };
 

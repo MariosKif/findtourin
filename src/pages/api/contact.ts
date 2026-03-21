@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
-import { db } from '../../lib/db';
-import { contactMessages } from '../../lib/db/schema';
+import { contactMessagesCol, Timestamp } from '../../lib/firestore';
 
 export const prerender = false;
 
@@ -16,26 +15,24 @@ export const POST: APIRoute = async ({ request }) => {
     const { name, email, subject, message } = body;
 
     if (!name || !email || !subject || !message) {
-      return json({ error: 'Missing required fields: name, email, subject, message' }, 400);
+      return json({ error: 'Missing required fields' }, 400);
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return json({ error: 'Invalid email address' }, 400);
     }
 
-    const [contactMessage] = await db
-      .insert(contactMessages)
-      .values({
-        name,
-        email,
-        subject,
-        message,
-      })
-      .returning();
+    const docRef = await contactMessagesCol().add({
+      name,
+      email,
+      subject,
+      message,
+      isRead: false,
+      createdAt: Timestamp.now(),
+    });
 
-    return json({ success: true, message: 'Message sent successfully', id: contactMessage.id }, 201);
+    return json({ success: true, message: 'Message sent successfully', id: docRef.id }, 201);
   } catch (error) {
     console.error('Error saving contact message:', error);
     return json({ error: 'Failed to send message' }, 500);

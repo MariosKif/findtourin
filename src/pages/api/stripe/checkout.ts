@@ -1,7 +1,5 @@
 import type { APIRoute } from 'astro';
-import { db } from '../../../lib/db';
-import { tours } from '../../../lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { toursCol, docToObj, type TourDoc } from '../../../lib/firestore';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
 import { createCheckoutSession } from '../../../lib/stripe';
 
@@ -16,34 +14,17 @@ const json = (data: unknown, status = 200) =>
 export const POST: APIRoute = async (context) => {
   try {
     const user = await getAuthenticatedUser(context);
-    if (!user) {
-      return json({ error: 'Unauthorized' }, 401);
-    }
-
-    if (user.role !== 'agency') {
-      return json({ error: 'Forbidden: agency role required' }, 403);
-    }
+    if (!user) return json({ error: 'Unauthorized' }, 401);
+    if (user.role !== 'agency') return json({ error: 'Forbidden' }, 403);
 
     const body = await context.request.json();
     const { tourId } = body;
+    if (!tourId) return json({ error: 'Missing tourId' }, 400);
 
-    if (!tourId) {
-      return json({ error: 'Missing required field: tourId' }, 400);
-    }
-
-    const [tour] = await db
-      .select()
-      .from(tours)
-      .where(eq(tours.id, tourId))
-      .limit(1);
-
-    if (!tour) {
-      return json({ error: 'Tour not found' }, 404);
-    }
-
-    if (tour.agencyId !== user.id) {
-      return json({ error: 'Forbidden: you do not own this tour' }, 403);
-    }
+    const tourDoc = await toursCol().doc(tourId).get();
+    const tour = docToObj<TourDoc>(tourDoc);
+    if (!tour) return json({ error: 'Tour not found' }, 404);
+    if (tour.agencyId !== user.id) return json({ error: 'Forbidden' }, 403);
 
     const origin = new URL(context.request.url).origin;
     const checkoutSession = await createCheckoutSession({

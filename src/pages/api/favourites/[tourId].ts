@@ -1,8 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
-import { db } from '../../../lib/db';
-import { favourites } from '../../../lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { favouritesCol } from '../../../lib/firestore';
 
 export const prerender = false;
 
@@ -15,18 +13,19 @@ const json = (data: unknown, status = 200) =>
 export const DELETE: APIRoute = async (context) => {
   try {
     const user = await getAuthenticatedUser(context);
-    if (!user) {
-      return json({ error: 'Unauthorized' }, 401);
-    }
+    if (!user) return json({ error: 'Unauthorized' }, 401);
 
     const { tourId } = context.params;
-    if (!tourId) {
-      return json({ error: 'Tour ID is required' }, 400);
-    }
+    if (!tourId) return json({ error: 'Tour ID is required' }, 400);
 
-    await db
-      .delete(favourites)
-      .where(and(eq(favourites.userId, user.id), eq(favourites.tourId, tourId)));
+    const snapshot = await favouritesCol()
+      .where('userId', '==', user.id)
+      .where('tourId', '==', tourId)
+      .get();
+
+    const batch = favouritesCol().firestore.batch();
+    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
 
     return json({ success: true });
   } catch (error) {

@@ -1,7 +1,5 @@
 import type { APIRoute } from 'astro';
-import { db } from '../../../lib/db';
-import { tours, payments } from '../../../lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { toursCol, paymentsCol, docToObj, Timestamp, type TourDoc } from '../../../lib/firestore';
 import { verifyWebhookSignature } from '../../../lib/stripe';
 
 export const prerender = false;
@@ -13,8 +11,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!signature) {
       return new Response(JSON.stringify({ error: 'Missing stripe-signature header' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
 
@@ -24,8 +21,7 @@ export const POST: APIRoute = async ({ request }) => {
     } catch (err) {
       console.error('Webhook signature verification failed:', err);
       return new Response(JSON.stringify({ error: 'Invalid signature' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
 
@@ -34,27 +30,22 @@ export const POST: APIRoute = async ({ request }) => {
       const tourId = session.metadata?.tourId;
 
       if (!tourId) {
-        console.error('No tourId in session metadata');
-        return new Response(JSON.stringify({ error: 'Missing tourId in metadata' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
+        return new Response(JSON.stringify({ error: 'Missing tourId' }), {
+          status: 400, headers: { 'Content-Type': 'application/json' },
         });
       }
 
-      // Update tour status to active
-      const [tour] = await db
-        .update(tours)
-        .set({
-          status: 'active',
-          stripePaymentId: session.payment_intent,
-          updatedAt: new Date(),
-        })
-        .where(eq(tours.id, tourId))
-        .returning();
+      const tourDoc = await toursCol().doc(tourId).get();
+      const tour = docToObj<TourDoc>(tourDoc);
 
       if (tour) {
-        // Create payment record
-        await db.insert(payments).values({
+        await toursCol().doc(tourId).update({
+          status: 'active',
+          stripePaymentId: session.payment_intent,
+          updatedAt: Timestamp.now(),
+        });
+
+        await paymentsCol().add({
           agencyId: tour.agencyId,
           tourId: tour.id,
           stripeSessionId: session.id,
@@ -62,19 +53,18 @@ export const POST: APIRoute = async ({ request }) => {
           amount: session.amount_total || 0,
           currency: session.currency || 'eur',
           status: 'completed',
+          createdAt: Timestamp.now(),
         });
       }
     }
 
     return new Response(JSON.stringify({ received: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Webhook error:', error);
     return new Response(JSON.stringify({ error: 'Webhook handler failed' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      status: 500, headers: { 'Content-Type': 'application/json' },
     });
   }
 };

@@ -1,15 +1,12 @@
 import type { APIRoute } from 'astro';
-import { db } from '../../../../lib/db';
-import { tours } from '../../../../lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { toursCol, Timestamp } from '../../../../lib/firestore';
 import { getAuthenticatedUser } from '../../../../lib/auth-helpers';
 
 export const prerender = false;
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
+    status, headers: { 'Content-Type': 'application/json' },
   });
 
 async function requireAdmin(context: Parameters<APIRoute>[0]) {
@@ -26,14 +23,11 @@ export const PUT: APIRoute = async (context) => {
   const body = await context.request.json();
   const { status } = body;
 
-  const [updated] = await db
-    .update(tours)
-    .set({ status, updatedAt: new Date() })
-    .where(eq(tours.id, id))
-    .returning();
+  await toursCol().doc(id).update({ status, updatedAt: Timestamp.now() });
+  const updated = await toursCol().doc(id).get();
+  if (!updated.exists) return json({ error: 'Tour not found' }, 404);
 
-  if (!updated) return json({ error: 'Tour not found' }, 404);
-  return json(updated);
+  return json({ id: updated.id, ...updated.data() });
 };
 
 export const DELETE: APIRoute = async (context) => {
@@ -41,6 +35,6 @@ export const DELETE: APIRoute = async (context) => {
   const { id } = context.params;
   if (!id) return json({ error: 'Missing tour ID' }, 400);
 
-  await db.delete(tours).where(eq(tours.id, id));
+  await toursCol().doc(id).delete();
   return json({ success: true });
 };

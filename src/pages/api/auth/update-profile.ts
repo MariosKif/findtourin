@@ -1,8 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
-import { db } from '../../../lib/db';
-import { profiles } from '../../../lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { usersCol, Timestamp } from '../../../lib/firestore';
 
 export const prerender = false;
 
@@ -22,20 +20,18 @@ export const POST: APIRoute = async (context) => {
     const body = await context.request.json();
     const { name, phone, website, companyName, companyDesc } = body;
 
-    const updateData: Record<string, any> = { updatedAt: new Date() };
+    const updateData: Record<string, any> = { updatedAt: Timestamp.now() };
     if (name !== undefined) updateData.name = name;
     if (phone !== undefined) updateData.phone = phone || null;
     if (website !== undefined) updateData.website = website || null;
     if (companyName !== undefined) updateData.companyName = companyName || null;
     if (companyDesc !== undefined) updateData.companyDesc = companyDesc || null;
 
-    const [updated] = await db
-      .update(profiles)
-      .set(updateData)
-      .where(eq(profiles.id, user.id))
-      .returning();
+    await usersCol().doc(user.id).update(updateData);
 
-    return json({ success: true, user: updated });
+    const updated = await usersCol().doc(user.id).get();
+
+    return json({ success: true, user: { id: updated.id, ...updated.data() } });
   } catch (error) {
     console.error('Update profile error:', error);
     return json({ error: 'Failed to update profile' }, 500);

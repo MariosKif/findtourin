@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
-import { createSupabaseServerClient, supabaseAdmin } from '../../../lib/supabase';
-import { db } from '../../../lib/db';
-import { profiles } from '../../../lib/db/schema';
+import { adminAuth } from '../../../lib/firebase';
+import { usersCol, Timestamp } from '../../../lib/firestore';
 
 export const prerender = false;
 
@@ -24,42 +23,48 @@ export const POST: APIRoute = async (context) => {
       return json({ error: 'Invalid role' }, 400);
     }
 
-    // Create auth user via admin client
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    const userRecord = await adminAuth.createUser({
       email,
       password,
-      email_confirm: true,
+      displayName: name,
+      emailVerified: true,
     });
 
-    if (authError) {
-      return json({ error: authError.message }, 400);
-    }
-
-    // Insert profile row
-    await db.insert(profiles).values({
-      id: authData.user.id,
+    const now = Timestamp.now();
+    await usersCol().doc(userRecord.uid).set({
       email,
       name,
       role: role || 'user',
       phone: phone || null,
       website: website || null,
       companyName: companyName || null,
+      companyDesc: null,
+      avatarUrl: null,
+      isVerified: false,
+      stripeCustomerId: null,
+      createdAt: now,
+      updatedAt: now,
     });
 
-    // Sign in to set session cookies
-    const supabase = createSupabaseServerClient(context);
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      return json({ error: 'Account created but sign-in failed. Please log in.' }, 500);
+    const { idToken } = body;
+    if (idToken) {
+      const expiresIn = 60 * 60 * 24 * 14 * 1000;
+      const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+      context.cookies.set('session', sessionCookie, {
+        httpOnly: true,
+        secure: import.meta.env.PROD,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: expiresIn / 1000,
+      });
     }
 
     return json({ success: true, role: role || 'user' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error);
+    if (error.code === 'auth/email-already-exists') {
+      return json({ error: 'Email already in use' }, 400);
+    }
     return json({ error: 'Registration failed' }, 500);
   }
 };

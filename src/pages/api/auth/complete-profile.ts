@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
-import { createSupabaseServerClient } from '../../../lib/supabase';
-import { db } from '../../../lib/db';
-import { profiles } from '../../../lib/db/schema';
+import { adminAuth } from '../../../lib/firebase';
+import { usersCol, Timestamp } from '../../../lib/firestore';
 
 export const prerender = false;
 
@@ -13,12 +12,13 @@ const json = (data: unknown, status = 200) =>
 
 export const POST: APIRoute = async (context) => {
   try {
-    const supabase = createSupabaseServerClient(context);
-    const { data: { user }, error } = await supabase.auth.getUser();
-
-    if (error || !user) {
+    const sessionCookie = context.cookies.get('session')?.value;
+    if (!sessionCookie) {
       return json({ error: 'Unauthorized' }, 401);
     }
+
+    const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
+    const firebaseUser = await adminAuth.getUser(decoded.uid);
 
     const body = await context.request.json();
     const { name, role, companyName, phone, website } = body;
@@ -31,16 +31,20 @@ export const POST: APIRoute = async (context) => {
       return json({ error: 'Invalid role' }, 400);
     }
 
-    // Insert profile row
-    await db.insert(profiles).values({
-      id: user.id,
-      email: user.email!,
+    const now = Timestamp.now();
+    await usersCol().doc(decoded.uid).set({
+      email: firebaseUser.email!,
       name,
       role,
       phone: phone || null,
       website: website || null,
       companyName: companyName || null,
-      avatarUrl: user.user_metadata?.avatar_url || null,
+      companyDesc: null,
+      avatarUrl: firebaseUser.photoURL || null,
+      isVerified: false,
+      stripeCustomerId: null,
+      createdAt: now,
+      updatedAt: now,
     });
 
     return json({ success: true, role });

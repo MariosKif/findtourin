@@ -1,22 +1,47 @@
 import type { APIRoute } from 'astro';
-import { createSupabaseServerClient } from '../../../lib/supabase';
+import { adminAuth } from '../../../lib/firebase';
+import { usersCol, docToObj, Timestamp, type UserDoc } from '../../../lib/firestore';
 
 export const prerender = false;
 
-export const GET: APIRoute = async (context) => {
-  const supabase = createSupabaseServerClient(context);
-  const origin = new URL(context.request.url).origin;
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${origin}/auth/callback`,
-    },
+const json = (data: unknown, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
   });
 
-  if (error || !data.url) {
-    return context.redirect('/auth/login?error=oauth_failed');
-  }
+export const POST: APIRoute = async (context) => {
+  try {
+    const body = await context.request.json();
+    const { idToken } = body;
 
-  return context.redirect(data.url);
+    if (!idToken) {
+      return json({ error: 'ID token is required' }, 400);
+    }
+
+    const decoded = await adminAuth.verifyIdToken(idToken);
+
+    const expiresIn = 60 * 60 * 24 * 14 * 1000;
+    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+
+    context.cookies.set('session', sessionCookie, {
+      httpOnly: true,
+      secure: import.meta.env.PROD,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: expiresIn / 1000,
+    });
+
+    const userDoc = await usersCol().doc(decoded.uid).get();
+    const profile = docToObj<UserDoc>(userDoc);
+
+    if (profile) {
+      return json({ success: true, role: profile.role, needsProfile: false });
+    }
+
+    return json({ success: true, needsProfile: true });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    return json({ error: 'Authentication failed' }, 500);
+  }
 };

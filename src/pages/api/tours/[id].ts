@@ -3,7 +3,7 @@ import { db } from '../../../lib/db';
 import { tours, tourImages } from '../../../lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
-import { deleteImage } from '../../../lib/cloudinary';
+import { deleteImage } from '../../../lib/storage';
 
 export const prerender = false;
 
@@ -131,7 +131,7 @@ export const DELETE: APIRoute = async (context) => {
       return json({ error: 'Forbidden: you do not own this tour' }, 403);
     }
 
-    // Delete images from Cloudinary
+    // Delete images from storage
     const images = await db
       .select()
       .from(tourImages)
@@ -141,7 +141,7 @@ export const DELETE: APIRoute = async (context) => {
       try {
         await deleteImage(image.publicId);
       } catch (err) {
-        console.error(`Failed to delete image ${image.publicId} from Cloudinary:`, err);
+        console.error(`Failed to delete image ${image.publicId} from storage:`, err);
       }
     }
 

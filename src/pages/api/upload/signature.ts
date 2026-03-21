@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
-import { uploadImage } from '../../../lib/cloudinary';
+import { uploadImage } from '../../../lib/storage';
 
 export const prerender = false;
 
@@ -32,7 +32,7 @@ export const POST: APIRoute = async (context) => {
     const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const result = await uploadImage(buffer, sanitizedName);
 
-    return json(result, 201);
+    return json({ url: result.url, publicId: result.storagePath }, 201);
   } catch (error) {
     console.error('Error uploading image:', error);
     return json({ error: 'Failed to upload image' }, 500);

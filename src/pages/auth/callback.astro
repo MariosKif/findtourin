@@ -1,0 +1,39 @@
+---
+export const prerender = false;
+
+import { createSupabaseServerClient } from '../../lib/supabase';
+import { db } from '../../lib/db';
+import { profiles } from '../../lib/db/schema';
+import { eq } from 'drizzle-orm';
+
+const code = Astro.url.searchParams.get('code');
+
+if (!code) {
+  return Astro.redirect('/auth/login?error=missing_code');
+}
+
+const supabase = createSupabaseServerClient(Astro);
+const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+if (error || !data.user) {
+  return Astro.redirect('/auth/login?error=callback_failed');
+}
+
+// Check if profile exists
+const [profile] = await db
+  .select()
+  .from(profiles)
+  .where(eq(profiles.id, data.user.id))
+  .limit(1);
+
+if (profile) {
+  // Existing user — redirect by role
+  if (profile.role === 'agency' || profile.role === 'admin') {
+    return Astro.redirect('/dashboard');
+  }
+  return Astro.redirect('/account/favourites');
+}
+
+// No profile yet (first OAuth login) — complete profile
+return Astro.redirect('/auth/complete-profile');
+---

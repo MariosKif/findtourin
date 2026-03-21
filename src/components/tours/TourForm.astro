@@ -1,0 +1,469 @@
+---
+import { COUNTRIES, CATEGORIES } from '../../lib/search';
+
+interface Props {
+  tour?: {
+    id: string;
+    name: string;
+    description: string;
+    country: string;
+    city: string;
+    departureCountry: string | null;
+    departureCity: string | null;
+    price: string;
+    currency: string;
+    startDate: Date | null;
+    endDate: Date | null;
+    durationDays: number | null;
+    maxParticipants: number | null;
+    category: string;
+    contactEmail: string | null;
+    contactPhone: string | null;
+    contactWebsite: string | null;
+  };
+  errors?: Record<string, string>;
+}
+
+const { tour, errors = {} } = Astro.props;
+const isEdit = !!tour;
+
+function formatDateForInput(date: Date | null | undefined): string {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toISOString().split('T')[0];
+}
+---
+
+<form id="tour-form" class="space-y-8 rounded-2xl bg-white p-6 shadow-md md:p-8">
+  <div>
+    <h2 class="text-2xl font-bold text-gray-900">{isEdit ? 'Edit Tour' : 'Create New Tour'}</h2>
+    <p class="mt-1 text-gray-500">Fill in the details for your tour listing.</p>
+  </div>
+
+  {/* General error */}
+  <div id="form-error" class="hidden rounded-lg bg-red-50 p-4 text-sm text-red-600"></div>
+
+  {/* Name */}
+  <div class="flex flex-col gap-1.5">
+    <label for="tour-name" class="text-sm font-medium text-gray-700">
+      Tour Name <span class="text-red-500">*</span>
+    </label>
+    <input
+      id="tour-name"
+      type="text"
+      name="name"
+      value={tour?.name || ''}
+      required
+      placeholder="e.g. Santorini Sunset Experience"
+      class:list={[
+        'w-full rounded-lg border px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0',
+        errors.name
+          ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+          : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200',
+      ]}
+    />
+    {errors.name && <p class="text-sm text-red-600">{errors.name}</p>}
+  </div>
+
+  {/* Description */}
+  <div class="flex flex-col gap-1.5">
+    <label for="tour-description" class="text-sm font-medium text-gray-700">
+      Description <span class="text-red-500">*</span>
+    </label>
+    <textarea
+      id="tour-description"
+      name="description"
+      required
+      rows={5}
+      placeholder="Describe your tour experience..."
+      class:list={[
+        'w-full rounded-lg border px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 resize-y',
+        errors.description
+          ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+          : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200',
+      ]}
+    >{tour?.description || ''}</textarea>
+    {errors.description && <p class="text-sm text-red-600">{errors.description}</p>}
+  </div>
+
+  {/* Departure Location */}
+  <div class="border-t border-gray-200 pt-6">
+    <h3 class="mb-4 text-lg font-semibold text-gray-900">Departure Location</h3>
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {/* Departure Country */}
+      <div class="flex flex-col gap-1.5">
+        <label for="tour-departure-country" class="text-sm font-medium text-gray-700">Departure Country</label>
+        <div class="relative">
+          <select
+            id="tour-departure-country"
+            name="departureCountry"
+            class="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 pr-10 text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
+          >
+            <option value="">No departure location</option>
+            {COUNTRIES.map((c) => (
+              <option value={c} selected={c === tour?.departureCountry}>{c}</option>
+            ))}
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      {/* Departure City */}
+      <div class="flex flex-col gap-1.5">
+        <label for="tour-departure-city" class="text-sm font-medium text-gray-700">Departure City</label>
+        <input
+          id="tour-departure-city"
+          type="text"
+          name="departureCity"
+          value={tour?.departureCity || ''}
+          placeholder="e.g. Athens"
+          class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
+        />
+      </div>
+    </div>
+  </div>
+
+  {/* Destination Country + City row */}
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+    {/* Destination Country */}
+    <div class="flex flex-col gap-1.5">
+      <label for="tour-country" class="text-sm font-medium text-gray-700">
+        Destination Country <span class="text-red-500">*</span>
+      </label>
+      <div class="relative">
+        <select
+          id="tour-country"
+          name="country"
+          required
+          class:list={[
+            'w-full appearance-none rounded-lg border bg-white px-4 py-2.5 pr-10 text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0',
+            errors.country
+              ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+              : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200',
+          ]}
+        >
+          <option value="">Select a country</option>
+          {COUNTRIES.map((c) => (
+            <option value={c} selected={c === tour?.country}>{c}</option>
+          ))}
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+          <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+      {errors.country && <p class="text-sm text-red-600">{errors.country}</p>}
+    </div>
+
+    {/* Destination City */}
+    <div class="flex flex-col gap-1.5">
+      <label for="tour-city" class="text-sm font-medium text-gray-700">
+        Destination City <span class="text-red-500">*</span>
+      </label>
+      <input
+        id="tour-city"
+        type="text"
+        name="city"
+        value={tour?.city || ''}
+        required
+        placeholder="e.g. Santorini"
+        class:list={[
+          'w-full rounded-lg border px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0',
+          errors.city
+            ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+            : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200',
+        ]}
+      />
+      {errors.city && <p class="text-sm text-red-600">{errors.city}</p>}
+    </div>
+  </div>
+
+  {/* Price + Currency row */}
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+    {/* Price */}
+    <div class="flex flex-col gap-1.5">
+      <label for="tour-price" class="text-sm font-medium text-gray-700">
+        Price <span class="text-red-500">*</span>
+      </label>
+      <input
+        id="tour-price"
+        type="number"
+        name="price"
+        value={tour?.price || ''}
+        required
+        min="0"
+        step="0.01"
+        placeholder="0.00"
+        class:list={[
+          'w-full rounded-lg border px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0',
+          errors.price
+            ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+            : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200',
+        ]}
+      />
+      {errors.price && <p class="text-sm text-red-600">{errors.price}</p>}
+    </div>
+
+    {/* Currency */}
+    <div class="flex flex-col gap-1.5">
+      <label for="tour-currency" class="text-sm font-medium text-gray-700">
+        Currency <span class="text-red-500">*</span>
+      </label>
+      <div class="relative">
+        <select
+          id="tour-currency"
+          name="currency"
+          required
+          class="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 pr-10 text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
+        >
+          <option value="EUR" selected={tour?.currency === 'EUR' || !tour}>EUR</option>
+          <option value="USD" selected={tour?.currency === 'USD'}>USD</option>
+          <option value="GBP" selected={tour?.currency === 'GBP'}>GBP</option>
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+          <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+      {errors.currency && <p class="text-sm text-red-600">{errors.currency}</p>}
+    </div>
+  </div>
+
+  {/* Dates row */}
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+    {/* Start Date */}
+    <div class="flex flex-col gap-1.5">
+      <label for="tour-start-date" class="text-sm font-medium text-gray-700">Start Date</label>
+      <input
+        id="tour-start-date"
+        type="date"
+        name="startDate"
+        value={formatDateForInput(tour?.startDate)}
+        class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
+      />
+      {errors.startDate && <p class="text-sm text-red-600">{errors.startDate}</p>}
+    </div>
+
+    {/* End Date */}
+    <div class="flex flex-col gap-1.5">
+      <label for="tour-end-date" class="text-sm font-medium text-gray-700">End Date</label>
+      <input
+        id="tour-end-date"
+        type="date"
+        name="endDate"
+        value={formatDateForInput(tour?.endDate)}
+        class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
+      />
+      {errors.endDate && <p class="text-sm text-red-600">{errors.endDate}</p>}
+    </div>
+  </div>
+
+  {/* Duration + Max Participants row */}
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+    {/* Duration Days */}
+    <div class="flex flex-col gap-1.5">
+      <label for="tour-duration" class="text-sm font-medium text-gray-700">Duration (days)</label>
+      <input
+        id="tour-duration"
+        type="number"
+        name="durationDays"
+        value={tour?.durationDays ?? ''}
+        min="1"
+        placeholder="e.g. 5"
+        class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
+      />
+      {errors.durationDays && <p class="text-sm text-red-600">{errors.durationDays}</p>}
+    </div>
+
+    {/* Max Participants */}
+    <div class="flex flex-col gap-1.5">
+      <label for="tour-participants" class="text-sm font-medium text-gray-700">Max Participants</label>
+      <input
+        id="tour-participants"
+        type="number"
+        name="maxParticipants"
+        value={tour?.maxParticipants ?? ''}
+        min="1"
+        placeholder="e.g. 20"
+        class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
+      />
+      {errors.maxParticipants && <p class="text-sm text-red-600">{errors.maxParticipants}</p>}
+    </div>
+  </div>
+
+  {/* Category */}
+  <div class="flex flex-col gap-1.5">
+    <label for="tour-category" class="text-sm font-medium text-gray-700">
+      Category <span class="text-red-500">*</span>
+    </label>
+    <div class="relative">
+      <select
+        id="tour-category"
+        name="category"
+        required
+        class:list={[
+          'w-full appearance-none rounded-lg border bg-white px-4 py-2.5 pr-10 text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0',
+          errors.category
+            ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+            : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200',
+        ]}
+      >
+        <option value="">Select a category</option>
+        {CATEGORIES.map((c) => (
+          <option value={c} selected={c === tour?.category}>{c}</option>
+        ))}
+      </select>
+      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+        <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </div>
+    {errors.category && <p class="text-sm text-red-600">{errors.category}</p>}
+  </div>
+
+  {/* Contact Information Section */}
+  <div class="border-t border-gray-200 pt-6">
+    <h3 class="mb-4 text-lg font-semibold text-gray-900">Contact Information</h3>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+      {/* Contact Email */}
+      <div class="flex flex-col gap-1.5">
+        <label for="tour-contact-email" class="text-sm font-medium text-gray-700">Contact Email</label>
+        <input
+          id="tour-contact-email"
+          type="email"
+          name="contactEmail"
+          value={tour?.contactEmail || ''}
+          placeholder="email@agency.com"
+          class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
+        />
+        {errors.contactEmail && <p class="text-sm text-red-600">{errors.contactEmail}</p>}
+      </div>
+
+      {/* Contact Phone */}
+      <div class="flex flex-col gap-1.5">
+        <label for="tour-contact-phone" class="text-sm font-medium text-gray-700">Contact Phone</label>
+        <input
+          id="tour-contact-phone"
+          type="tel"
+          name="contactPhone"
+          value={tour?.contactPhone || ''}
+          placeholder="+30 123 456 7890"
+          class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
+        />
+        {errors.contactPhone && <p class="text-sm text-red-600">{errors.contactPhone}</p>}
+      </div>
+
+      {/* Contact Website */}
+      <div class="flex flex-col gap-1.5">
+        <label for="tour-contact-website" class="text-sm font-medium text-gray-700">Website</label>
+        <input
+          id="tour-contact-website"
+          type="url"
+          name="contactWebsite"
+          value={tour?.contactWebsite || ''}
+          placeholder="https://www.agency.com"
+          class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
+        />
+        {errors.contactWebsite && <p class="text-sm text-red-600">{errors.contactWebsite}</p>}
+      </div>
+    </div>
+  </div>
+
+  {/* Submit */}
+  <div class="flex items-center justify-end gap-4 border-t border-gray-200 pt-6">
+    <a href="/dashboard/tours" class="rounded-lg px-5 py-2.5 text-gray-600 transition-colors hover:text-gray-900">
+      Cancel
+    </a>
+    <button
+      type="submit"
+      id="tour-submit"
+      class="rounded-lg bg-primary-600 px-8 py-2.5 font-medium text-white transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {isEdit ? 'Update Tour' : 'Create Tour'}
+    </button>
+  </div>
+</form>
+
+<script define:vars={{ isEdit, tourId: tour?.id || null }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('tour-form');
+    const submitBtn = document.getElementById('tour-submit');
+    const errorDiv = document.getElementById('form-error');
+
+    if (!form || !submitBtn || !errorDiv) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorDiv.classList.add('hidden');
+      submitBtn.disabled = true;
+      submitBtn.textContent = isEdit ? 'Updating...' : 'Creating...';
+
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+
+      // Convert numeric fields
+      if (data.price) data.price = String(parseFloat(data.price));
+      if (data.durationDays) data.durationDays = String(parseInt(data.durationDays, 10));
+      if (data.maxParticipants) data.maxParticipants = String(parseInt(data.maxParticipants, 10));
+
+      const url = isEdit ? `/api/tours/${tourId}` : '/api/tours';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          // Show field-level errors
+          if (result.errors && typeof result.errors === 'object') {
+            Object.entries(result.errors).forEach(([field, message]) => {
+              const el = form.querySelector(`[name="${field}"]`);
+              if (el) {
+                el.classList.add('border-red-400');
+                const errorP = el.closest('.flex.flex-col')?.querySelector('.text-red-600') ||
+                  document.createElement('p');
+                errorP.className = 'text-sm text-red-600';
+                errorP.textContent = message;
+                if (!errorP.parentElement) {
+                  el.closest('.flex.flex-col')?.appendChild(errorP);
+                }
+              }
+            });
+          }
+
+          errorDiv.textContent = result.message || 'Something went wrong. Please try again.';
+          errorDiv.classList.remove('hidden');
+          return;
+        }
+
+        // Success - redirect
+        if (result.redirect) {
+          window.location.href = result.redirect;
+        } else if (result.tour?.slug) {
+          window.location.href = `/tours/${result.tour.slug}`;
+        } else {
+          window.location.href = '/dashboard/tours';
+        }
+      } catch (err) {
+        errorDiv.textContent = 'Network error. Please check your connection and try again.';
+        errorDiv.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = isEdit ? 'Update Tour' : 'Create Tour';
+      }
+    });
+  });
+</script>

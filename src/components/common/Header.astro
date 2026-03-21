@@ -1,0 +1,197 @@
+---
+const user = Astro.locals.user;
+const currentPath = Astro.url.pathname;
+const isHome = currentPath === '/';
+
+const navLinks = [
+  { href: '/', label: 'Home' },
+  { href: '/tours', label: 'Tours' },
+  { href: '/blog', label: 'Blog' },
+  { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
+];
+---
+
+<header id="site-header" class:list={[
+  "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+  isHome ? "bg-transparent" : "bg-white/90 backdrop-blur-md border-b border-gray-100"
+]}>
+  <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between py-5">
+      <!-- Logo -->
+      <a href="/" class:list={[
+        "flex items-center gap-2 font-heading text-xl transition-colors",
+        isHome ? "text-white header-logo" : "text-primary-700"
+      ]}>
+        <svg class:list={["w-8 h-8 transition-colors", isHome ? "text-white header-logo-icon" : "text-primary-500"]} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        FindToursIn
+      </a>
+
+      <!-- Desktop Nav -->
+      <div class="hidden md:flex items-center gap-8">
+        {navLinks.map((link) => (
+          <a
+            href={link.href}
+            class:list={[
+              'uppercase tracking-wider text-[13px] font-medium transition-colors',
+              currentPath === link.href
+                ? isHome
+                  ? 'text-white border-b-2 border-white pb-1 header-nav-active'
+                  : 'text-primary-600 border-b-2 border-primary-500 pb-1'
+                : isHome
+                  ? 'text-white/80 hover:text-white header-nav-link'
+                  : 'text-gray-600 hover:text-primary-600',
+            ]}
+          >
+            {link.label}
+          </a>
+        ))}
+      </div>
+
+      <!-- Auth Actions -->
+      <div class="hidden md:flex items-center gap-3">
+        {user ? (
+          <div class="flex items-center gap-3">
+            {user.role === 'user' && (
+              <a href="/account/favourites" class:list={[
+                "text-sm font-medium transition-colors",
+                isHome ? "text-white/80 hover:text-white header-nav-link" : "text-gray-600 hover:text-primary-600"
+              ]}>
+                My Account
+              </a>
+            )}
+            {(user.role === 'agency' || user.role === 'admin') && (
+              <a href="/dashboard" class:list={[
+                "text-sm font-medium transition-colors",
+                isHome ? "text-white/80 hover:text-white header-nav-link" : "text-gray-600 hover:text-primary-600"
+              ]}>
+                Dashboard
+              </a>
+            )}
+            <a
+              href="/auth/logout"
+              class:list={[
+                "text-sm font-medium transition-colors",
+                isHome ? "text-white/80 hover:text-white header-nav-link" : "text-gray-600 hover:text-primary-600"
+              ]}
+            >
+              Logout
+            </a>
+            <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-sm font-semibold">
+              {user.name?.charAt(0).toUpperCase() || 'U'}
+            </div>
+          </div>
+        ) : (
+          <>
+            <a href="/auth/login" class:list={[
+              "text-sm font-medium transition-colors",
+              isHome ? "text-white/80 hover:text-white header-nav-link" : "text-gray-600 hover:text-primary-600"
+            ]}>
+              Log in
+            </a>
+            <a
+              href="/auth/register"
+              class:list={[
+                "px-4 py-2 text-sm font-medium rounded-lg transition-colors border",
+                isHome
+                  ? "border-white text-white hover:bg-white hover:text-gray-900 header-cta"
+                  : "border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white"
+              ]}
+            >
+              List Your Tours
+            </a>
+          </>
+        )}
+      </div>
+
+      <!-- Mobile Menu Button -->
+      <button
+        id="mobile-menu-btn"
+        class:list={["md:hidden p-2", isHome ? "text-white" : "text-gray-600 hover:text-gray-900"]}
+        aria-label="Toggle menu"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path id="menu-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden pb-4 border-t border-gray-100 mt-2 bg-white rounded-b-xl">
+      <div class="flex flex-col gap-2 pt-4">
+        {navLinks.map((link) => (
+          <a
+            href={link.href}
+            class:list={[
+              'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+              currentPath === link.href
+                ? 'bg-primary-50 text-primary-600'
+                : 'text-gray-600 hover:bg-gray-50',
+            ]}
+          >
+            {link.label}
+          </a>
+        ))}
+        <hr class="my-2 border-gray-100" />
+        {user ? (
+          <>
+            {user.role === 'user' && (
+              <a href="/account/favourites" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">My Account</a>
+            )}
+            {(user.role === 'agency' || user.role === 'admin') && (
+              <a href="/dashboard" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">Dashboard</a>
+            )}
+            <a href="/auth/logout" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">Logout</a>
+          </>
+        ) : (
+          <>
+            <a href="/auth/login" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">Log in</a>
+            <a href="/auth/register" class="px-3 py-2 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 text-center">List Your Tours</a>
+          </>
+        )}
+      </div>
+    </div>
+  </nav>
+</header>
+
+<script>
+  const btn = document.getElementById('mobile-menu-btn');
+  const menu = document.getElementById('mobile-menu');
+  btn?.addEventListener('click', () => {
+    menu?.classList.toggle('hidden');
+  });
+
+  // Scroll-based transparency toggle for homepage
+  const header = document.getElementById('site-header');
+  if (header?.classList.contains('bg-transparent')) {
+    const logo = header.querySelector('.header-logo') as HTMLElement;
+    const logoIcon = header.querySelector('.header-logo-icon') as HTMLElement;
+    const navLinks = header.querySelectorAll('.header-nav-link') as NodeListOf<HTMLElement>;
+    const navActive = header.querySelector('.header-nav-active') as HTMLElement;
+    const cta = header.querySelector('.header-cta') as HTMLElement;
+
+    window.addEventListener('scroll', () => {
+      const scrolled = window.scrollY > 80;
+
+      if (scrolled) {
+        header.classList.remove('bg-transparent');
+        header.classList.add('bg-white/90', 'backdrop-blur-md', 'border-b', 'border-gray-100');
+        if (logo) { logo.classList.remove('text-white'); logo.classList.add('text-primary-700'); }
+        if (logoIcon) { logoIcon.classList.remove('text-white'); logoIcon.classList.add('text-primary-500'); }
+        navLinks.forEach(l => { l.classList.remove('text-white/80', 'hover:text-white'); l.classList.add('text-gray-600', 'hover:text-primary-600'); });
+        if (navActive) { navActive.classList.remove('text-white', 'border-white'); navActive.classList.add('text-primary-600', 'border-primary-500'); }
+        if (cta) { cta.classList.remove('border-white', 'text-white', 'hover:bg-white', 'hover:text-gray-900'); cta.classList.add('border-gray-900', 'text-gray-900', 'hover:bg-gray-900', 'hover:text-white'); }
+      } else {
+        header.classList.add('bg-transparent');
+        header.classList.remove('bg-white/90', 'backdrop-blur-md', 'border-b', 'border-gray-100');
+        if (logo) { logo.classList.add('text-white'); logo.classList.remove('text-primary-700'); }
+        if (logoIcon) { logoIcon.classList.add('text-white'); logoIcon.classList.remove('text-primary-500'); }
+        navLinks.forEach(l => { l.classList.add('text-white/80', 'hover:text-white'); l.classList.remove('text-gray-600', 'hover:text-primary-600'); });
+        if (navActive) { navActive.classList.add('text-white', 'border-white'); navActive.classList.remove('text-primary-600', 'border-primary-500'); }
+        if (cta) { cta.classList.add('border-white', 'text-white', 'hover:bg-white', 'hover:text-gray-900'); cta.classList.remove('border-gray-900', 'text-gray-900', 'hover:bg-gray-900', 'hover:text-white'); }
+      }
+    });
+  }
+</script>

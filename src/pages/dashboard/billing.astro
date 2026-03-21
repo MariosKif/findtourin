@@ -1,0 +1,40 @@
+---
+export const prerender = false;
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import BillingHistory from '../../components/dashboard/BillingHistory.astro';
+import { db } from '../../lib/db';
+import { payments, tours } from '../../lib/db/schema';
+import { eq, desc, sql } from 'drizzle-orm';
+import { formatPrice } from '../../lib/utils';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/auth/login');
+
+const userPayments = await db
+  .select({
+    id: payments.id,
+    amount: payments.amount,
+    currency: payments.currency,
+    status: payments.status,
+    createdAt: payments.createdAt,
+    tourName: tours.name,
+    tourId: payments.tourId,
+  })
+  .from(payments)
+  .leftJoin(tours, eq(payments.tourId, tours.id))
+  .where(eq(payments.agencyId, user.id))
+  .orderBy(desc(payments.createdAt));
+
+const totalSpent = userPayments
+  .filter((p) => p.status === 'completed')
+  .reduce((sum, p) => sum + p.amount, 0);
+---
+
+<DashboardLayout title="Billing">
+  <div class="mb-6 bg-white rounded-xl border border-gray-200 p-6">
+    <p class="text-sm text-gray-500">Total Spent</p>
+    <p class="text-3xl font-bold text-gray-900">{formatPrice(totalSpent / 100)}</p>
+  </div>
+
+  <BillingHistory payments={userPayments} />
+</DashboardLayout>

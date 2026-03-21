@@ -1,0 +1,33 @@
+---
+export const prerender = false;
+
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import LoginForm from '../../components/auth/LoginForm.astro';
+
+const user = Astro.locals.user;
+if (user) {
+  return Astro.redirect('/dashboard');
+}
+---
+
+<PublicLayout title="Log In">
+  <div class="flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+      <div class="rounded-2xl bg-white p-8 shadow-lg border border-gray-100">
+        <div class="mb-8 text-center">
+          <h1 class="text-2xl font-bold text-gray-900">Welcome Back</h1>
+          <p class="mt-2 text-gray-600">Log in to your account</p>
+        </div>
+
+        <LoginForm />
+
+        <p class="mt-6 text-center text-sm text-gray-600">
+          Don't have an account?
+          <a href="/auth/register" class="font-medium text-primary-600 hover:text-primary-700">
+            Create one
+          </a>
+        </p>
+      </div>
+    </div>
+  </div>
+</PublicLayout>

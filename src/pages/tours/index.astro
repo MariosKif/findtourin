@@ -1,0 +1,157 @@
+---
+export const prerender = false;
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import TourGrid from '../../components/tours/TourGrid.astro';
+import TourFilters from '../../components/tours/TourFilters.astro';
+import Pagination from '../../components/ui/Pagination.astro';
+import { searchTours, type SearchParams } from '../../lib/search';
+import { DEMO_TOURS } from '../../lib/demo-tours';
+
+const url = Astro.url;
+const params: SearchParams = {
+  q: url.searchParams.get('q') || undefined,
+  country: url.searchParams.get('country') || undefined,
+  city: url.searchParams.get('city') || undefined,
+  category: url.searchParams.get('category') || undefined,
+  minPrice: url.searchParams.get('minPrice') ? Number(url.searchParams.get('minPrice')) : undefined,
+  maxPrice: url.searchParams.get('maxPrice') ? Number(url.searchParams.get('maxPrice')) : undefined,
+  sort: (url.searchParams.get('sort') as SearchParams['sort']) || undefined,
+  page: url.searchParams.get('page') ? Number(url.searchParams.get('page')) : 1,
+  departureCountry: url.searchParams.get('from') || url.searchParams.get('departureCountry') || undefined,
+  departureCity: url.searchParams.get('departureCity') || undefined,
+  destination: url.searchParams.get('to') || undefined,
+  dateFrom: url.searchParams.get('dateFrom') || undefined,
+  dateTo: url.searchParams.get('dateTo') || undefined,
+};
+
+const perPage = 12;
+
+let results;
+try {
+  results = await searchTours(params);
+} catch {
+  // Fallback to demo data when DB is unavailable
+  results = { tours: DEMO_TOURS, total: DEMO_TOURS.length, totalPages: 1, page: 1, hasNext: false, hasPrev: false };
+}
+
+// Build active filter chips
+const filterChips: { label: string; paramKey: string }[] = [];
+if (params.q) filterChips.push({ label: `Search: ${params.q}`, paramKey: 'q' });
+if (params.country) filterChips.push({ label: `Country: ${params.country}`, paramKey: 'country' });
+if (params.destination) {
+  filterChips.push({ label: `Destination: ${params.destination}`, paramKey: 'to' });
+}
+if (params.departureCountry) {
+  const paramKey = url.searchParams.has('from') ? 'from' : 'departureCountry';
+  filterChips.push({ label: `From: ${params.departureCountry}`, paramKey });
+}
+if (params.departureCity) filterChips.push({ label: `Departure City: ${params.departureCity}`, paramKey: 'departureCity' });
+if (params.category) filterChips.push({ label: `Category: ${params.category}`, paramKey: 'category' });
+if (params.minPrice) filterChips.push({ label: `Min Price: $${params.minPrice}`, paramKey: 'minPrice' });
+if (params.maxPrice) filterChips.push({ label: `Max Price: $${params.maxPrice}`, paramKey: 'maxPrice' });
+if (params.dateFrom) filterChips.push({ label: `From: ${params.dateFrom}`, paramKey: 'dateFrom' });
+if (params.dateTo) filterChips.push({ label: `Until: ${params.dateTo}`, paramKey: 'dateTo' });
+
+function buildChipUrl(paramToRemove: string): string {
+  const newParams = new URLSearchParams(url.searchParams);
+  newParams.delete(paramToRemove);
+  const qs = newParams.toString();
+  return qs ? `/tours?${qs}` : '/tours';
+}
+
+const hasFilters = filterChips.length > 0;
+
+const fromLabel = params.departureCountry ? `from ${params.departureCountry}` : '';
+const toLabel = params.destination ? `to ${params.destination}` : '';
+const fromToLabel = [fromLabel, toLabel].filter(Boolean).join(' ');
+const filterString = [fromToLabel, params.q, params.country, params.category].filter(Boolean).join(', ');
+
+const pageTitle = hasFilters ? (filterString ? `Tours ${filterString}` : 'Filtered Tours') : 'Explore Tours Worldwide';
+const pageSubtitle = hasFilters
+  ? `${results.total} tour${results.total !== 1 ? 's' : ''} found`
+  : 'Discover experiences across 50+ countries';
+
+// Pagination range text
+const currentPage = results.page;
+const startItem = (currentPage - 1) * perPage + 1;
+const endItem = Math.min(currentPage * perPage, results.total);
+---
+
+<PublicLayout title={pageTitle} description="Browse and discover amazing tours from trusted agencies worldwide.">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="mb-6">
+      <h1 class="font-heading text-3xl font-normal text-gray-900">{pageTitle}</h1>
+      <p class="mt-2 text-gray-600">{pageSubtitle}</p>
+    </div>
+
+    <!-- Active Filter Chips -->
+    {filterChips.length > 0 && (
+      <div class="mb-6 flex flex-wrap items-center gap-2">
+        {filterChips.map((chip) => (
+          <a
+            href={buildChipUrl(chip.paramKey)}
+            class="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-100 hover:border-primary-300"
+          >
+            {chip.label}
+            <svg class="h-3.5 w-3.5 text-primary-400 hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </a>
+        ))}
+        <a
+          href="/tours"
+          class="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+        >
+          Clear all
+        </a>
+      </div>
+    )}
+
+    <div class="flex flex-col lg:flex-row gap-8">
+      <!-- Filters Sidebar -->
+      <aside class="w-full lg:w-72 shrink-0">
+        <TourFilters currentFilters={params} />
+      </aside>
+
+      <!-- Results -->
+      <div class="flex-1">
+        <!-- Sort + result count bar -->
+        <div class="flex items-center justify-between mb-6">
+          <p class="text-sm text-gray-600">
+            {results.total > 0 ? (
+              <>Showing {startItem}–{endItem} of {results.total} tours</>
+            ) : (
+              <>No tours found</>
+            )}
+          </p>
+          <div class="flex items-center gap-2">
+            <label for="inline-sort" class="text-sm text-gray-500">Sort:</label>
+            <select
+              id="inline-sort"
+              class="appearance-none rounded-lg border border-gray-200 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-200"
+              onchange="const url = new URL(window.location.href); url.searchParams.set('sort', this.value); window.location.href = url.toString();"
+            >
+              <option value="newest" selected={params.sort === 'newest' || !params.sort}>Newest</option>
+              <option value="price_asc" selected={params.sort === 'price_asc'}>Price: Low to High</option>
+              <option value="price_desc" selected={params.sort === 'price_desc'}>Price: High to Low</option>
+              <option value="name" selected={params.sort === 'name'}>Name</option>
+            </select>
+          </div>
+        </div>
+
+        <TourGrid tours={results.tours} />
+
+        {results.totalPages > 1 && (
+          <div class="mt-8">
+            <Pagination
+              currentPage={results.page}
+              totalPages={results.totalPages}
+              baseUrl={`/tours?${url.searchParams.toString().replace(/&?page=\d+/, '')}`}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+</PublicLayout>

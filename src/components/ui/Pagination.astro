@@ -1,0 +1,99 @@
+---
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  baseUrl: string;
+}
+
+const { currentPage, totalPages, baseUrl } = Astro.props;
+
+function pageUrl(page: number): string {
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}page=${page}`;
+}
+
+// Build page number list with ellipsis
+function getPageNumbers(): (number | '...')[] {
+  const pages: (number | '...')[] = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (currentPage > 3) pages.push('...');
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+      pages.push(i);
+    }
+    if (currentPage < totalPages - 2) pages.push('...');
+    pages.push(totalPages);
+  }
+  return pages;
+}
+
+const pageNumbers = getPageNumbers();
+const hasPrev = currentPage > 1;
+const hasNext = currentPage < totalPages;
+---
+
+{totalPages > 1 && (
+  <nav class="flex items-center justify-center gap-1" aria-label="Pagination">
+    <!-- Previous -->
+    {hasPrev ? (
+      <a
+        href={pageUrl(currentPage - 1)}
+        class="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100"
+        aria-label="Previous page"
+      >
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Prev
+      </a>
+    ) : (
+      <span class="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-300">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Prev
+      </span>
+    )}
+
+    <!-- Page numbers -->
+    {pageNumbers.map((page) =>
+      page === '...' ? (
+        <span class="px-2 py-2 text-sm text-gray-400">...</span>
+      ) : page === currentPage ? (
+        <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary-600 text-sm font-semibold text-white">
+          {page}
+        </span>
+      ) : (
+        <a
+          href={pageUrl(page)}
+          class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100"
+        >
+          {page}
+        </a>
+      )
+    )}
+
+    <!-- Next -->
+    {hasNext ? (
+      <a
+        href={pageUrl(currentPage + 1)}
+        class="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100"
+        aria-label="Next page"
+      >
+        Next
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
+    ) : (
+      <span class="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-300">
+        Next
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </span>
+    )}
+  </nav>
+)}

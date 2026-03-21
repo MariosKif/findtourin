@@ -1,0 +1,98 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import HeroSection from '../components/home/HeroSection.astro';
+import FeaturedTours from '../components/home/FeaturedTours.astro';
+import HowItWorks from '../components/home/HowItWorks.astro';
+import PopularDestinations from '../components/home/PopularDestinations.astro';
+import { FEATURED_TOURS } from '../lib/demo-tours';
+---
+
+<PublicLayout title="FindToursIn" description="Discover amazing tours worldwide. Browse curated travel experiences from trusted agencies.">
+  <HeroSection />
+  <FeaturedTours tours={FEATURED_TOURS} />
+  <PopularDestinations />
+  <HowItWorks />
+
+  <!-- CTA Section -->
+  <section class="bg-gradient-to-r from-primary-800 to-primary-900 py-20">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+      <h2 class="font-heading text-3xl md:text-4xl font-normal text-white">Ready to Share Your Tours with the World?</h2>
+      <p class="mt-4 text-lg text-primary-200 max-w-2xl mx-auto">
+        Join hundreds of agencies already listing their tours on FindToursIn.
+      </p>
+      <p class="mt-2 text-sm text-primary-300">Trusted by 200+ agencies worldwide</p>
+      <div class="mt-8">
+        <a
+          href="/auth/register"
+          class="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-primary-800 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-200"
+        >
+          List Your Tours
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- GSAP Animations -->
+  <script>
+    import { gsap } from 'gsap';
+    import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Hero animations
+    const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+    if (document.querySelector('#hero-title')) {
+      heroTl.from('#hero-title', { y: 40, opacity: 0, duration: 1 });
+    }
+    if (document.querySelector('#hero-search')) {
+      heroTl.from('#hero-search', { y: 30, opacity: 0, duration: 0.8 }, '-=0.4');
+    }
+    if (document.querySelector('#hero-stats')) {
+      heroTl.from('#hero-stats', { y: 20, opacity: 0, duration: 0.5 }, '-=0.3');
+    }
+
+    // Scroll-triggered animations
+    const sections = ['.featured-tours-section', '.how-it-works-section'];
+    sections.forEach((selector) => {
+      const el = document.querySelector(selector);
+      if (!el) return;
+
+      const targets = el.querySelectorAll('.tour-card, .destination-card');
+      if (!targets.length) return;
+      gsap.fromTo(targets,
+        { y: 40, opacity: 0 },
+        {
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+          },
+          y: 0,
+          opacity: 1,
+          duration: 0.5,
+          stagger: 0.08,
+          ease: 'power2.out',
+        }
+      );
+    });
+
+    // Section headings
+    document.querySelectorAll('section h2').forEach((heading) => {
+      gsap.fromTo(heading,
+        { y: 20, opacity: 0 },
+        {
+          scrollTrigger: {
+            trigger: heading,
+            start: 'top 90%',
+            toggleActions: 'play none none none',
+          },
+          y: 0,
+          opacity: 1,
+          duration: 0.5,
+          ease: 'power2.out',
+        }
+      );
+    });
+  </script>
+</PublicLayout>

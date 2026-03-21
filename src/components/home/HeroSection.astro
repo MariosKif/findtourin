@@ -1,0 +1,117 @@
+---
+const locations = [
+  "Greece", "Bulgaria", "Turkey", "Germany", "Sweden",
+  "Scotland", "Italy", "Spain", "France", "Japan",
+  "Morocco", "Peru", "Iceland", "Thailand", "Australia"
+];
+---
+
+<section class="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-[url('https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1920&q=80')] bg-cover bg-center">
+  <!-- Dark overlay -->
+  <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60"></div>
+
+  <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-20">
+    <!-- Heading -->
+    <h1
+      id="hero-title"
+      class="font-heading text-5xl md:text-6xl font-normal text-white leading-tight mb-6"
+    >
+      Find Tours in<br />
+      <span id="hero-location-wrapper" class="inline-block relative overflow-hidden" style="min-width: 320px; height: 1.4em; vertical-align: bottom;">
+        {locations.map((loc, i) => (
+          <span
+            class="hero-location absolute left-0 w-full"
+            style={`opacity: ${i === 0 ? 1 : 0}; transform: translateY(${i === 0 ? '0%' : '100%'})`}
+          >
+            {loc}
+          </span>
+        ))}
+      </span>
+    </h1>
+
+    <!-- Static tagline -->
+    <p class="text-xl text-white/80 font-light max-w-2xl mx-auto mb-12">
+      Curated tours from trusted agencies worldwide
+    </p>
+
+    <!-- Single pill search bar -->
+    <form
+      id="hero-search"
+      action="/tours"
+      method="get"
+      class="relative max-w-xl mx-auto"
+    >
+      <div class="flex items-center bg-white rounded-full shadow-2xl h-14 overflow-hidden">
+        <input
+          type="text"
+          name="to"
+          placeholder="Where do you want to go?"
+          class="flex-1 h-full px-6 text-gray-900 placeholder-gray-400 border-0 bg-transparent focus:outline-none text-base"
+        />
+        <button
+          type="submit"
+          class="flex items-center justify-center h-10 w-10 mr-2 rounded-full bg-primary-600 hover:bg-primary-700 text-white transition-colors duration-200 shrink-0 cursor-pointer"
+          aria-label="Search tours"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- Stats Band -->
+<section id="hero-stats" class="bg-gray-50 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-center items-center divide-x divide-gray-300">
+      <div class="text-center px-8 sm:px-12">
+        <div class="font-heading text-3xl sm:text-4xl font-normal text-gray-900">500+</div>
+        <div class="text-gray-500 text-sm mt-1">Tours</div>
+      </div>
+      <div class="text-center px-8 sm:px-12">
+        <div class="font-heading text-3xl sm:text-4xl font-normal text-gray-900">200+</div>
+        <div class="text-gray-500 text-sm mt-1">Agencies</div>
+      </div>
+      <div class="text-center px-8 sm:px-12">
+        <div class="font-heading text-3xl sm:text-4xl font-normal text-gray-900">50+</div>
+        <div class="text-gray-500 text-sm mt-1">Countries</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import gsap from "gsap";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const locations = document.querySelectorAll(".hero-location");
+    if (locations.length === 0) return;
+
+    const tl = gsap.timeline({ repeat: -1 });
+
+    locations.forEach((loc, i) => {
+      const next = locations[(i + 1) % locations.length];
+
+      // Hold current location visible
+      tl.to(loc, { duration: 2.5 });
+
+      // Slide current out (up + fade)
+      tl.to(loc, {
+        opacity: 0,
+        y: "-100%",
+        duration: 0.5,
+        ease: "power2.inOut",
+      });
+
+      // Slide next in (from below + fade in)
+      tl.fromTo(
+        next,
+        { opacity: 0, y: "100%" },
+        { opacity: 1, y: "0%", duration: 0.5, ease: "power2.inOut" },
+        "<"
+      );
+    });
+  });
+</script>

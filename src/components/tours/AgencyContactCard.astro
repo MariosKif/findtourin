@@ -1,0 +1,155 @@
+---
+interface Props {
+  tour: {
+    price: string;
+    currency: string;
+    contactEmail: string | null;
+    contactPhone: string | null;
+    contactWebsite: string | null;
+    agencyName?: string;
+    agencyVerified?: boolean;
+    rating?: number;
+    reviewCount?: number;
+  };
+}
+
+const { tour } = Astro.props;
+
+const currencySymbols: Record<string, string> = {
+  EUR: '\u20AC',
+  USD: '$',
+  GBP: '\u00A3',
+};
+const symbol = currencySymbols[tour.currency] || tour.currency;
+
+const viewersToday = Math.floor(Math.random() * 21) + 5;
+---
+
+<div class="sticky top-6 rounded-2xl bg-white p-6 shadow-lg">
+  {/* Price */}
+  <div class="mb-6 text-center">
+    <div class="text-sm font-medium text-gray-500">Starting from</div>
+    <div class="mt-1 text-4xl font-bold text-secondary-600">
+      {symbol}{Number(tour.price).toLocaleString()}
+    </div>
+    <div class="text-sm text-gray-400">per person</div>
+  </div>
+
+  <hr class="mb-6 border-gray-100" />
+
+  {/* Contact Heading */}
+  <h3 class="mb-4 text-lg font-bold text-gray-900">Contact Agency</h3>
+
+  <div class="space-y-3">
+    {/* Email */}
+    {tour.contactEmail && (
+      <a
+        href={`mailto:${tour.contactEmail}`}
+        class="flex items-center gap-3 rounded-lg bg-gray-50 px-4 py-3 text-gray-700 transition-colors hover:bg-primary-50 hover:text-primary-600"
+      >
+        <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <span class="truncate text-sm">{tour.contactEmail}</span>
+      </a>
+    )}
+
+    {/* Phone */}
+    {tour.contactPhone && (
+      <a
+        href={`tel:${tour.contactPhone}`}
+        class="flex items-center gap-3 rounded-lg bg-gray-50 px-4 py-3 text-gray-700 transition-colors hover:bg-primary-50 hover:text-primary-600"
+      >
+        <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+        </svg>
+        <span class="text-sm">{tour.contactPhone}</span>
+      </a>
+    )}
+
+    {/* Website */}
+    {tour.contactWebsite && (
+      <a
+        href={tour.contactWebsite}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center gap-3 rounded-lg bg-gray-50 px-4 py-3 text-gray-700 transition-colors hover:bg-primary-50 hover:text-primary-600"
+      >
+        <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+        <span class="truncate text-sm">{tour.contactWebsite}</span>
+      </a>
+    )}
+  </div>
+
+  {/* Agency Info */}
+  {tour.agencyName && (
+    <div class="mt-6 border-t border-gray-100 pt-6">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-600">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-semibold text-gray-900">{tour.agencyName}</span>
+            {tour.agencyVerified && (
+              <svg class="h-4 w-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+            )}
+          </div>
+          {tour.agencyVerified && (
+            <span class="text-xs text-primary-500">Verified Agency</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* Trust Signals */}
+  <div class="mt-6 border-t border-gray-100 pt-6 space-y-3">
+    {/* Response Time */}
+    <div class="flex items-center gap-2 text-sm text-gray-600">
+      <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>Response time: Usually within 2 hours</span>
+    </div>
+
+    {/* Viewers Today */}
+    <div class="flex items-center gap-2 text-sm text-gray-600">
+      <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+      </svg>
+      <span>{viewersToday} people viewed this today</span>
+    </div>
+
+    {/* Tour Rating */}
+    {tour.rating && (
+      <div class="flex items-center gap-2 text-sm text-gray-600">
+        <div class="flex items-center gap-0.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <svg
+              class:list={[
+                'h-4 w-4',
+                i < Math.round(tour.rating!) ? 'text-amber-400' : 'text-gray-200',
+              ]}
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          ))}
+        </div>
+        <span class="font-semibold text-gray-900">{tour.rating}</span>
+        {tour.reviewCount && (
+          <span class="text-gray-400">({tour.reviewCount} reviews)</span>
+        )}
+      </div>
+    )}
+  </div>
+</div>

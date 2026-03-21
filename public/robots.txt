@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://worldoftours.com/sitemap-index.xml
+
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api
+Disallow: /auth

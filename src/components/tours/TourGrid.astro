@@ -1,0 +1,77 @@
+---
+import TourCard from './TourCard.astro';
+
+interface Props {
+  tours: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string;
+    country: string;
+    city: string;
+    departureCountry?: string | null;
+    departureCity?: string | null;
+    price: string;
+    currency: string;
+    category: string;
+    durationDays: number | null;
+    thumbnail: string | null;
+    rating?: number;
+    reviewCount?: number;
+    bookingCount?: number;
+  }[];
+}
+
+const { tours } = Astro.props;
+
+const popularSearches = [
+  { label: 'Beach tours in Bali', url: '/tours?to=Indonesia&category=Beach' },
+  { label: 'Food tours in Italy', url: '/tours?to=Italy&category=Food' },
+  { label: 'Safari in Tanzania', url: '/tours?to=Tanzania&category=Safari' },
+  { label: 'Temples in Japan', url: '/tours?to=Japan&category=Cultural' },
+  { label: 'Hiking in Peru', url: '/tours?to=Peru&category=Hiking' },
+  { label: 'Cruises in Croatia', url: '/tours?to=Croatia&category=Cruise' },
+];
+---
+
+{tours.length > 0 ? (
+  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    {tours.map((tour) => (
+      <TourCard tour={tour} />
+    ))}
+  </div>
+) : (
+  <div class="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 px-6 py-16 text-center">
+    <svg class="mb-4 h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+    <h3 class="mb-2 text-xl font-semibold text-gray-600">No tours found</h3>
+    <p class="max-w-sm text-gray-400">
+      Try adjusting your filters or search terms to find what you're looking for.
+    </p>
+
+    <div class="mt-8 w-full max-w-md">
+      <p class="mb-3 text-sm font-medium text-gray-500">Popular searches</p>
+      <div class="flex flex-wrap justify-center gap-2">
+        {popularSearches.map((search) => (
+          <a
+            href={search.url}
+            class="inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
+          >
+            {search.label}
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <a
+      href="/tours"
+      class="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+    >
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+      Clear all filters
+    </a>
+  </div>
+)}

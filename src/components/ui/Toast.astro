@@ -1,0 +1,65 @@
+---
+---
+
+<div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+<script>
+  function setupToast() {
+    const container = document.getElementById('toast-container');
+
+    const typeStyles: Record<string, { bg: string; icon: string }> = {
+      success: {
+        bg: 'bg-green-600',
+        icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />',
+      },
+      error: {
+        bg: 'bg-red-600',
+        icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />',
+      },
+      info: {
+        bg: 'bg-primary-600',
+        icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />',
+      },
+    };
+
+    (window as any).showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+      if (!container) return;
+
+      const style = typeStyles[type] || typeStyles.info;
+
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-3 rounded-lg px-4 py-3 text-white shadow-lg transition-all duration-300 ${style.bg}`;
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100%)';
+
+      toast.innerHTML = `
+        <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">${style.icon}</svg>
+        <span class="text-sm font-medium">${message}</span>
+        <button type="button" class="ml-2 flex-shrink-0 opacity-70 hover:opacity-100 cursor-pointer" data-toast-dismiss>
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      `;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+      });
+
+      const dismiss = () => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+      };
+
+      toast.querySelector('[data-toast-dismiss]')?.addEventListener('click', dismiss);
+      setTimeout(dismiss, 4000);
+    };
+  }
+
+  setupToast();
+  document.addEventListener('astro:after-swap', setupToast);
+</script>

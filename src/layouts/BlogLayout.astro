@@ -1,0 +1,27 @@
+---
+import PublicLayout from './PublicLayout.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  date?: string;
+  author?: string;
+}
+
+const { title, description, image, date, author } = Astro.props;
+---
+
+<PublicLayout title={title} description={description} image={image}>
+  <article class="max-w-3xl mx-auto px-4 sm:px-6 py-12">
+    <header class="mb-8">
+      {date && <time class="text-sm text-gray-500">{date}</time>}
+      <h1 class="text-4xl font-bold text-gray-900 mt-2">{title}</h1>
+      {description && <p class="mt-4 text-xl text-gray-600">{description}</p>}
+      {author && <p class="mt-4 text-sm text-gray-500">By {author}</p>}
+    </header>
+    <div class="prose prose-lg prose-primary max-w-none">
+      <slot />
+    </div>
+  </article>
+</PublicLayout>

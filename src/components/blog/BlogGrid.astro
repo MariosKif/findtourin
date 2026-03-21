@@ -1,0 +1,25 @@
+---
+import BlogCard from './BlogCard.astro';
+
+interface Props {
+  posts: Array<{
+    id: string;
+    data: {
+      title: string;
+      description: string;
+      date: string;
+      author: string;
+      image?: string;
+      tags: string[];
+    };
+  }>;
+}
+
+const { posts } = Astro.props;
+---
+
+<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+  {posts.map((post) => (
+    <BlogCard post={post} />
+  ))}
+</div>

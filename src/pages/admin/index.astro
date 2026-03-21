@@ -1,0 +1,49 @@
+---
+export const prerender = false;
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { db } from '../../lib/db';
+import { profiles, tours, payments } from '../../lib/db/schema';
+import { count, eq, sql } from 'drizzle-orm';
+
+const user = Astro.locals.user;
+if (!user || user.role !== 'admin') return Astro.redirect('/');
+
+const [userCount, tourCount, activeCount, revenue] = await Promise.all([
+  db.select({ total: count() }).from(profiles).then(r => r[0]?.total || 0),
+  db.select({ total: count() }).from(tours).then(r => r[0]?.total || 0),
+  db.select({ total: count() }).from(tours).where(eq(tours.status, 'active')).then(r => r[0]?.total || 0),
+  db.select({ total: sql<number>`COALESCE(SUM(${payments.amount}), 0)` }).from(payments).where(eq(payments.status, 'completed')).then(r => r[0]?.total || 0),
+]);
+---
+
+<DashboardLayout title="Admin Dashboard">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <p class="text-sm text-gray-500">Total Users</p>
+      <p class="text-3xl font-bold text-gray-900">{userCount}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <p class="text-sm text-gray-500">Total Tours</p>
+      <p class="text-3xl font-bold text-gray-900">{tourCount}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <p class="text-sm text-gray-500">Active Tours</p>
+      <p class="text-3xl font-bold text-green-600">{activeCount}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <p class="text-sm text-gray-500">Total Revenue</p>
+      <p class="text-3xl font-bold text-gray-900">&euro;{(Number(revenue) / 100).toFixed(2)}</p>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-6">
+    <a href="/admin/users" class="block bg-white rounded-xl border border-gray-200 p-6 hover:border-primary-300 transition-colors">
+      <h3 class="text-lg font-semibold text-gray-900">Manage Users</h3>
+      <p class="mt-1 text-sm text-gray-600">View, edit roles, verify, or remove users.</p>
+    </a>
+    <a href="/admin/listings" class="block bg-white rounded-xl border border-gray-200 p-6 hover:border-primary-300 transition-colors">
+      <h3 class="text-lg font-semibold text-gray-900">Manage Listings</h3>
+      <p class="mt-1 text-sm text-gray-600">Review, approve, or remove tour listings.</p>
+    </a>
+  </div>
+</DashboardLayout>

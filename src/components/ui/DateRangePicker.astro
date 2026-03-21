@@ -1,0 +1,481 @@
+---
+interface Props {
+  id: string;
+  dateFromName?: string;
+  dateToName?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  variant?: 'hero' | 'filter';
+}
+
+const {
+  id,
+  dateFromName = 'dateFrom',
+  dateToName = 'dateTo',
+  dateFrom = '',
+  dateTo = '',
+  variant = 'filter',
+} = Astro.props;
+
+const isHero = variant === 'hero';
+---
+
+<div class="date-range-picker relative" data-picker-id={id}>
+  <!-- Trigger button -->
+  <button
+    type="button"
+    class:list={[
+      'date-picker-trigger flex items-center gap-2 w-full text-left transition-colors',
+      isHero
+        ? 'px-4 py-3 rounded-xl bg-white/90 text-gray-900 focus:outline-none focus:ring-2 focus:ring-secondary-400 text-base'
+        : 'rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200',
+    ]}
+  >
+    <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+    <span class="date-picker-label flex-1 truncate" data-placeholder="Select dates">
+      {dateFrom || dateTo ? `${dateFrom || '...'} — ${dateTo || '...'}` : 'Select dates'}
+    </span>
+    <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+
+  <!-- Hidden form inputs -->
+  <input type="hidden" name={dateFromName} class="date-from-input" value={dateFrom} />
+  <input type="hidden" name={dateToName} class="date-to-input" value={dateTo} />
+
+  <!-- Dropdown calendar -->
+  <div class="date-picker-dropdown hidden absolute z-50 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 sm:p-6 left-1/2 -translate-x-1/2" style="width: min(680px, 95vw);">
+    <!-- Tabs: Dates / Flexible -->
+    <div class="flex justify-center mb-5">
+      <div class="inline-flex rounded-full bg-gray-100 p-1">
+        <button type="button" class="tab-dates rounded-full px-5 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm transition-all">Dates</button>
+        <button type="button" class="tab-flexible rounded-full px-5 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-700 transition-all">I'm flexible</button>
+      </div>
+    </div>
+
+    <!-- Dates panel -->
+    <div class="dates-panel">
+      <!-- Calendar header with nav -->
+      <div class="flex items-center justify-between mb-4">
+        <button type="button" class="prev-month p-1.5 rounded-full hover:bg-gray-100 transition-colors">
+          <svg class="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div class="flex gap-6 sm:gap-12">
+          <span class="month-left-title text-sm font-semibold text-gray-900"></span>
+          <span class="month-right-title text-sm font-semibold text-gray-900 hidden sm:inline"></span>
+        </div>
+        <button type="button" class="next-month p-1.5 rounded-full hover:bg-gray-100 transition-colors">
+          <svg class="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Two-month calendar grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+        <div class="month-left">
+          <div class="grid grid-cols-7 mb-1">
+            <span class="text-center text-xs font-medium text-gray-400 py-1">Mo</span>
+            <span class="text-center text-xs font-medium text-gray-400 py-1">Tu</span>
+            <span class="text-center text-xs font-medium text-gray-400 py-1">We</span>
+            <span class="text-center text-xs font-medium text-gray-400 py-1">Th</span>
+            <span class="text-center text-xs font-medium text-gray-400 py-1">Fr</span>
+            <span class="text-center text-xs font-medium text-gray-400 py-1">Sa</span>
+            <span class="text-center text-xs font-medium text-gray-400 py-1">Su</span>
+          </div>
+          <div class="month-left-days grid grid-cols-7"></div>
+        </div>
+        <div class="month-right hidden sm:block">
+          <div class="grid grid-cols-7 mb-1">
+            <span class="text-center text-xs font-medium text-gray-400 py-1">Mo</span>
+            <span class="text-center text-xs font-medium text-gray-400 py-1">Tu</span>
+            <span class="text-center text-xs font-medium text-gray-400 py-1">We</span>
+            <span class="text-center text-xs font-medium text-gray-400 py-1">Th</span>
+            <span class="text-center text-xs font-medium text-gray-400 py-1">Fr</span>
+            <span class="text-center text-xs font-medium text-gray-400 py-1">Sa</span>
+            <span class="text-center text-xs font-medium text-gray-400 py-1">Su</span>
+          </div>
+          <div class="month-right-days grid grid-cols-7"></div>
+        </div>
+      </div>
+
+      <!-- Flexibility chips -->
+      <div class="flex flex-wrap justify-center gap-2 mt-5 pt-4 border-t border-gray-100">
+        <button type="button" class="flex-chip active rounded-full border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-900 hover:text-gray-900 transition-colors" data-flex="0">Exact dates</button>
+        <button type="button" class="flex-chip rounded-full border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-900 hover:text-gray-900 transition-colors" data-flex="1">&pm; 1 day</button>
+        <button type="button" class="flex-chip rounded-full border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-900 hover:text-gray-900 transition-colors" data-flex="2">&pm; 2 days</button>
+        <button type="button" class="flex-chip rounded-full border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-900 hover:text-gray-900 transition-colors" data-flex="3">&pm; 3 days</button>
+        <button type="button" class="flex-chip rounded-full border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-900 hover:text-gray-900 transition-colors" data-flex="7">&pm; 7 days</button>
+        <button type="button" class="flex-chip rounded-full border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-900 hover:text-gray-900 transition-colors" data-flex="14">&pm; 14 days</button>
+      </div>
+    </div>
+
+    <!-- Flexible panel (month picker) -->
+    <div class="flexible-panel hidden">
+      <p class="text-center text-sm text-gray-500 mb-4">Choose how long you'd like to stay</p>
+      <div class="flex flex-wrap justify-center gap-2 mb-5">
+        <button type="button" class="duration-chip active rounded-full border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-900 transition-colors" data-duration="weekend">Weekend</button>
+        <button type="button" class="duration-chip rounded-full border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-900 transition-colors" data-duration="week">Week</button>
+        <button type="button" class="duration-chip rounded-full border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-900 transition-colors" data-duration="month">Month</button>
+      </div>
+      <p class="text-center text-sm text-gray-500 mb-3">When do you want to go?</p>
+      <div class="flex-months-grid grid grid-cols-3 sm:grid-cols-4 gap-2"></div>
+    </div>
+
+    <!-- Footer actions -->
+    <div class="flex justify-between items-center mt-5 pt-4 border-t border-gray-100">
+      <button type="button" class="clear-dates text-sm font-semibold text-gray-600 underline hover:text-gray-900 transition-colors">Clear dates</button>
+      <button type="button" class="close-picker rounded-lg bg-gray-900 px-5 py-2 text-sm font-semibold text-white hover:bg-gray-800 transition-colors">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('astro:page-load', initDatePickers);
+  document.addEventListener('DOMContentLoaded', initDatePickers);
+
+  function initDatePickers() {
+    document.querySelectorAll<HTMLElement>('.date-range-picker').forEach((picker) => {
+      if (picker.dataset.initialized) return;
+      picker.dataset.initialized = 'true';
+
+      const trigger = picker.querySelector<HTMLButtonElement>('.date-picker-trigger')!;
+      const dropdown = picker.querySelector<HTMLElement>('.date-picker-dropdown')!;
+      const label = picker.querySelector<HTMLElement>('.date-picker-label')!;
+      const dateFromInput = picker.querySelector<HTMLInputElement>('.date-from-input')!;
+      const dateToInput = picker.querySelector<HTMLInputElement>('.date-to-input')!;
+
+      const monthLeftTitle = picker.querySelector<HTMLElement>('.month-left-title')!;
+      const monthRightTitle = picker.querySelector<HTMLElement>('.month-right-title')!;
+      const monthLeftDays = picker.querySelector<HTMLElement>('.month-left-days')!;
+      const monthRightDays = picker.querySelector<HTMLElement>('.month-right-days')!;
+
+      const tabDates = picker.querySelector<HTMLButtonElement>('.tab-dates')!;
+      const tabFlexible = picker.querySelector<HTMLButtonElement>('.tab-flexible')!;
+      const datesPanel = picker.querySelector<HTMLElement>('.dates-panel')!;
+      const flexiblePanel = picker.querySelector<HTMLElement>('.flexible-panel')!;
+      const flexMonthsGrid = picker.querySelector<HTMLElement>('.flex-months-grid')!;
+
+      let currentMonth = new Date().getMonth();
+      let currentYear = new Date().getFullYear();
+      let startDate: string | null = dateFromInput.value || null;
+      let endDate: string | null = dateToInput.value || null;
+      let flexDays = 0;
+      let hoverDate: string | null = null;
+      let isOpen = false;
+
+      const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+      const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      // If initial dates exist, set currentMonth to the start date's month
+      if (startDate) {
+        const d = new Date(startDate);
+        currentMonth = d.getMonth();
+        currentYear = d.getFullYear();
+      }
+
+      function toDateStr(y: number, m: number, d: number): string {
+        return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      }
+
+      function formatDisplay(dateStr: string): string {
+        const d = new Date(dateStr + 'T00:00:00');
+        return `${SHORT_MONTHS[d.getMonth()]} ${d.getDate()}`;
+      }
+
+      function updateLabel() {
+        if (startDate && endDate) {
+          label.textContent = `${formatDisplay(startDate)} — ${formatDisplay(endDate)}`;
+        } else if (startDate) {
+          label.textContent = `${formatDisplay(startDate)} — ...`;
+        } else {
+          label.textContent = label.dataset.placeholder || 'Select dates';
+        }
+        dateFromInput.value = startDate || '';
+        dateToInput.value = endDate || '';
+      }
+
+      function getDaysInMonth(y: number, m: number): number {
+        return new Date(y, m + 1, 0).getDate();
+      }
+
+      function getFirstDayOfWeek(y: number, m: number): number {
+        const day = new Date(y, m, 1).getDay();
+        return day === 0 ? 6 : day - 1; // Monday = 0
+      }
+
+      function isInRange(dateStr: string): boolean {
+        if (!startDate) return false;
+        const end = endDate || hoverDate;
+        if (!end) return false;
+        return dateStr > startDate && dateStr < end;
+      }
+
+      function isToday(dateStr: string): boolean {
+        const today = new Date();
+        return dateStr === toDateStr(today.getFullYear(), today.getMonth(), today.getDate());
+      }
+
+      function isPast(dateStr: string): boolean {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return new Date(dateStr + 'T00:00:00') < today;
+      }
+
+      function renderMonth(container: HTMLElement, year: number, month: number) {
+        container.innerHTML = '';
+        const daysInMonth = getDaysInMonth(year, month);
+        const firstDay = getFirstDayOfWeek(year, month);
+
+        // Empty cells before first day
+        for (let i = 0; i < firstDay; i++) {
+          const empty = document.createElement('div');
+          empty.className = 'h-9';
+          container.appendChild(empty);
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateStr = toDateStr(year, month, d);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = String(d);
+          btn.dataset.date = dateStr;
+
+          const past = isPast(dateStr);
+          const isStart = dateStr === startDate;
+          const isEnd = dateStr === endDate;
+          const inRange = isInRange(dateStr);
+          const today = isToday(dateStr);
+
+          let cls = 'h-9 w-full text-sm rounded-full transition-colors ';
+          if (past) {
+            cls += 'text-gray-300 cursor-default';
+          } else if (isStart || isEnd) {
+            cls += 'bg-gray-900 text-white font-semibold';
+          } else if (inRange) {
+            cls += 'bg-gray-100 text-gray-900 hover:bg-gray-200';
+          } else if (today) {
+            cls += 'font-bold text-gray-900 hover:bg-gray-100 cursor-pointer';
+          } else {
+            cls += 'text-gray-700 hover:bg-gray-100 cursor-pointer';
+          }
+          btn.className = cls;
+
+          if (!past) {
+            btn.addEventListener('click', () => onDayClick(dateStr));
+            btn.addEventListener('mouseenter', () => {
+              if (startDate && !endDate) {
+                hoverDate = dateStr;
+                renderCalendars();
+              }
+            });
+          }
+
+          container.appendChild(btn);
+        }
+      }
+
+      function renderCalendars() {
+        monthLeftTitle.textContent = `${MONTH_NAMES[currentMonth]} ${currentYear}`;
+        const rightMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+        const rightYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+        monthRightTitle.textContent = `${MONTH_NAMES[rightMonth]} ${rightYear}`;
+
+        renderMonth(monthLeftDays, currentYear, currentMonth);
+        renderMonth(monthRightDays, rightYear, rightMonth);
+      }
+
+      function onDayClick(dateStr: string) {
+        if (!startDate || (startDate && endDate)) {
+          // Start new selection
+          startDate = dateStr;
+          endDate = null;
+          hoverDate = null;
+        } else {
+          // Set end date
+          if (dateStr < startDate) {
+            endDate = startDate;
+            startDate = dateStr;
+          } else if (dateStr === startDate) {
+            startDate = null;
+            endDate = null;
+          } else {
+            endDate = dateStr;
+          }
+        }
+
+        // Apply flex days
+        applyFlexDays();
+        updateLabel();
+        renderCalendars();
+      }
+
+      function applyFlexDays() {
+        if (flexDays === 0 || !startDate) return;
+        if (startDate && endDate) {
+          const s = new Date(startDate + 'T00:00:00');
+          const e = new Date(endDate + 'T00:00:00');
+          s.setDate(s.getDate() - flexDays);
+          e.setDate(e.getDate() + flexDays);
+          // Don't go before today
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (s < today) s.setTime(today.getTime());
+          startDate = toDateStr(s.getFullYear(), s.getMonth(), s.getDate());
+          endDate = toDateStr(e.getFullYear(), e.getMonth(), e.getDate());
+        }
+      }
+
+      // Flex chips
+      picker.querySelectorAll<HTMLButtonElement>('.flex-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          picker.querySelectorAll('.flex-chip').forEach(c => {
+            c.classList.remove('active', 'bg-gray-900', 'text-white', 'border-gray-900');
+            c.classList.add('border-gray-300', 'text-gray-700');
+          });
+          chip.classList.add('active', 'bg-gray-900', 'text-white', 'border-gray-900');
+          chip.classList.remove('border-gray-300', 'text-gray-700');
+          flexDays = parseInt(chip.dataset.flex || '0');
+        });
+      });
+
+      // Set initial active style on "Exact dates"
+      const exactChip = picker.querySelector('.flex-chip[data-flex="0"]');
+      if (exactChip) {
+        exactChip.classList.add('bg-gray-900', 'text-white', 'border-gray-900');
+        exactChip.classList.remove('border-gray-300', 'text-gray-700');
+      }
+
+      // Tab switching
+      tabDates.addEventListener('click', () => {
+        tabDates.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
+        tabDates.classList.remove('text-gray-500');
+        tabFlexible.classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
+        tabFlexible.classList.add('text-gray-500');
+        datesPanel.classList.remove('hidden');
+        flexiblePanel.classList.add('hidden');
+      });
+
+      tabFlexible.addEventListener('click', () => {
+        tabFlexible.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
+        tabFlexible.classList.remove('text-gray-500');
+        tabDates.classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
+        tabDates.classList.add('text-gray-500');
+        flexiblePanel.classList.remove('hidden');
+        datesPanel.classList.add('hidden');
+        renderFlexibleMonths();
+      });
+
+      // Flexible months
+      function renderFlexibleMonths() {
+        flexMonthsGrid.innerHTML = '';
+        const now = new Date();
+        for (let i = 0; i < 12; i++) {
+          const m = (now.getMonth() + i) % 12;
+          const y = now.getFullYear() + Math.floor((now.getMonth() + i) / 12);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'flex flex-col items-center gap-1 rounded-xl border border-gray-200 p-3 text-sm hover:border-gray-900 transition-colors cursor-pointer';
+          btn.innerHTML = `<span class="text-2xl">📅</span><span class="font-medium text-gray-900">${SHORT_MONTHS[m]}</span><span class="text-xs text-gray-500">${y}</span>`;
+          btn.addEventListener('click', () => {
+            // Set to first and last day of that month
+            startDate = toDateStr(y, m, 1);
+            endDate = toDateStr(y, m, getDaysInMonth(y, m));
+            currentMonth = m;
+            currentYear = y;
+            updateLabel();
+
+            // Switch back to dates view
+            tabDates.click();
+            renderCalendars();
+          });
+          flexMonthsGrid.appendChild(btn);
+        }
+      }
+
+      // Navigation
+      picker.querySelector('.prev-month')!.addEventListener('click', () => {
+        currentMonth--;
+        if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+        renderCalendars();
+      });
+
+      picker.querySelector('.next-month')!.addEventListener('click', () => {
+        currentMonth++;
+        if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+        renderCalendars();
+      });
+
+      // Clear
+      picker.querySelector('.clear-dates')!.addEventListener('click', () => {
+        startDate = null;
+        endDate = null;
+        hoverDate = null;
+        flexDays = 0;
+        // Reset flex chip
+        picker.querySelectorAll('.flex-chip').forEach(c => {
+          c.classList.remove('active', 'bg-gray-900', 'text-white', 'border-gray-900');
+          c.classList.add('border-gray-300', 'text-gray-700');
+        });
+        if (exactChip) {
+          exactChip.classList.add('active', 'bg-gray-900', 'text-white', 'border-gray-900');
+          exactChip.classList.remove('border-gray-300', 'text-gray-700');
+        }
+        updateLabel();
+        renderCalendars();
+      });
+
+      // Close / Done
+      picker.querySelector('.close-picker')!.addEventListener('click', () => {
+        applyFlexDays();
+        updateLabel();
+        close();
+      });
+
+      // Toggle
+      function open() {
+        dropdown.classList.remove('hidden');
+        isOpen = true;
+        renderCalendars();
+      }
+
+      function close() {
+        dropdown.classList.add('hidden');
+        isOpen = false;
+      }
+
+      trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isOpen) { close(); } else { open(); }
+      });
+
+      // Close on outside click
+      document.addEventListener('click', (e) => {
+        if (isOpen && !picker.contains(e.target as Node)) {
+          applyFlexDays();
+          updateLabel();
+          close();
+        }
+      });
+
+      // Mouse leave calendar resets hover
+      dropdown.addEventListener('mouseleave', () => {
+        if (startDate && !endDate) {
+          hoverDate = null;
+          renderCalendars();
+        }
+      });
+
+      // Initial render of label
+      updateLabel();
+    });
+  }
+</script>

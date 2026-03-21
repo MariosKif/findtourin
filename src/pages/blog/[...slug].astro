@@ -1,0 +1,42 @@
+---
+import BlogLayout from '../../layouts/BlogLayout.astro';
+import { getCollection, render } from 'astro:content';
+import { formatDate } from '../../lib/utils';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+---
+
+<BlogLayout
+  title={post.data.title}
+  description={post.data.description}
+  image={post.data.image}
+  date={formatDate(post.data.date)}
+  author={post.data.author}
+>
+  <Content />
+
+  <!-- Tags -->
+  {post.data.tags.length > 0 && (
+    <div class="mt-12 pt-8 border-t border-gray-200">
+      <div class="flex flex-wrap gap-2">
+        {post.data.tags.map((tag: string) => (
+          <span class="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">{tag}</span>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <!-- Back link -->
+  <div class="mt-8">
+    <a href="/blog" class="text-primary-600 hover:text-primary-700 font-medium">&larr; Back to Blog</a>
+  </div>
+</BlogLayout>

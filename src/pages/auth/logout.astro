@@ -1,0 +1,28 @@
+---
+export const prerender = false;
+
+import PublicLayout from '../../layouts/PublicLayout.astro';
+---
+
+<PublicLayout title="Logging Out">
+  <div class="flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
+    <div class="text-center">
+      <p class="text-lg text-gray-600">Signing you out...</p>
+    </div>
+  </div>
+</PublicLayout>
+
+<script>
+  async function logout() {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch {
+      // proceed to redirect even on error
+    }
+    window.location.href = '/';
+  }
+  logout();
+</script>

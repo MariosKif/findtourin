@@ -1,0 +1,335 @@
+---
+import { COUNTRIES, CATEGORIES } from '../../lib/search';
+import DateRangePicker from '../ui/DateRangePicker.astro';
+
+interface Props {
+  currentFilters?: {
+    q?: string;
+    country?: string;
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    sort?: string;
+    departureCountry?: string;
+    departureCity?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  };
+}
+
+const { currentFilters = {} } = Astro.props;
+const { q, country, category, minPrice, maxPrice, sort, departureCountry, departureCity, dateFrom, dateTo } = currentFilters;
+
+// Count active filters (excluding sort and empty values)
+const activeFilterCount = [q, country, category, minPrice, maxPrice, departureCountry, departureCity, dateFrom, dateTo].filter(Boolean).length;
+
+// Merge departure fields
+const departingFrom = [departureCity, departureCountry].filter(Boolean).join(', ');
+---
+
+{/* Mobile: collapsible details element, hidden on lg+ */}
+<div class="lg:hidden">
+  <details class="group rounded-2xl bg-white border border-gray-200">
+    <summary class="flex cursor-pointer items-center justify-between rounded-2xl px-6 py-4 font-bold text-gray-900">
+      <span class="flex items-center gap-2">
+        <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+        </svg>
+        Filters
+        {activeFilterCount > 0 && (
+          <span class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary-600 px-1.5 text-xs font-medium text-white">
+            {activeFilterCount}
+          </span>
+        )}
+      </span>
+      <svg class="h-5 w-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </summary>
+    <form method="GET" action="/tours" class="space-y-6 px-6 pb-6">
+      {/* Search */}
+      <div class="flex flex-col gap-1.5">
+        <label for="filter-q-mobile" class="text-sm font-medium text-gray-700">Search</label>
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            id="filter-q-mobile"
+            type="text"
+            name="q"
+            value={q || ''}
+            placeholder="Search tours..."
+            class="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          />
+        </div>
+      </div>
+
+      {/* Destination Country */}
+      <div class="flex flex-col gap-1.5">
+        <label for="filter-country-mobile" class="text-sm font-medium text-gray-700">Destination Country</label>
+        <input
+          id="filter-country-mobile"
+          type="text"
+          name="country"
+          value={country || ''}
+          placeholder="Type to search countries..."
+          list="countries-list-mobile"
+          class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        />
+        <datalist id="countries-list-mobile">
+          {COUNTRIES.map((c) => (
+            <option value={c} />
+          ))}
+        </datalist>
+      </div>
+
+      {/* Departing from (merged) */}
+      <div class="flex flex-col gap-1.5">
+        <label for="filter-departing-mobile" class="text-sm font-medium text-gray-700">Departing from</label>
+        <input
+          id="filter-departing-mobile"
+          type="text"
+          name="departureCountry"
+          value={departingFrom || ''}
+          placeholder="City or country of departure"
+          list="departure-countries-list-mobile"
+          class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        />
+        <datalist id="departure-countries-list-mobile">
+          {COUNTRIES.map((c) => (
+            <option value={c} />
+          ))}
+        </datalist>
+      </div>
+
+      {/* Category */}
+      <div class="flex flex-col gap-1.5">
+        <label for="filter-category-mobile" class="text-sm font-medium text-gray-700">Category</label>
+        <div class="relative">
+          <select
+            id="filter-category-mobile"
+            name="category"
+            class="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 pr-10 text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          >
+            <option value="">All Categories</option>
+            {CATEGORIES.map((c) => (
+              <option value={c} selected={c === category}>{c}</option>
+            ))}
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      {/* Price Range */}
+      <div class="flex flex-col gap-1.5">
+        <label class="text-sm font-medium text-gray-700">Price Range</label>
+        <div class="flex items-center gap-2">
+          <input
+            type="number"
+            name="minPrice"
+            value={minPrice ?? ''}
+            placeholder="Min"
+            min="0"
+            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          />
+          <span class="text-gray-400">&ndash;</span>
+          <input
+            type="number"
+            name="maxPrice"
+            value={maxPrice ?? ''}
+            placeholder="Max"
+            min="0"
+            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          />
+        </div>
+      </div>
+
+      {/* Travel Dates */}
+      <div class="flex flex-col gap-1.5">
+        <label class="text-sm font-medium text-gray-700">Travel Dates</label>
+        <DateRangePicker id="filter-dates-mobile" variant="filter" dateFrom={dateFrom || ''} dateTo={dateTo || ''} />
+      </div>
+
+      {/* Submit */}
+      <button
+        type="submit"
+        class="w-full rounded-lg bg-primary-600 px-5 py-2.5 text-center font-medium text-white transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+      >
+        Apply Filters
+      </button>
+    </form>
+  </details>
+</div>
+
+{/* Desktop: collapsible accordion form, hidden below lg */}
+<form method="GET" action="/tours" class="hidden lg:block rounded-2xl bg-white p-6 border border-gray-200">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-bold text-gray-900">Filter Tours</h2>
+    <a href="/tours" class="text-sm text-primary-600 hover:underline">Reset</a>
+  </div>
+
+  <div class="space-y-1">
+    {/* Search - open by default */}
+    <details open class="border-b border-gray-100 pb-4">
+      <summary class="cursor-pointer py-2 text-sm font-medium text-gray-700 flex items-center justify-between">
+        Search
+        <svg class="h-4 w-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <div class="mt-2">
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            id="filter-q"
+            type="text"
+            name="q"
+            value={q || ''}
+            placeholder="Search tours..."
+            class="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          />
+        </div>
+      </div>
+    </details>
+
+    {/* Destination - open by default */}
+    <details open class="border-b border-gray-100 pb-4">
+      <summary class="cursor-pointer py-2 text-sm font-medium text-gray-700 flex items-center justify-between">
+        Destination
+        <svg class="h-4 w-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <div class="mt-2">
+        <input
+          id="filter-country"
+          type="text"
+          name="country"
+          value={country || ''}
+          placeholder="Type to search countries..."
+          list="countries-list"
+          class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        />
+        <datalist id="countries-list">
+          {COUNTRIES.map((c) => (
+            <option value={c} />
+          ))}
+        </datalist>
+      </div>
+    </details>
+
+    {/* Departing from (merged) - collapsed by default */}
+    <details class="border-b border-gray-100 pb-4">
+      <summary class="cursor-pointer py-2 text-sm font-medium text-gray-700 flex items-center justify-between">
+        Departing from
+        <svg class="h-4 w-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <div class="mt-2">
+        <input
+          id="filter-departing"
+          type="text"
+          name="departureCountry"
+          value={departingFrom || ''}
+          placeholder="City or country of departure"
+          list="departure-countries-list"
+          class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        />
+        <datalist id="departure-countries-list">
+          {COUNTRIES.map((c) => (
+            <option value={c} />
+          ))}
+        </datalist>
+      </div>
+    </details>
+
+    {/* Category - collapsed by default */}
+    <details class="border-b border-gray-100 pb-4">
+      <summary class="cursor-pointer py-2 text-sm font-medium text-gray-700 flex items-center justify-between">
+        Category
+        <svg class="h-4 w-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <div class="mt-2">
+        <div class="relative">
+          <select
+            id="filter-category"
+            name="category"
+            class="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 pr-10 text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          >
+            <option value="">All Categories</option>
+            {CATEGORIES.map((c) => (
+              <option value={c} selected={c === category}>{c}</option>
+            ))}
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    {/* Price Range - collapsed by default */}
+    <details class="border-b border-gray-100 pb-4">
+      <summary class="cursor-pointer py-2 text-sm font-medium text-gray-700 flex items-center justify-between">
+        Price Range
+        <svg class="h-4 w-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <div class="mt-2">
+        <div class="flex items-center gap-2">
+          <input
+            type="number"
+            name="minPrice"
+            value={minPrice ?? ''}
+            placeholder="Min"
+            min="0"
+            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          />
+          <span class="text-gray-400">&ndash;</span>
+          <input
+            type="number"
+            name="maxPrice"
+            value={maxPrice ?? ''}
+            placeholder="Max"
+            min="0"
+            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          />
+        </div>
+      </div>
+    </details>
+
+    {/* Travel Dates - collapsed by default */}
+    <details class="border-b border-gray-100 pb-4">
+      <summary class="cursor-pointer py-2 text-sm font-medium text-gray-700 flex items-center justify-between">
+        Travel Dates
+        <svg class="h-4 w-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <div class="mt-2">
+        <DateRangePicker id="filter-dates" variant="filter" dateFrom={dateFrom || ''} dateTo={dateTo || ''} />
+      </div>
+    </details>
+  </div>
+
+  {/* Submit */}
+  <button
+    type="submit"
+    class="mt-4 w-full rounded-lg bg-primary-600 px-5 py-2.5 text-center font-medium text-white transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+  >
+    Apply Filters
+  </button>
+</form>

@@ -1,0 +1,184 @@
+---
+interface Props {
+  tourId: string;
+  maxImages?: number;
+}
+
+const { tourId, maxImages = 5 } = Astro.props;
+const componentId = `image-upload-${tourId}`;
+---
+
+<div id={componentId} class="space-y-4" data-tour-id={tourId} data-max-images={maxImages}>
+  <!-- Drop zone -->
+  <div
+    class="upload-dropzone flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center transition-colors duration-200 hover:border-primary-400 hover:bg-primary-50 cursor-pointer"
+  >
+    <svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+    <div>
+      <p class="text-sm font-medium text-gray-700">Drop images here or <span class="text-primary-600 underline">browse</span></p>
+      <p class="mt-1 text-xs text-gray-500">PNG, JPG, WebP up to 10MB. Max {maxImages} images.</p>
+    </div>
+    <input type="file" class="upload-input hidden" accept="image/png,image/jpeg,image/webp" multiple />
+  </div>
+
+  <!-- Preview grid -->
+  <div class="upload-previews grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5"></div>
+
+  <!-- Progress -->
+  <div class="upload-progress hidden">
+    <div class="flex items-center gap-3">
+      <div class="h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
+        <div class="upload-progress-bar h-full rounded-full bg-primary-600 transition-all duration-300" style="width: 0%"></div>
+      </div>
+      <span class="upload-progress-text text-sm text-gray-600">0%</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initImageUpload() {
+    document.querySelectorAll<HTMLDivElement>('[id^="image-upload-"]').forEach((container) => {
+      const tourId = container.dataset.tourId!;
+      const maxImages = parseInt(container.dataset.maxImages || '5', 10);
+      const dropzone = container.querySelector<HTMLDivElement>('.upload-dropzone')!;
+      const fileInput = container.querySelector<HTMLInputElement>('.upload-input')!;
+      const previewsEl = container.querySelector<HTMLDivElement>('.upload-previews')!;
+      const progressEl = container.querySelector<HTMLDivElement>('.upload-progress')!;
+      const progressBar = container.querySelector<HTMLDivElement>('.upload-progress-bar')!;
+      const progressText = container.querySelector<HTMLSpanElement>('.upload-progress-text')!;
+
+      const uploadedImages: string[] = [];
+
+      dropzone.addEventListener('click', () => fileInput.click());
+
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-primary-500', 'bg-primary-50');
+      });
+
+      dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('border-primary-500', 'bg-primary-50');
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-primary-500', 'bg-primary-50');
+        if (e.dataTransfer?.files) handleFiles(e.dataTransfer.files);
+      });
+
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files) handleFiles(fileInput.files);
+        fileInput.value = '';
+      });
+
+      async function handleFiles(files: FileList) {
+        const remaining = maxImages - uploadedImages.length;
+        const toUpload = Array.from(files).slice(0, remaining);
+
+        if (toUpload.length === 0) {
+          (window as any).showToast?.(`Maximum of ${maxImages} images allowed`, 'error');
+          return;
+        }
+
+        progressEl.classList.remove('hidden');
+        let completed = 0;
+
+        for (const file of toUpload) {
+          try {
+            // Get signature
+            const sigRes = await fetch('/api/upload/signature');
+            if (!sigRes.ok) throw new Error('Failed to get upload signature');
+            const { signature, timestamp, cloudName, apiKey, uploadPreset, folder } = await sigRes.json();
+
+            // Upload to Cloudinary
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('signature', signature);
+            formData.append('timestamp', timestamp);
+            formData.append('api_key', apiKey);
+            if (uploadPreset) formData.append('upload_preset', uploadPreset);
+            if (folder) formData.append('folder', folder);
+
+            const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+              method: 'POST',
+              body: formData,
+            });
+
+            if (!uploadRes.ok) throw new Error('Upload failed');
+            const uploadData = await uploadRes.json();
+
+            // Save to backend
+            const saveRes = await fetch(`/api/tours/${tourId}/images`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                url: uploadData.secure_url,
+                publicId: uploadData.public_id,
+              }),
+            });
+
+            if (!saveRes.ok) throw new Error('Failed to save image');
+
+            uploadedImages.push(uploadData.public_id);
+            addPreview(uploadData.secure_url, uploadData.public_id);
+
+            completed++;
+            const pct = Math.round((completed / toUpload.length) * 100);
+            progressBar.style.width = `${pct}%`;
+            progressText.textContent = `${pct}%`;
+          } catch (err) {
+            console.error('Upload error:', err);
+            (window as any).showToast?.('Image upload failed', 'error');
+            completed++;
+          }
+        }
+
+        setTimeout(() => progressEl.classList.add('hidden'), 1000);
+        (window as any).showToast?.(`${completed} image(s) uploaded`, 'success');
+      }
+
+      function addPreview(url: string, publicId: string) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'group relative aspect-square overflow-hidden rounded-lg border border-gray-200';
+
+        wrapper.innerHTML = `
+          <img src="${url}" alt="Uploaded image" class="h-full w-full object-cover" />
+          <button
+            type="button"
+            class="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white opacity-0 transition-opacity group-hover:opacity-100 cursor-pointer"
+            data-public-id="${publicId}"
+          >
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        `;
+
+        wrapper.querySelector('button')!.addEventListener('click', async () => {
+          try {
+            const res = await fetch(`/api/tours/${tourId}/images`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ publicId }),
+            });
+            if (res.ok) {
+              wrapper.remove();
+              const idx = uploadedImages.indexOf(publicId);
+              if (idx > -1) uploadedImages.splice(idx, 1);
+              (window as any).showToast?.('Image removed', 'info');
+            }
+          } catch {
+            (window as any).showToast?.('Failed to remove image', 'error');
+          }
+        });
+
+        previewsEl.appendChild(wrapper);
+      }
+    });
+  }
+
+  initImageUpload();
+  document.addEventListener('astro:after-swap', initImageUpload);
+</script>

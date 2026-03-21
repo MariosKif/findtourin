@@ -1,0 +1,79 @@
+---
+export const prerender = false;
+import DashboardLayout from '../../../../layouts/DashboardLayout.astro';
+import TourForm from '../../../../components/tours/TourForm.astro';
+import ImageUpload from '../../../../components/ui/ImageUpload.astro';
+import { db } from '../../../../lib/db';
+import { tours, tourImages } from '../../../../lib/db/schema';
+import { eq, and, asc } from 'drizzle-orm';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/auth/login');
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect('/dashboard/tours');
+
+const tour = await db.select().from(tours).where(eq(tours.id, id)).then(r => r[0]);
+
+if (!tour) return Astro.redirect('/dashboard/tours');
+if (tour.agencyId !== user.id && user.role !== 'admin') return Astro.redirect('/dashboard/tours');
+
+const images = await db
+  .select()
+  .from(tourImages)
+  .where(eq(tourImages.tourId, id))
+  .orderBy(asc(tourImages.position));
+---
+
+<DashboardLayout title={`Edit: ${tour.name}`}>
+  <div class="max-w-4xl space-y-8">
+    <TourForm tour={tour} />
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Tour Images</h2>
+      <p class="text-sm text-gray-600 mb-4">Upload up to 5 images. The first image will be used as the thumbnail.</p>
+      <ImageUpload tourId={id} maxImages={5} />
+
+      {images.length > 0 && (
+        <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+          {images.map((img) => (
+            <div class="relative group rounded-lg overflow-hidden aspect-square">
+              <img src={img.url} alt={img.altText || 'Tour image'} class="w-full h-full object-cover" />
+              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <button
+                  data-image-id={img.id}
+                  data-tour-id={id}
+                  class="delete-image-btn px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600"
+                >
+                  Delete
+                </button>
+              </div>
+              <span class="absolute top-1 left-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded">#{img.position + 1}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.delete-image-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        const imageId = target.dataset.imageId;
+        const tourId = target.dataset.tourId;
+        if (!confirm('Delete this image?')) return;
+
+        const res = await fetch(`/api/tours/${tourId}/images`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageId }),
+        });
+
+        if (res.ok) {
+          target.closest('.relative')?.remove();
+        }
+      });
+    });
+  </script>
+</DashboardLayout>

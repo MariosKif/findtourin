@@ -1,0 +1,103 @@
+---
+export const prerender = false;
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import TourGallery from '../../components/tours/TourGallery.astro';
+import TourInfo from '../../components/tours/TourInfo.astro';
+import AgencyContactCard from '../../components/tours/AgencyContactCard.astro';
+import { db } from '../../lib/db';
+import { tours, tourImages, profiles } from '../../lib/db/schema';
+import { eq, asc } from 'drizzle-orm';
+import { getDemoTourBySlug, DEMO_AGENCY, DEMO_REVIEWS } from '../../lib/demo-tours';
+
+const { slug } = Astro.params;
+if (!slug) return Astro.redirect('/tours');
+
+let tour: any;
+let images: any[] = [];
+let agency: any;
+
+try {
+  tour = await db.select().from(tours).where(eq(tours.slug, slug)).then(r => r[0]);
+} catch {
+  // DB unavailable — fall through to demo lookup
+}
+
+if (!tour || tour.status !== 'active') {
+  const demoTour = getDemoTourBySlug(slug);
+  if (!demoTour) return Astro.redirect('/tours');
+  tour = demoTour;
+}
+
+try {
+  const [dbImages, dbAgency] = await Promise.all([
+    db.select().from(tourImages).where(eq(tourImages.tourId, tour.id)).orderBy(asc(tourImages.position)),
+    db.select().from(profiles).where(eq(profiles.id, tour.agencyId)).then(r => r[0]),
+  ]);
+  images = dbImages;
+  agency = dbAgency;
+} catch {
+  // DB unavailable — use demo defaults
+}
+
+const reviews = DEMO_REVIEWS[slug] || [];
+
+const tourWithAgency = {
+  ...tour,
+  agencyName: agency?.companyName || agency?.name || DEMO_AGENCY.companyName,
+  agencyVerified: agency?.isVerified || DEMO_AGENCY.isVerified,
+  rating: tour.rating,
+  reviewCount: tour.reviewCount,
+};
+---
+
+<PublicLayout
+  title={tour.name}
+  description={tour.description?.slice(0, 160)}
+  image={images[0]?.url}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumb -->
+    <nav class="mb-6 text-sm text-gray-500">
+      <a href="/" class="hover:text-primary-600">Home</a>
+      <span class="mx-2">/</span>
+      <a href="/tours" class="hover:text-primary-600">Tours</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-900">{tour.name}</span>
+    </nav>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+      <!-- Main Content -->
+      <div class="flex-1">
+        <TourGallery images={images.map(img => ({ url: img.url, altText: img.altText || '' }))} />
+        <div class="mt-8">
+          <TourInfo tour={tour} reviews={reviews} />
+        </div>
+      </div>
+
+      <!-- Contact Sidebar -->
+      <aside class="w-full lg:w-96 shrink-0">
+        <div class="lg:sticky lg:top-24">
+          <AgencyContactCard tour={tourWithAgency} />
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "TouristTrip",
+    "name": tour.name,
+    "description": tour.description,
+    "touristType": tour.category,
+    "offers": {
+      "@type": "Offer",
+      "price": tour.price,
+      "priceCurrency": tour.currency,
+    },
+    "provider": {
+      "@type": "TravelAgency",
+      "name": tourWithAgency.agencyName,
+    },
+  })} />
+</PublicLayout>

@@ -1,0 +1,30 @@
+---
+interface Props {
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const { size = 'md' } = Astro.props;
+
+const sizeClasses: Record<string, string> = {
+  sm: 'h-4 w-4 border-2',
+  md: 'h-8 w-8 border-3',
+  lg: 'h-12 w-12 border-4',
+};
+---
+
+<div
+  class:list={[
+    'animate-spin rounded-full border-primary-200 border-t-primary-600',
+    sizeClasses[size],
+  ]}
+  role="status"
+  aria-label="Loading"
+>
+  <span class="sr-only">Loading...</span>
+</div>
+
+<style>
+  .border-3 {
+    border-width: 3px;
+  }
+</style>

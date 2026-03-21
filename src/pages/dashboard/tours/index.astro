@@ -1,0 +1,27 @@
+---
+export const prerender = false;
+import DashboardLayout from '../../../layouts/DashboardLayout.astro';
+import ListingsTable from '../../../components/dashboard/ListingsTable.astro';
+import Button from '../../../components/ui/Button.astro';
+import { db } from '../../../lib/db';
+import { tours } from '../../../lib/db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/auth/login');
+
+const userTours = await db
+  .select()
+  .from(tours)
+  .where(eq(tours.agencyId, user.id))
+  .orderBy(desc(tours.createdAt));
+---
+
+<DashboardLayout title="My Listings">
+  <div class="flex items-center justify-between mb-6">
+    <p class="text-gray-600">{userTours.length} tour{userTours.length !== 1 ? 's' : ''} total</p>
+    <Button href="/dashboard/tours/new" variant="primary">+ Add New Tour</Button>
+  </div>
+
+  <ListingsTable tours={userTours} />
+</DashboardLayout>

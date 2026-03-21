@@ -1,0 +1,147 @@
+---
+export const prerender = false;
+
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import Input from '../../components/ui/Input.astro';
+import Select from '../../components/ui/Select.astro';
+import Button from '../../components/ui/Button.astro';
+import { createSupabaseServerClient } from '../../lib/supabase';
+
+const supabase = createSupabaseServerClient(Astro);
+const { data: { user } } = await supabase.auth.getUser();
+
+if (!user) {
+  return Astro.redirect('/auth/login');
+}
+
+const defaultName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+
+const roleOptions = [
+  { value: 'user', label: 'User' },
+  { value: 'agency', label: 'Agency' },
+];
+---
+
+<PublicLayout title="Complete Your Profile">
+  <div class="flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+      <h1 class="text-2xl font-bold text-gray-900 mb-2">Complete Your Profile</h1>
+      <p class="text-gray-600 mb-6">Just a few more details to get started.</p>
+
+      <form id="complete-profile-form" class="space-y-5">
+        <div id="profile-error" class="hidden rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700"></div>
+
+        <Input
+          label="Full Name"
+          name="name"
+          type="text"
+          placeholder="John Doe"
+          value={defaultName}
+          required
+        />
+
+        <Select
+          label="Account Type"
+          name="role"
+          options={roleOptions}
+          value="user"
+          required
+        />
+
+        <div id="agency-fields" class="hidden space-y-5">
+          <Input
+            label="Company Name"
+            name="companyName"
+            type="text"
+            placeholder="Your company name"
+          />
+
+          <Input
+            label="Phone"
+            name="phone"
+            type="tel"
+            placeholder="+1 (555) 000-0000"
+          />
+
+          <Input
+            label="Website"
+            name="website"
+            type="url"
+            placeholder="https://yourcompany.com"
+          />
+        </div>
+
+        <Button type="submit" variant="primary" size="lg" class="w-full">
+          Continue
+        </Button>
+      </form>
+    </div>
+  </div>
+</PublicLayout>
+
+<script>
+  const form = document.getElementById('complete-profile-form') as HTMLFormElement;
+  const errorDiv = document.getElementById('profile-error') as HTMLDivElement;
+  const roleSelect = form.querySelector('select[name="role"]') as HTMLSelectElement;
+  const agencyFields = document.getElementById('agency-fields') as HTMLDivElement;
+
+  roleSelect.addEventListener('change', () => {
+    if (roleSelect.value === 'agency') {
+      agencyFields.classList.remove('hidden');
+    } else {
+      agencyFields.classList.add('hidden');
+    }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorDiv.classList.add('hidden');
+
+    const formData = new FormData(form);
+    const body: Record<string, string> = {
+      name: formData.get('name') as string,
+      role: formData.get('role') as string,
+    };
+
+    if (body.role === 'agency') {
+      const companyName = formData.get('companyName') as string;
+      const phone = formData.get('phone') as string;
+      const website = formData.get('website') as string;
+      if (companyName) body.companyName = companyName;
+      if (phone) body.phone = phone;
+      if (website) body.website = website;
+    }
+
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+
+    try {
+      const res = await fetch('/api/auth/complete-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        errorDiv.textContent = data?.error || 'Failed to save profile.';
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+
+      if (data.role === 'agency' || data.role === 'admin') {
+        window.location.href = '/dashboard';
+      } else {
+        window.location.href = '/account/favourites';
+      }
+    } catch {
+      errorDiv.textContent = 'Something went wrong. Please try again.';
+      errorDiv.classList.remove('hidden');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Continue';
+    }
+  });
+</script>

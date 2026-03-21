@@ -1,0 +1,69 @@
+---
+export const prerender = false;
+import AccountLayout from '../../layouts/AccountLayout.astro';
+import TourCard from '../../components/tours/TourCard.astro';
+import { db } from '../../lib/db';
+import { favourites, tours, tourImages } from '../../lib/db/schema';
+import { eq, asc } from 'drizzle-orm';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/auth/login');
+
+// Get favourited tours with their first image
+const userFavourites = await db
+  .select({
+    id: tours.id,
+    name: tours.name,
+    slug: tours.slug,
+    description: tours.description,
+    country: tours.country,
+    city: tours.city,
+    departureCountry: tours.departureCountry,
+    departureCity: tours.departureCity,
+    price: tours.price,
+    currency: tours.currency,
+    category: tours.category,
+    durationDays: tours.durationDays,
+  })
+  .from(favourites)
+  .innerJoin(tours, eq(favourites.tourId, tours.id))
+  .where(eq(favourites.userId, user.id))
+  .orderBy(asc(favourites.createdAt));
+
+// Get thumbnails for all favourited tours
+const tourIds = userFavourites.map(t => t.id);
+const allImages = tourIds.length > 0
+  ? await db
+      .select({ tourId: tourImages.tourId, url: tourImages.url })
+      .from(tourImages)
+      .where(eq(tourImages.position, 0))
+  : [];
+
+const imageMap = new Map(allImages.map(img => [img.tourId, img.url]));
+
+const toursWithThumbnails = userFavourites.map(t => ({
+  ...t,
+  thumbnail: imageMap.get(t.id) || null,
+}));
+---
+
+<AccountLayout title="Favourites">
+  {toursWithThumbnails.length > 0 ? (
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {toursWithThumbnails.map((tour) => (
+        <TourCard tour={tour} />
+      ))}
+    </div>
+  ) : (
+    <div class="text-center py-16">
+      <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+      </svg>
+      <h2 class="mt-4 text-xl font-semibold text-gray-900">No favourites yet</h2>
+      <p class="mt-2 text-gray-600">Browse our tours and tap the heart icon to save your favourites.</p>
+      <a href="/tours" class="mt-6 inline-block rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700 transition-colors">
+        Explore Tours
+      </a>
+    </div>
+  )}
+</AccountLayout>

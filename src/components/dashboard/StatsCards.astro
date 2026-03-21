@@ -1,0 +1,49 @@
+---
+interface Stat {
+  label: string;
+  value: string | number;
+  icon: string;
+}
+
+interface Props {
+  stats: Stat[];
+}
+
+const { stats } = Astro.props;
+
+const iconPaths: Record<string, string> = {
+  listings: 'M4 6h16M4 10h16M4 14h16M4 18h16',
+  active: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+  pending: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+  money: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+};
+
+const iconColors: Record<string, { bg: string; text: string }> = {
+  listings: { bg: 'bg-blue-100', text: 'text-blue-600' },
+  active: { bg: 'bg-green-100', text: 'text-green-600' },
+  pending: { bg: 'bg-amber-100', text: 'text-amber-600' },
+  money: { bg: 'bg-purple-100', text: 'text-purple-600' },
+};
+---
+
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  {stats.map((stat) => {
+    const colors = iconColors[stat.icon] || { bg: 'bg-gray-100', text: 'text-gray-600' };
+    const path = iconPaths[stat.icon] || iconPaths.listings;
+    return (
+      <div class="rounded-xl bg-white p-5 shadow-sm border border-gray-100">
+        <div class="flex items-center gap-4">
+          <div class:list={['flex h-12 w-12 shrink-0 items-center justify-center rounded-lg', colors.bg]}>
+            <svg class:list={['h-6 w-6', colors.text]} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={path} />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">{stat.label}</p>
+            <p class="text-2xl font-bold text-gray-900">{stat.value}</p>
+          </div>
+        </div>
+      </div>
+    );
+  })}
+</div>

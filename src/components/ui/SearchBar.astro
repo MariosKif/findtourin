@@ -1,0 +1,67 @@
+---
+interface Props {
+  placeholder?: string;
+  value?: string;
+  action?: string;
+  size?: 'sm' | 'lg';
+  class?: string;
+}
+
+const {
+  placeholder = 'Search tours...',
+  value = '',
+  action = '/tours',
+  size = 'sm',
+  class: className,
+} = Astro.props;
+
+const sizeClasses: Record<string, { wrapper: string; input: string; icon: string; button: string }> = {
+  sm: {
+    wrapper: '',
+    input: 'py-2.5 pl-10 pr-4 text-sm',
+    icon: 'left-3 h-4 w-4',
+    button: 'px-4 py-2 text-sm',
+  },
+  lg: {
+    wrapper: '',
+    input: 'py-4 pl-12 pr-6 text-base',
+    icon: 'left-4 h-5 w-5',
+    button: 'px-6 py-3 text-base',
+  },
+};
+
+const s = sizeClasses[size];
+---
+
+<form action={action} method="GET" class:list={['relative flex items-center', className]}>
+  <div class="relative flex-1">
+    <svg
+      class:list={['absolute top-1/2 -translate-y-1/2 text-gray-400', s.icon]}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+    <input
+      type="search"
+      name="q"
+      value={value}
+      placeholder={placeholder}
+      class:list={[
+        'w-full rounded-l-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 transition-colors duration-200',
+        'focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200',
+        s.input,
+      ]}
+    />
+  </div>
+  <button
+    type="submit"
+    class:list={[
+      'rounded-r-lg bg-primary-600 font-medium text-white transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer',
+      s.button,
+    ]}
+  >
+    Search
+  </button>
+</form>

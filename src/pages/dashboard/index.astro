@@ -1,0 +1,78 @@
+---
+export const prerender = false;
+
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import StatsCards from '../../components/dashboard/StatsCards.astro';
+import ListingsTable from '../../components/dashboard/ListingsTable.astro';
+import Badge from '../../components/ui/Badge.astro';
+import { db } from '../../lib/db';
+import { tours, payments } from '../../lib/db/schema';
+import { eq, desc, count, sql } from 'drizzle-orm';
+import { formatPrice, formatDate } from '../../lib/utils';
+
+const user = Astro.locals.user;
+
+if (!user) {
+  return Astro.redirect('/auth/login');
+}
+
+// Count tours by status
+const tourCounts = await db
+  .select({
+    status: tours.status,
+    count: count(),
+  })
+  .from(tours)
+  .where(eq(tours.agencyId, user.id))
+  .groupBy(tours.status);
+
+const totalListings = tourCounts.reduce((sum, row) => sum + row.count, 0);
+const activeListings = tourCounts.find((r) => r.status === 'active')?.count || 0;
+const pendingPayment = tourCounts.find((r) => r.status === 'pending_payment')?.count || 0;
+
+// Total spent
+const spentResult = await db
+  .select({
+    total: sql<number>`COALESCE(SUM(${payments.amount}), 0)`,
+  })
+  .from(payments)
+  .where(eq(payments.agencyId, user.id));
+
+const totalSpent = Number(spentResult[0]?.total || 0);
+
+// Recent listings
+const recentTours = await db
+  .select()
+  .from(tours)
+  .where(eq(tours.agencyId, user.id))
+  .orderBy(desc(tours.createdAt))
+  .limit(5);
+
+const stats = [
+  { label: 'Total Listings', value: totalListings, icon: 'listings' },
+  { label: 'Active Listings', value: activeListings, icon: 'active' },
+  { label: 'Pending Payment', value: pendingPayment, icon: 'pending' },
+  { label: 'Total Spent', value: formatPrice(totalSpent / 100), icon: 'money' },
+];
+---
+
+<DashboardLayout title="Dashboard">
+  <div class="space-y-8">
+    <div>
+      <h2 class="text-lg font-semibold text-gray-900">Welcome back, {user.name}</h2>
+      <p class="mt-1 text-sm text-gray-500">Here's an overview of your tour listings.</p>
+    </div>
+
+    <StatsCards stats={stats} />
+
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900">Recent Listings</h3>
+        <a href="/dashboard/tours" class="text-sm font-medium text-primary-600 hover:text-primary-700">
+          View all &rarr;
+        </a>
+      </div>
+      <ListingsTable tours={recentTours} />
+    </div>
+  </div>
+</DashboardLayout>

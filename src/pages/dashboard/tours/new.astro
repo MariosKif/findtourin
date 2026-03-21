@@ -1,0 +1,15 @@
+---
+export const prerender = false;
+import DashboardLayout from '../../../layouts/DashboardLayout.astro';
+import TourForm from '../../../components/tours/TourForm.astro';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/auth/login');
+---
+
+<DashboardLayout title="Add New Tour">
+  <div class="max-w-4xl">
+    <p class="text-gray-600 mb-6">Fill in the details below to create a new tour listing. After creating, you'll need to pay the listing fee to make it visible.</p>
+    <TourForm />
+  </div>
+</DashboardLayout>

@@ -4,6 +4,7 @@ import AccountLayout from '../../layouts/AccountLayout.astro';
 import TourCard from '../../components/tours/TourCard.astro';
 import Button from '../../components/ui/Button.astro';
 import { favouritesCol, toursCol } from '../../lib/firestore';
+import { DEMO_TOURS } from '../../lib/demo-tours';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
@@ -25,6 +26,20 @@ if (tourIds.length > 0) {
     });
   }
 }
+
+// Fallback to demo tours for IDs not found in Firestore
+const foundIds = new Set(allTours.map(t => t.id));
+const missingIds = tourIds.filter(id => !foundIds.has(id));
+for (const missingId of missingIds) {
+  const demoTour = DEMO_TOURS.find(t => t.id === missingId);
+  if (demoTour) {
+    allTours.push({
+      ...demoTour,
+      thumbnail: (demoTour as any).images?.[0]?.url || null,
+    });
+  }
+}
+
 const toursWithThumbnails = allTours;
 ---
 

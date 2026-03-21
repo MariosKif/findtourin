@@ -2,15 +2,19 @@
 export const prerender = false;
 import AccountLayout from '../../layouts/AccountLayout.astro';
 import Button from '../../components/ui/Button.astro';
-import { createSupabaseServerClient } from '../../lib/supabase';
+import { adminAuth } from '../../lib/firebase';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
 
-// Check if user signed up with Google (password section hidden for OAuth-only users)
-const supabase = createSupabaseServerClient(Astro);
-const { data: { user: authUser } } = await supabase.auth.getUser();
-const isOAuthUser = authUser?.app_metadata?.provider === 'google' && !authUser?.app_metadata?.providers?.includes('email');
+let isOAuthUser = false;
+try {
+  const firebaseUser = await adminAuth.getUser(user.id);
+  isOAuthUser = firebaseUser.providerData.some(p => p.providerId === 'google.com')
+    && !firebaseUser.providerData.some(p => p.providerId === 'password');
+} catch {
+  // If we can't check, assume not OAuth
+}
 ---
 
 <AccountLayout title="Settings">

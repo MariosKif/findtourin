@@ -1,39 +1,46 @@
 ---
 export const prerender = false;
-
-import { createSupabaseServerClient } from '../../lib/supabase';
-import { db } from '../../lib/db';
-import { profiles } from '../../lib/db/schema';
-import { eq } from 'drizzle-orm';
-
-const code = Astro.url.searchParams.get('code');
-
-if (!code) {
-  return Astro.redirect('/auth/login?error=missing_code');
-}
-
-const supabase = createSupabaseServerClient(Astro);
-const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-
-if (error || !data.user) {
-  return Astro.redirect('/auth/login?error=callback_failed');
-}
-
-// Check if profile exists
-const [profile] = await db
-  .select()
-  .from(profiles)
-  .where(eq(profiles.id, data.user.id))
-  .limit(1);
-
-if (profile) {
-  // Existing user — redirect by role
-  if (profile.role === 'agency' || profile.role === 'admin') {
-    return Astro.redirect('/dashboard');
-  }
-  return Astro.redirect('/account/favourites');
-}
-
-// No profile yet (first OAuth login) — complete profile
-return Astro.redirect('/auth/complete-profile');
 ---
+
+<html>
+<head><title>Authenticating...</title></head>
+<body>
+  <p>Authenticating, please wait...</p>
+  <script type="module">
+    import { getAuth, getRedirectResult } from 'firebase/auth';
+    import { initializeApp, getApps } from 'firebase/app';
+
+    const config = {
+      apiKey: document.querySelector('meta[name="firebase-api-key"]')?.getAttribute('content'),
+      authDomain: document.querySelector('meta[name="firebase-auth-domain"]')?.getAttribute('content'),
+      projectId: document.querySelector('meta[name="firebase-project-id"]')?.getAttribute('content'),
+    };
+    const app = getApps().length === 0 ? initializeApp(config) : getApps()[0];
+    const auth = getAuth(app);
+
+    try {
+      const result = await getRedirectResult(auth);
+      if (result?.user) {
+        const idToken = await result.user.getIdToken();
+        const res = await fetch('/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken }),
+        });
+        const data = await res.json();
+        if (data.needsProfile) {
+          window.location.href = '/auth/complete-profile';
+        } else if (data.role === 'agency' || data.role === 'admin') {
+          window.location.href = '/dashboard';
+        } else {
+          window.location.href = '/account/favourites';
+        }
+      } else {
+        window.location.href = '/auth/login?error=no_result';
+      }
+    } catch {
+      window.location.href = '/auth/login?error=callback_failed';
+    }
+  </script>
+</body>
+</html>

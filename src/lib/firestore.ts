@@ -1,5 +1,5 @@
 import { adminDb } from './firebase';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 
 // Collection references
 export const usersCol = () => adminDb.collection('users');
@@ -103,4 +103,4 @@ export function docsToArray<T>(snapshot: FirebaseFirestore.QuerySnapshot): (T & 
   return snapshot.docs.map(doc => docToObj<T>(doc)!);
 }
 
-export { FieldValue, Timestamp };
+export { Timestamp };

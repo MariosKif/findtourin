@@ -9,29 +9,22 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "astro": "astro"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.0",
     "@astrojs/node": "^10.0.0",
     "@astrojs/sitemap": "^3.7.1",
     "@astrojs/vercel": "^10.0.2",
-    "@supabase/ssr": "^0.6.1",
-    "@supabase/supabase-js": "^2.49.4",
     "@tailwindcss/vite": "^4.2.1",
     "astro": "^6.0.2",
-    "drizzle-orm": "^0.45.1",
+    "firebase": "^12.11.0",
+    "firebase-admin": "^13.7.0",
     "gsap": "^3.14.2",
-    "postgres": "^3.4.8",
     "stripe": "^20.4.1",
     "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
-    "@types/node": "^25.4.0",
-    "drizzle-kit": "^0.31.9"
+    "@types/node": "^25.4.0"
   }
 }

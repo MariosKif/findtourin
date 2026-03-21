@@ -87,21 +87,11 @@ const componentId = `image-upload-${tourId}`;
 
         for (const file of toUpload) {
           try {
-            // Get signature
-            const sigRes = await fetch('/api/upload/signature');
-            if (!sigRes.ok) throw new Error('Failed to get upload signature');
-            const { signature, timestamp, cloudName, apiKey, uploadPreset, folder } = await sigRes.json();
-
-            // Upload to Cloudinary
+            // Upload to Supabase Storage via our API
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('signature', signature);
-            formData.append('timestamp', timestamp);
-            formData.append('api_key', apiKey);
-            if (uploadPreset) formData.append('upload_preset', uploadPreset);
-            if (folder) formData.append('folder', folder);
 
-            const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+            const uploadRes = await fetch('/api/upload/signature', {
               method: 'POST',
               body: formData,
             });
@@ -109,20 +99,20 @@ const componentId = `image-upload-${tourId}`;
             if (!uploadRes.ok) throw new Error('Upload failed');
             const uploadData = await uploadRes.json();
 
-            // Save to backend
+            // Save to backend (link image to tour)
             const saveRes = await fetch(`/api/tours/${tourId}/images`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                url: uploadData.secure_url,
-                publicId: uploadData.public_id,
+                url: uploadData.url,
+                publicId: uploadData.publicId,
               }),
             });
 
             if (!saveRes.ok) throw new Error('Failed to save image');
 
-            uploadedImages.push(uploadData.public_id);
-            addPreview(uploadData.secure_url, uploadData.public_id);
+            uploadedImages.push(uploadData.publicId);
+            addPreview(uploadData.url, uploadData.publicId);
 
             completed++;
             const pct = Math.round((completed / toUpload.length) * 100);

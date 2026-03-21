@@ -1,35 +1,27 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { supabaseAdmin } from './supabase';
 
-cloudinary.config({
-  cloud_name: import.meta.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: import.meta.env.CLOUDINARY_API_KEY || process.env.CLOUDINARY_API_KEY,
-  api_secret: import.meta.env.CLOUDINARY_API_SECRET || process.env.CLOUDINARY_API_SECRET,
-});
+const BUCKET = 'tour-images';
 
-export function generateUploadSignature() {
-  const timestamp = Math.round(Date.now() / 1000);
-  const params = {
-    timestamp,
-    folder: 'worldoftours/tours',
-    transformation: 'c_limit,w_1600,h_1200,q_auto',
-  };
+export async function uploadImage(file: Buffer, fileName: string): Promise<{ url: string; publicId: string }> {
+  const path = `tours/${Date.now()}-${fileName}`;
 
-  const signature = cloudinary.utils.api_sign_request(
-    params,
-    import.meta.env.CLOUDINARY_API_SECRET || process.env.CLOUDINARY_API_SECRET || ''
-  );
+  const { error } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .upload(path, file, { upsert: false });
 
-  return {
-    signature,
-    timestamp,
-    cloudName: import.meta.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME,
-    apiKey: import.meta.env.CLOUDINARY_API_KEY || process.env.CLOUDINARY_API_KEY,
-    folder: params.folder,
-  };
+  if (error) throw new Error(`Upload failed: ${error.message}`);
+
+  const { data: { publicUrl } } = supabaseAdmin.storage
+    .from(BUCKET)
+    .getPublicUrl(path);
+
+  return { url: publicUrl, publicId: path };
 }
 
 export async function deleteImage(publicId: string) {
-  return cloudinary.uploader.destroy(publicId);
-}
+  const { error } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .remove([publicId]);
 
-export { cloudinary };
+  if (error) throw new Error(`Delete failed: ${error.message}`);
+}

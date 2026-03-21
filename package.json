@@ -24,7 +24,6 @@
     "@supabase/supabase-js": "^2.49.4",
     "@tailwindcss/vite": "^4.2.1",
     "astro": "^6.0.2",
-    "cloudinary": "^2.9.0",
     "drizzle-orm": "^0.45.1",
     "gsap": "^3.14.2",
     "postgres": "^3.4.8",

@@ -18,9 +18,36 @@ const userTours = data || [];
 ---
 
 <DashboardLayout title="My Listings">
+  {/* Header */}
   <div class="flex items-center justify-between mb-6">
-    <p class="text-gray-600">{userTours.length} tour{userTours.length !== 1 ? 's' : ''} total</p>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100">
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-xl font-semibold text-gray-900">My Listings</h1>
+        <p class="text-sm text-gray-500">{userTours.length} tour{userTours.length !== 1 ? 's' : ''} total</p>
+      </div>
+    </div>
     <Button href="/dashboard/tours/new" variant="primary">+ Add New Tour</Button>
+  </div>
+
+  {/* Stats bar */}
+  <div class="flex items-center gap-6 mb-6 text-sm">
+    <span class="flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-green-400"></span>
+      <span class="text-gray-600">{userTours.filter(t => t.status === 'active').length} active</span>
+    </span>
+    <span class="flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+      <span class="text-gray-600">{userTours.filter(t => t.status === 'pending_payment').length} pending</span>
+    </span>
+    <span class="flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+      <span class="text-gray-600">{userTours.filter(t => t.status === 'inactive').length} inactive</span>
+    </span>
   </div>
 
   <ListingsTable tours={userTours} />

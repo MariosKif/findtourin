@@ -1,0 +1,35 @@
+---
+export const prerender = false;
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+const user = Astro.locals.user;
+if (!user || user.role !== 'admin') return Astro.redirect('/');
+
+const { data: messages } = await supabase
+  .from('contact_messages')
+  .select('*')
+  .order('created_at', { ascending: false });
+---
+
+<DashboardLayout title="Contact Messages">
+  <h1 class="text-xl font-semibold text-gray-900 mb-6">Contact Messages</h1>
+  {(messages || []).length > 0 ? (
+    <div class="space-y-4">
+      {(messages || []).map((msg) => (
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-medium text-gray-900">{msg.subject}</h3>
+            <span class="text-xs text-gray-400">{new Date(msg.created_at).toLocaleDateString()}</span>
+          </div>
+          <p class="text-sm text-gray-600 mb-2">{msg.message}</p>
+          <p class="text-xs text-gray-400">From: {msg.name} ({msg.email})</p>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
+      No messages yet
+    </div>
+  )}
+</DashboardLayout>

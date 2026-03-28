@@ -6,7 +6,7 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
-  site: 'https://findtourin.vercel.app',
+  site: 'https://www.findtoursin.com',
   output: 'server',
   adapter: vercel(),
   integrations: [mdx(), sitemap()],

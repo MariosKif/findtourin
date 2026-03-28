@@ -1,0 +1,14 @@
+---
+export const prerender = false;
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+
+const user = Astro.locals.user;
+if (!user || user.role !== 'admin') return Astro.redirect('/');
+---
+
+<DashboardLayout title="Analytics">
+  <h1 class="text-xl font-semibold text-gray-900 mb-6">Analytics</h1>
+  <div class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
+    Analytics dashboard coming soon
+  </div>
+</DashboardLayout>

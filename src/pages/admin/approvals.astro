@@ -1,0 +1,74 @@
+---
+export const prerender = false;
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+const user = Astro.locals.user;
+if (!user || user.role !== 'admin') return Astro.redirect('/');
+
+const { data: pendingTours } = await supabase
+  .from('tours')
+  .select('*')
+  .eq('status', 'pending_payment')
+  .order('created_at', { ascending: false });
+---
+
+<DashboardLayout title="Approvals">
+  <h1 class="text-xl font-semibold text-gray-900 mb-6">Pending Approvals</h1>
+  {(pendingTours || []).length > 0 ? (
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Tour</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Country</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Created</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {(pendingTours || []).map((t) => (
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-gray-900">{t.name}</td>
+              <td class="px-4 py-3 text-gray-600">{t.country}</td>
+              <td class="px-4 py-3 text-gray-500 text-xs">{new Date(t.created_at).toLocaleDateString()}</td>
+              <td class="px-4 py-3">
+                <button class="approve-btn text-xs text-green-600 hover:underline mr-2" data-tour-id={t.id}>Approve</button>
+                <button class="reject-btn text-xs text-red-600 hover:underline" data-tour-id={t.id}>Reject</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
+      No pending approvals
+    </div>
+  )}
+
+  <script>
+    document.querySelectorAll('.approve-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const tourId = (btn as HTMLElement).dataset.tourId;
+        await fetch('/api/admin/tours/' + tourId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'active' }),
+        });
+        location.reload();
+      });
+    });
+    document.querySelectorAll('.reject-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const tourId = (btn as HTMLElement).dataset.tourId;
+        await fetch('/api/admin/tours/' + tourId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'inactive' }),
+        });
+        location.reload();
+      });
+    });
+  </script>
+</DashboardLayout>

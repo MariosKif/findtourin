@@ -1,0 +1,137 @@
+---
+export const prerender = false;
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import Badge from '../../components/ui/Badge.astro';
+import { supabase } from '../../lib/supabase';
+import { formatDate } from '../../lib/utils';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/auth/login');
+
+// Fetch all tours with favourite counts
+const { data: tours } = await supabase
+  .from('tours')
+  .select('id, name, slug, status, view_count, category, country, created_at')
+  .eq('agency_id', user.id)
+  .order('view_count', { ascending: false });
+
+const allTours = tours || [];
+
+// Get favourite counts per tour
+const favouriteCounts = new Map<string, number>();
+if (allTours.length > 0) {
+  const tourIds = allTours.map(t => t.id);
+  const { data: favData } = await supabase
+    .from('favourites')
+    .select('tour_id')
+    .in('tour_id', tourIds);
+
+  (favData || []).forEach(f => {
+    favouriteCounts.set(f.tour_id, (favouriteCounts.get(f.tour_id) || 0) + 1);
+  });
+}
+
+const totalViews = allTours.reduce((sum, t) => sum + (t.view_count || 0), 0);
+const totalFavourites = Array.from(favouriteCounts.values()).reduce((sum, c) => sum + c, 0);
+
+const statusVariant: Record<string, string> = {
+  active: 'success',
+  pending_payment: 'warning',
+  inactive: 'neutral',
+  deleted: 'danger',
+};
+---
+
+<DashboardLayout title="Tour Analytics">
+  {/* Header */}
+  <div class="flex items-center gap-3 mb-8">
+    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100">
+      <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    </div>
+    <h1 class="text-xl font-semibold text-gray-900">Tour Analytics</h1>
+  </div>
+
+  {/* Summary Stats */}
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Total Views</p>
+        <p class="text-2xl font-bold text-gray-900">{totalViews}</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-50">
+        <svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Total Favourites</p>
+        <p class="text-2xl font-bold text-gray-900">{totalFavourites}</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-green-50">
+        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Active Tours</p>
+        <p class="text-2xl font-bold text-gray-900">{allTours.filter(t => t.status === 'active').length}</p>
+      </div>
+    </div>
+  </div>
+
+  {/* Tour Performance Table */}
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Tour</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Category</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+            <th class="text-right px-4 py-3 font-medium text-gray-600">Views</th>
+            <th class="text-right px-4 py-3 font-medium text-gray-600">Favourites</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Created</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {allTours.map((tour) => (
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3">
+                <a href={`/tours/${tour.slug}`} class="font-medium text-primary-600 hover:underline">{tour.name}</a>
+                <p class="text-xs text-gray-500">{tour.country}</p>
+              </td>
+              <td class="px-4 py-3 text-gray-600 text-xs">{tour.category}</td>
+              <td class="px-4 py-3">
+                <Badge variant={statusVariant[tour.status] || 'neutral'} size="sm">
+                  {tour.status === 'pending_payment' ? 'Pending' : tour.status}
+                </Badge>
+              </td>
+              <td class="px-4 py-3 text-right font-medium text-gray-900">{tour.view_count || 0}</td>
+              <td class="px-4 py-3 text-right font-medium text-gray-900">{favouriteCounts.get(tour.id) || 0}</td>
+              <td class="px-4 py-3 text-gray-500 text-xs">{formatDate(tour.created_at)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    {allTours.length === 0 && (
+      <div class="p-12 text-center text-gray-400 text-sm">
+        No tours yet. <a href="/dashboard/tours/new" class="text-primary-600 hover:underline">Create your first tour</a>
+      </div>
+    )}
+  </div>
+</DashboardLayout>

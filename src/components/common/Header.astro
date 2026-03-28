@@ -60,6 +60,23 @@ const navLinks = [
             {link.label}
           </a>
         ))}
+        {user?.role === 'admin' && (
+          <a
+            href="/admin"
+            class:list={[
+              'uppercase tracking-wider text-[13px] font-semibold transition-colors',
+              currentPath.startsWith('/admin')
+                ? isHome
+                  ? 'text-white border-b-2 border-white pb-1 header-nav-active'
+                  : 'text-primary-600 border-b-2 border-primary-500 pb-1'
+                : isHome
+                  ? 'text-white/80 hover:text-white header-nav-link'
+                  : 'text-gray-600 hover:text-primary-600',
+            ]}
+          >
+            Admin
+          </a>
+        )}
       </div>
 
       <!-- Auth Actions -->

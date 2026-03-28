@@ -1,0 +1,20 @@
+---
+export const prerender = false;
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { supabase } from '../../lib/supabase';
+
+const user = Astro.locals.user;
+if (!user || user.role !== 'admin') return Astro.redirect('/');
+
+const { data: payments } = await supabase
+  .from('payments')
+  .select('*')
+  .order('created_at', { ascending: false });
+---
+
+<DashboardLayout title="Payments">
+  <h1 class="text-xl font-semibold text-gray-900 mb-6">Payments</h1>
+  <div class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
+    {(payments || []).length === 0 ? 'No payments yet' : `${(payments || []).length} payments recorded`}
+  </div>
+</DashboardLayout>

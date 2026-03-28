@@ -6,47 +6,140 @@ import { supabase } from '../../lib/supabase';
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
 
+// Fetch stats
 const [usersResult, toursResult, paymentsResult] = await Promise.all([
-  supabase.from('users').select('*', { count: 'exact', head: true }),
-  supabase.from('tours').select('*'),
+  supabase.from('users').select('id, role', { count: 'exact' }),
+  supabase.from('tours').select('id, status, name, slug, created_at, agency_id'),
   supabase.from('payments').select('amount').eq('status', 'completed'),
 ]);
 
-const userCount = usersResult.count || 0;
+const allUsers = usersResult.data || [];
+const totalUsers = allUsers.length;
+const activeAgencies = allUsers.filter(u => u.role === 'agency').length;
 const allTours = toursResult.data || [];
-const tourCount = allTours.length;
-const activeCount = allTours.filter(t => t.status === 'active').length;
-const revenue = (paymentsResult.data || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+const totalTours = allTours.length;
+const pendingTours = allTours.filter(t => t.status === 'pending_payment');
+const pendingCount = pendingTours.length;
+
+// Recent activity: latest 8 users
+const { data: recentUsers } = await supabase
+  .from('users')
+  .select('id, name, email, created_at')
+  .order('created_at', { ascending: false })
+  .limit(8);
+
+// Format date helper
+function formatRelativeDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) + ', ' +
+    date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
 ---
 
-<DashboardLayout title="Admin Dashboard">
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-      <p class="text-sm text-gray-500">Total Users</p>
-      <p class="text-3xl font-bold text-gray-900">{userCount}</p>
+<DashboardLayout title="Platform Overview">
+  {/* Header */}
+  <div class="flex items-center gap-3 mb-8">
+    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100">
+      <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+      </svg>
     </div>
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-      <p class="text-sm text-gray-500">Total Tours</p>
-      <p class="text-3xl font-bold text-gray-900">{tourCount}</p>
+    <h1 class="text-xl font-semibold text-gray-900">Platform Overview</h1>
+  </div>
+
+  {/* Stat Cards */}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    {/* Total Users */}
+    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Total Users</p>
+        <p class="text-2xl font-bold text-gray-900">{totalUsers}</p>
+      </div>
     </div>
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-      <p class="text-sm text-gray-500">Active Tours</p>
-      <p class="text-3xl font-bold text-green-600">{activeCount}</p>
+
+    {/* Active Agencies */}
+    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Active Agencies</p>
+        <p class="text-2xl font-bold text-gray-900">{activeAgencies}</p>
+      </div>
     </div>
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-      <p class="text-sm text-gray-500">Total Revenue</p>
-      <p class="text-3xl font-bold text-gray-900">&euro;{(Number(revenue) / 100).toFixed(2)}</p>
+
+    {/* Total Tours */}
+    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Total Tours</p>
+        <p class="text-2xl font-bold text-gray-900">{totalTours}</p>
+      </div>
+    </div>
+
+    {/* Pending Approvals */}
+    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Pending Approvals</p>
+        <p class="text-2xl font-bold text-gray-900">{pendingCount}</p>
+      </div>
     </div>
   </div>
 
-  <div class="grid md:grid-cols-2 gap-6">
-    <a href="/admin/users" class="block bg-white rounded-xl border border-gray-200 p-6 hover:border-primary-300 transition-colors">
-      <h3 class="text-lg font-semibold text-gray-900">Manage Users</h3>
-      <p class="mt-1 text-sm text-gray-600">View, edit roles, verify, or remove users.</p>
-    </a>
-    <a href="/admin/listings" class="block bg-white rounded-xl border border-gray-200 p-6 hover:border-primary-300 transition-colors">
-      <h3 class="text-lg font-semibold text-gray-900">Manage Listings</h3>
-      <p class="mt-1 text-sm text-gray-600">Review, approve, or remove tour listings.</p>
-    </a>
+  {/* Two Panels */}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {/* Pending Approvals Panel */}
+    <div class="bg-white rounded-xl border border-gray-200 p-6 min-h-[320px]">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Pending Approvals</h2>
+      {pendingTours.length > 0 ? (
+        <div class="space-y-3">
+          {pendingTours.slice(0, 6).map((tour) => (
+            <a href={`/admin/listings`} class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
+              <div>
+                <p class="text-sm font-medium text-gray-900">{tour.name}</p>
+                <p class="text-xs text-gray-500">Submitted {formatRelativeDate(tour.created_at)}</p>
+              </div>
+              <span class="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">Pending</span>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="flex items-center justify-center h-48 text-gray-400 text-sm">
+          No pending approvals
+        </div>
+      )}
+    </div>
+
+    {/* Recent Activity Panel */}
+    <div class="bg-white rounded-xl border border-gray-200 p-6 min-h-[320px]">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+      <div class="space-y-1">
+        {(recentUsers || []).map((u) => (
+          <div class="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-gray-50 transition-colors">
+            <div class="flex items-center gap-3">
+              <span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>
+              <p class="text-sm text-gray-700">New registration: <span class="font-medium">{u.name}</span></p>
+            </div>
+            <p class="text-xs text-gray-400 whitespace-nowrap">{formatRelativeDate(u.created_at)}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   </div>
 </DashboardLayout>

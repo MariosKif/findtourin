@@ -1,5 +1,5 @@
 ---
-import { formatDate, getReadingTime } from '../../lib/utils';
+import { formatDate } from '../../lib/utils';
 
 interface Props {
   post: {
@@ -18,7 +18,6 @@ interface Props {
 }
 
 const { post } = Astro.props;
-const readingTime = post.body ? getReadingTime(post.body) : '3 min read';
 ---
 
 <a
@@ -45,11 +44,6 @@ const readingTime = post.body ? getReadingTime(post.body) : '3 min read';
     {/* Category badge */}
     <span class="absolute top-3 left-3 text-[11px] font-semibold uppercase tracking-wider bg-white/90 backdrop-blur-sm text-gray-700 px-2.5 py-1 rounded-full shadow-sm">
       {post.data.category}
-    </span>
-
-    {/* Reading time */}
-    <span class="absolute top-3 right-3 text-xs font-medium bg-white/90 backdrop-blur-sm text-gray-600 px-2.5 py-1 rounded-full shadow-sm">
-      {readingTime}
     </span>
   </div>
 

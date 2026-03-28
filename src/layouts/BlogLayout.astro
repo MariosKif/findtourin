@@ -2,7 +2,7 @@
 import PublicLayout from './PublicLayout.astro';
 import BlogCard from '../components/blog/BlogCard.astro';
 import { getCollection } from 'astro:content';
-import { formatDate, getReadingTime } from '../lib/utils';
+import { formatDate } from '../lib/utils';
 
 interface Props {
   title: string;
@@ -19,7 +19,6 @@ interface Props {
 
 const { title, description, image, date, updatedDate, author, category, tags, body, slug } = Astro.props;
 
-const readingTime = getReadingTime(body);
 const canonicalUrl = `https://www.findtoursin.com/blog/${slug}`;
 const publishDate = new Date(date).toISOString();
 const modifiedDate = updatedDate ? new Date(updatedDate).toISOString() : publishDate;
@@ -102,7 +101,6 @@ const breadcrumbLd = {
             <a href={`/blog/tag/${category.toLowerCase().replace(/\s+/g, '-')}`} class="text-xs font-semibold uppercase tracking-wider text-primary-600 bg-primary-50 px-3 py-1 rounded-full hover:bg-primary-100 transition-colors">
               {category}
             </a>
-            <span class="text-xs text-gray-400">{readingTime}</span>
           </div>
 
           <h1 class="font-heading text-3xl md:text-4xl lg:text-[2.5rem] text-gray-900 leading-tight mb-4">

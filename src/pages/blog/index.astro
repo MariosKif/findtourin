@@ -1,29 +1,98 @@
 ---
+import { getCollection } from 'astro:content';
 import PublicLayout from '../../layouts/PublicLayout.astro';
 import BlogCard from '../../components/blog/BlogCard.astro';
-import { getCollection } from 'astro:content';
+import { getReadingTime } from '../../lib/utils';
 
-const posts = (await getCollection('blog'))
-  .filter((post) => !post.data.draft)
-  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+const allPosts = await getCollection('blog', ({ data }) => !data.draft);
+const sortedPosts = allPosts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+
+// Get featured post
+const featuredPost = sortedPosts.find(p => p.data.featured) || sortedPosts[0];
+const otherPosts = sortedPosts.filter(p => p.id !== featuredPost?.id);
+
+// Get unique categories
+const categories = [...new Set(sortedPosts.map(p => p.data.category))].sort();
+
+// Reading time for featured
+const featuredBody = featuredPost ? await featuredPost.render() : null;
 ---
 
-<PublicLayout title="Blog" description="Travel tips, destination guides, and industry insights from FindToursIn.">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-16">
+<PublicLayout title="Travel Blog" description="Travel tips, destination guides, and expert advice for your next adventure.">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    {/* Hero header */}
     <div class="text-center mb-12">
-      <h1 class="text-4xl font-bold text-gray-900">Blog</h1>
-      <p class="mt-4 text-lg text-gray-600">Travel tips, destination guides, and industry insights.</p>
+      <h1 class="font-heading text-4xl md:text-5xl text-gray-900 mb-4">Travel Blog</h1>
+      <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+        Destination guides, travel tips, and expert advice to help you plan your next adventure.
+      </p>
     </div>
 
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {posts.map((post) => (
-        <BlogCard post={post} />
-      ))}
-    </div>
+    {/* Featured Post */}
+    {featuredPost && (
+      <a href={`/blog/${featuredPost.id}`} class="group block mb-12 rounded-2xl overflow-hidden border border-gray-200 bg-white hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div class="grid md:grid-cols-2">
+          <div class="aspect-[16/10] md:aspect-auto overflow-hidden bg-gray-100">
+            {featuredPost.data.image ? (
+              <img
+                src={featuredPost.data.image}
+                alt={featuredPost.data.title}
+                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+            ) : (
+              <div class="w-full h-full min-h-[280px] bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                <svg class="w-20 h-20 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+              </div>
+            )}
+          </div>
+          <div class="p-8 md:p-10 flex flex-col justify-center">
+            <div class="flex items-center gap-3 mb-4">
+              <span class="text-xs font-semibold uppercase tracking-wider text-primary-600 bg-primary-50 px-2.5 py-1 rounded-full">
+                {featuredPost.data.category}
+              </span>
+              <span class="text-xs text-gray-400">Featured</span>
+            </div>
+            <h2 class="font-heading text-2xl md:text-3xl text-gray-900 mb-3 group-hover:text-primary-600 transition-colors">
+              {featuredPost.data.title}
+            </h2>
+            <p class="text-gray-600 mb-6 line-clamp-3">{featuredPost.data.description}</p>
+            <div class="flex items-center gap-4 text-sm text-gray-500">
+              <span>{new Date(featuredPost.data.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+              <span>&middot;</span>
+              <span>{featuredPost.data.author}</span>
+            </div>
+          </div>
+        </div>
+      </a>
+    )}
 
-    {posts.length === 0 && (
+    {/* Category Pills */}
+    {categories.length > 1 && (
+      <div class="flex flex-wrap items-center gap-2 mb-8">
+        <span class="text-sm font-medium text-gray-500 mr-1">Browse:</span>
+        <a href="/blog" class="px-4 py-1.5 rounded-full text-sm font-medium bg-primary-600 text-white">
+          All
+        </a>
+        {categories.map(cat => (
+          <a href={`/blog/tag/${cat.toLowerCase().replace(/\s+/g, '-')}`} class="px-4 py-1.5 rounded-full text-sm font-medium border border-gray-200 text-gray-600 hover:border-primary-300 hover:text-primary-600 hover:bg-primary-50 transition-colors">
+            {cat}
+          </a>
+        ))}
+      </div>
+    )}
+
+    {/* Post Grid */}
+    {otherPosts.length > 0 ? (
+      <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {otherPosts.map((post) => (
+          <BlogCard post={post} />
+        ))}
+      </div>
+    ) : (
       <div class="text-center py-16">
-        <p class="text-gray-500">No blog posts yet. Check back soon!</p>
+        <p class="text-gray-400 text-lg">No other posts yet. Check back soon!</p>
       </div>
     )}
   </div>

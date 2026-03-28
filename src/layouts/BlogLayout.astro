@@ -1,27 +1,242 @@
 ---
 import PublicLayout from './PublicLayout.astro';
+import BlogCard from '../components/blog/BlogCard.astro';
+import { getCollection } from 'astro:content';
+import { formatDate, getReadingTime } from '../lib/utils';
 
 interface Props {
   title: string;
-  description?: string;
+  description: string;
   image?: string;
-  date?: string;
-  author?: string;
+  date: string;
+  updatedDate?: string;
+  author: string;
+  category: string;
+  tags: string[];
+  body: string;
+  slug: string;
 }
 
-const { title, description, image, date, author } = Astro.props;
+const { title, description, image, date, updatedDate, author, category, tags, body, slug } = Astro.props;
+
+const readingTime = getReadingTime(body);
+const canonicalUrl = `https://www.findtoursin.com/blog/${slug}`;
+const publishDate = new Date(date).toISOString();
+const modifiedDate = updatedDate ? new Date(updatedDate).toISOString() : publishDate;
+
+// Get related posts (same category or overlapping tags, exclude current)
+const allPosts = await getCollection('blog', ({ data }) => !data.draft);
+const relatedPosts = allPosts
+  .filter(p => p.id !== slug)
+  .map(p => ({
+    post: p,
+    score: (p.data.category === category ? 2 : 0) + p.data.tags.filter(t => tags.includes(t)).length,
+  }))
+  .filter(p => p.score > 0)
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 3)
+  .map(p => p.post);
+
+// JSON-LD structured data
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  headline: title,
+  description,
+  image: image ? (image.startsWith('http') ? image : `https://www.findtoursin.com${image}`) : undefined,
+  datePublished: publishDate,
+  dateModified: modifiedDate,
+  author: {
+    "@type": "Organization",
+    name: "FindToursIn",
+    url: "https://www.findtoursin.com",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "FindToursIn",
+    url: "https://www.findtoursin.com",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://www.findtoursin.com/favicon.svg",
+    },
+  },
+  mainEntityOfPage: {
+    "@type": "WebPage",
+    "@id": canonicalUrl,
+  },
+  wordCount: body.trim().split(/\s+/).length,
+};
+
+const breadcrumbLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.findtoursin.com/" },
+    { "@type": "ListItem", position: 2, name: "Blog", item: "https://www.findtoursin.com/blog" },
+    { "@type": "ListItem", position: 3, name: title, item: canonicalUrl },
+  ],
+};
 ---
 
 <PublicLayout title={title} description={description} image={image}>
-  <article class="max-w-3xl mx-auto px-4 sm:px-6 py-12">
-    <header class="mb-8">
-      {date && <time class="text-sm text-gray-500">{date}</time>}
-      <h1 class="text-4xl font-bold text-gray-900 mt-2">{title}</h1>
-      {description && <p class="mt-4 text-xl text-gray-600">{description}</p>}
-      {author && <p class="mt-4 text-sm text-gray-500">By {author}</p>}
-    </header>
-    <div class="prose prose-lg prose-primary max-w-none">
-      <slot />
+  {/* JSON-LD */}
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
+
+  <article class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {/* Breadcrumbs */}
+    <nav class="mb-8 text-sm text-gray-500">
+      <a href="/" class="hover:text-primary-600">Home</a>
+      <span class="mx-2">/</span>
+      <a href="/blog" class="hover:text-primary-600">Blog</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-900">{title}</span>
+    </nav>
+
+    <div class="flex flex-col lg:flex-row gap-12">
+      {/* Main content */}
+      <div class="flex-1 min-w-0">
+        {/* Article header */}
+        <header class="mb-8">
+          <div class="flex items-center gap-3 mb-4">
+            <a href={`/blog/tag/${category.toLowerCase().replace(/\s+/g, '-')}`} class="text-xs font-semibold uppercase tracking-wider text-primary-600 bg-primary-50 px-3 py-1 rounded-full hover:bg-primary-100 transition-colors">
+              {category}
+            </a>
+            <span class="text-xs text-gray-400">{readingTime}</span>
+          </div>
+
+          <h1 class="font-heading text-3xl md:text-4xl lg:text-[2.5rem] text-gray-900 leading-tight mb-4">
+            {title}
+          </h1>
+
+          <p class="text-lg text-gray-600 mb-6">{description}</p>
+
+          <div class="flex items-center gap-4 text-sm text-gray-500 pb-6 border-b border-gray-200">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-xs font-semibold">
+                {author.charAt(0).toUpperCase()}
+              </div>
+              <span class="font-medium text-gray-700">{author}</span>
+            </div>
+            <span>&middot;</span>
+            <time datetime={date}>{formatDate(date)}</time>
+            {updatedDate && (
+              <>
+                <span>&middot;</span>
+                <span>Updated {formatDate(updatedDate)}</span>
+              </>
+            )}
+          </div>
+        </header>
+
+        {/* Article body */}
+        <div class="prose prose-lg prose-primary max-w-none prose-headings:font-heading prose-headings:scroll-mt-24 prose-a:text-primary-600 prose-img:rounded-xl">
+          <slot />
+        </div>
+
+        {/* Tags */}
+        {tags.length > 0 && (
+          <div class="mt-10 pt-6 border-t border-gray-200">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-sm font-medium text-gray-500">Tags:</span>
+              {tags.map(tag => (
+                <a
+                  href={`/blog/tag/${tag.toLowerCase().replace(/\s+/g, '-')}`}
+                  class="px-3 py-1 rounded-full text-sm border border-gray-200 text-gray-600 hover:border-primary-300 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                >
+                  {tag}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Author Bio */}
+        <div class="mt-10 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-xl font-bold font-heading shrink-0">
+              F
+            </div>
+            <div>
+              <p class="font-semibold text-gray-900">FindToursIn</p>
+              <p class="text-sm text-gray-500 mt-1">
+                Curated travel content from our team of travel enthusiasts. We help you discover the best tours and destinations worldwide.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div class="mt-10 p-8 bg-primary-50 rounded-2xl text-center">
+          <h3 class="font-heading text-xl text-gray-900 mb-2">Ready to explore?</h3>
+          <p class="text-gray-600 mb-4">Find curated tours from trusted agencies worldwide.</p>
+          <a href="/tours" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors">
+            Explore Tours
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      {/* Sidebar */}
+      <aside class="w-full lg:w-72 shrink-0">
+        <div class="lg:sticky lg:top-24 space-y-8">
+          {/* Table of Contents */}
+          <div class="bg-white rounded-2xl border border-gray-200 p-5" id="toc-container">
+            <h4 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">Table of Contents</h4>
+            <nav id="toc-nav" class="space-y-1 text-sm">
+              {/* Populated by client-side JS */}
+            </nav>
+          </div>
+
+          {/* Related Posts */}
+          {relatedPosts.length > 0 && (
+            <div>
+              <h4 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Related Articles</h4>
+              <div class="space-y-4">
+                {relatedPosts.map(post => (
+                  <a href={`/blog/${post.id}`} class="group block">
+                    <h5 class="text-sm font-medium text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-2">
+                      {post.data.title}
+                    </h5>
+                    <p class="text-xs text-gray-400 mt-1">{formatDate(post.data.date)}</p>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </aside>
     </div>
   </article>
+
+  {/* TOC generation script */}
+  <script>
+    function buildTOC() {
+      const article = document.querySelector('.prose');
+      const tocNav = document.getElementById('toc-nav');
+      const tocContainer = document.getElementById('toc-container');
+      if (!article || !tocNav) return;
+
+      const headings = article.querySelectorAll('h2, h3');
+      if (headings.length === 0) {
+        tocContainer?.classList.add('hidden');
+        return;
+      }
+
+      const links: string[] = [];
+      headings.forEach((h, i) => {
+        if (!h.id) h.id = `heading-${i}`;
+        const level = h.tagName === 'H3' ? 'pl-4' : '';
+        links.push(
+          `<a href="#${h.id}" class="block py-1 text-gray-500 hover:text-primary-600 transition-colors ${level}">${h.textContent}</a>`
+        );
+      });
+      tocNav.innerHTML = links.join('');
+    }
+
+    buildTOC();
+    document.addEventListener('astro:after-swap', buildTOC);
+  </script>
 </PublicLayout>

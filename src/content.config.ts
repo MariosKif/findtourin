@@ -7,9 +7,12 @@ const blog = defineCollection({
     title: z.string(),
     description: z.string(),
     date: z.string(),
+    updatedDate: z.string().optional(),
     author: z.string().default('FindToursIn'),
     image: z.string().optional(),
+    category: z.string().default('Travel Tips'),
     tags: z.array(z.string()).default([]),
+    featured: z.boolean().default(false),
     draft: z.boolean().default(false),
   }),
 });

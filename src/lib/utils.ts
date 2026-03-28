@@ -37,6 +37,12 @@ export function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+export function getReadingTime(content: string): string {
+  const words = content.trim().split(/\s+/).length;
+  const minutes = Math.max(1, Math.round(words / 200));
+  return `${minutes} min read`;
+}
+
 export function buildSearchUrl(params: Record<string, string | number | undefined>): string {
   const searchParams = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {

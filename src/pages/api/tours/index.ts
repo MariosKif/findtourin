@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { toursCol, Timestamp } from '../../../lib/firestore';
+import { supabase } from '../../../lib/supabase';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
 import { searchTours, type SearchParams } from '../../../lib/search';
 import { slugify } from '../../../lib/utils';
@@ -55,14 +55,18 @@ export const POST: APIRoute = async (context) => {
     }
 
     let slug = slugify(name);
-    const existing = await toursCol().where('slug', '==', slug).limit(1).get();
-    if (!existing.empty) {
+    const { data: existing } = await supabase
+      .from('tours')
+      .select('id')
+      .eq('slug', slug)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
       slug = `${slug}-${Math.random().toString(36).substring(2, 8)}`;
     }
 
-    const now = Timestamp.now();
     const tourData = {
-      agencyId: user.id,
+      agency_id: user.id,
       name,
       slug,
       description,
@@ -71,25 +75,29 @@ export const POST: APIRoute = async (context) => {
       price: Number(price),
       currency: currency || 'EUR',
       category,
-      departureCountry: departureCountry || null,
-      departureCity: departureCity || null,
-      contactEmail: contactEmail || null,
-      contactPhone: contactPhone || null,
-      contactWebsite: contactWebsite || null,
-      startDate: startDate ? Timestamp.fromDate(new Date(startDate)) : null,
-      endDate: endDate ? Timestamp.fromDate(new Date(endDate)) : null,
-      durationDays: durationDays || null,
-      maxParticipants: maxParticipants || null,
+      departure_country: departureCountry || null,
+      departure_city: departureCity || null,
+      contact_email: contactEmail || null,
+      contact_phone: contactPhone || null,
+      contact_website: contactWebsite || null,
+      start_date: startDate || null,
+      end_date: endDate || null,
+      duration_days: durationDays || null,
+      max_participants: maxParticipants || null,
       status: 'pending_payment',
-      stripePaymentId: null,
+      stripe_payment_id: null,
       images: [],
-      createdAt: now,
-      updatedAt: now,
     };
 
-    const docRef = await toursCol().add(tourData);
+    const { data: tour, error } = await supabase
+      .from('tours')
+      .insert(tourData)
+      .select()
+      .single();
 
-    return json({ id: docRef.id, ...tourData }, 201);
+    if (error) throw error;
+
+    return json(tour, 201);
   } catch (error) {
     console.error('Error creating tour:', error);
     return json({ error: 'Failed to create tour' }, 500);

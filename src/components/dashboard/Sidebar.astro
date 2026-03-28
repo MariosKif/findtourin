@@ -3,7 +3,7 @@ interface Props {
   user?: {
     name: string;
     role: string;
-    companyName?: string | null;
+    company_name?: string | null;
   };
 }
 
@@ -65,8 +65,8 @@ const icons: Record<string, string> = {
         </svg>
         FindToursIn
       </a>
-      {user?.companyName && (
-        <p class="mt-1 text-xs text-gray-500 truncate">{user.companyName}</p>
+      {user?.company_name && (
+        <p class="mt-1 text-xs text-gray-500 truncate">{user.company_name}</p>
       )}
     </div>
 

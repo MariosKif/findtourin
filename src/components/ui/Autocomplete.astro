@@ -10,6 +10,7 @@ interface Props {
   items?: readonly string[] | string[];
   apiUrl?: string;
   dependsOn?: string;
+  inputClass?: string;
   class?: string;
 }
 
@@ -24,6 +25,7 @@ const {
   items,
   apiUrl,
   dependsOn,
+  inputClass,
   class: className,
 } = Astro.props;
 
@@ -50,6 +52,7 @@ const componentId = `ac-${id}`;
         error
           ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
           : 'border-gray-300 focus:border-primary-500 focus:ring-primary-200',
+        inputClass,
       ]}
     />
     <div class="ac-dropdown hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-100 bg-white shadow-lg z-50">
@@ -117,6 +120,10 @@ const componentId = `ac-${id}`;
           const depVal = depEl?.value || '';
           if (!depVal) { suggestions = []; return; }
           url += (url.includes('?') ? '&' : '?') + 'country=' + encodeURIComponent(depVal);
+        }
+        const q = input.value.trim();
+        if (q) {
+          url += (url.includes('?') ? '&' : '?') + 'q=' + encodeURIComponent(q);
         }
         try {
           const res = await fetch(url);

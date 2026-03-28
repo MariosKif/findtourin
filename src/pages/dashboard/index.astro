@@ -5,7 +5,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import StatsCards from '../../components/dashboard/StatsCards.astro';
 import ListingsTable from '../../components/dashboard/ListingsTable.astro';
 import Badge from '../../components/ui/Badge.astro';
-import { toursCol, paymentsCol } from '../../lib/firestore';
+import { supabase } from '../../lib/supabase';
 import { formatPrice, formatDate } from '../../lib/utils';
 
 const user = Astro.locals.user;
@@ -14,25 +14,26 @@ if (!user) {
   return Astro.redirect('/auth/login');
 }
 
-// Fetch all user's tours and count by status in JS
-const toursSnapshot = await toursCol().where('agencyId', '==', user.id).get();
-const allUserTours = toursSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+const { data: allUserTours } = await supabase
+  .from('tours')
+  .select('*')
+  .eq('agency_id', user.id);
 
-const totalListings = allUserTours.length;
-const activeListings = allUserTours.filter(t => t.status === 'active').length;
-const pendingPayment = allUserTours.filter(t => t.status === 'pending_payment').length;
+const tours = allUserTours || [];
+const totalListings = tours.length;
+const activeListings = tours.filter(t => t.status === 'active').length;
+const pendingPayment = tours.filter(t => t.status === 'pending_payment').length;
 
-// Total spent
-const paymentsSnapshot = await paymentsCol().where('agencyId', '==', user.id).where('status', '==', 'completed').get();
-const totalSpent = paymentsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+const { data: paymentsData } = await supabase
+  .from('payments')
+  .select('amount')
+  .eq('agency_id', user.id)
+  .eq('status', 'completed');
 
-// Recent listings (sort in JS, take 5)
-const recentTours = allUserTours
-  .sort((a, b) => {
-    const aTime = a.createdAt?.toMillis?.() || 0;
-    const bTime = b.createdAt?.toMillis?.() || 0;
-    return bTime - aTime;
-  })
+const totalSpent = (paymentsData || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+
+const recentTours = [...tours]
+  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   .slice(0, 5);
 
 const stats = [

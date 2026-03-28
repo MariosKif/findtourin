@@ -5,22 +5,23 @@ import PublicLayout from '../../layouts/PublicLayout.astro';
 import Input from '../../components/ui/Input.astro';
 import Select from '../../components/ui/Select.astro';
 import Button from '../../components/ui/Button.astro';
-import { adminAuth } from '../../lib/firebase';
+import { supabase } from '../../lib/supabase';
 
-const sessionCookie = Astro.cookies.get('session')?.value;
-if (!sessionCookie) {
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+if (!accessToken) {
   return Astro.redirect('/auth/login');
 }
 
-let firebaseUser;
+let authUser;
 try {
-  const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
-  firebaseUser = await adminAuth.getUser(decoded.uid);
+  const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+  if (error || !user) return Astro.redirect('/auth/login');
+  authUser = user;
 } catch {
   return Astro.redirect('/auth/login');
 }
 
-const defaultName = firebaseUser.displayName || '';
+const defaultName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || '';
 
 const roleOptions = [
   { value: 'user', label: 'User' },

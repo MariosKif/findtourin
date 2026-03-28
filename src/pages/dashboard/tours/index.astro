@@ -3,13 +3,18 @@ export const prerender = false;
 import DashboardLayout from '../../../layouts/DashboardLayout.astro';
 import ListingsTable from '../../../components/dashboard/ListingsTable.astro';
 import Button from '../../../components/ui/Button.astro';
-import { toursCol } from '../../../lib/firestore';
+import { supabase } from '../../../lib/supabase';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
 
-const snapshot = await toursCol().where('agencyId', '==', user.id).orderBy('createdAt', 'desc').get();
-const userTours = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+const { data } = await supabase
+  .from('tours')
+  .select('*')
+  .eq('agency_id', user.id)
+  .order('created_at', { ascending: false });
+
+const userTours = data || [];
 ---
 
 <DashboardLayout title="My Listings">

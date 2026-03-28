@@ -17,10 +17,15 @@ const locations = [
       class="font-heading text-5xl md:text-7xl lg:text-8xl font-normal text-white leading-tight mb-6"
     >
       Find Tours in<br />
-      <span id="hero-location-wrapper" class="inline-block relative overflow-hidden" style="min-width: 320px; height: 1.3em; vertical-align: bottom;">
+      <span id="hero-location-wrapper" class="inline-block relative overflow-hidden" style="vertical-align: bottom;">
+        {/* Invisible sizer: first item sets the height, widest sets the width */}
+        {locations.map((loc, i) => (
+          <span class={`block invisible ${i === 0 ? '' : 'h-0'}`} aria-hidden="true">{loc}</span>
+        ))}
+        {/* Visible animated locations */}
         {locations.map((loc, i) => (
           <span
-            class="hero-location absolute left-0 w-full"
+            class="hero-location absolute inset-x-0 top-0"
             style={`opacity: ${i === 0 ? 1 : 0}; transform: translateY(${i === 0 ? '0%' : '100%'})`}
           >
             {loc}

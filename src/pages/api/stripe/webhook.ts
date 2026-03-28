@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { toursCol, paymentsCol, docToObj, Timestamp, type TourDoc } from '../../../lib/firestore';
+import { supabase } from '../../../lib/supabase';
 import { verifyWebhookSignature } from '../../../lib/stripe';
 
 export const prerender = false;
@@ -35,25 +35,30 @@ export const POST: APIRoute = async ({ request }) => {
         });
       }
 
-      const tourDoc = await toursCol().doc(tourId).get();
-      const tour = docToObj<TourDoc>(tourDoc);
+      const { data: tour } = await supabase
+        .from('tours')
+        .select('*')
+        .eq('id', tourId)
+        .single();
 
       if (tour) {
-        await toursCol().doc(tourId).update({
-          status: 'active',
-          stripePaymentId: session.payment_intent,
-          updatedAt: Timestamp.now(),
-        });
+        await supabase
+          .from('tours')
+          .update({
+            status: 'active',
+            stripe_payment_id: session.payment_intent,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', tourId);
 
-        await paymentsCol().add({
-          agencyId: tour.agencyId,
-          tourId: tour.id,
-          stripeSessionId: session.id,
-          stripePaymentIntent: session.payment_intent,
+        await supabase.from('payments').insert({
+          agency_id: tour.agency_id,
+          tour_id: tour.id,
+          stripe_session_id: session.id,
+          stripe_payment_intent: session.payment_intent,
           amount: session.amount_total || 0,
           currency: session.currency || 'eur',
           status: 'completed',
-          createdAt: Timestamp.now(),
         });
       }
     }

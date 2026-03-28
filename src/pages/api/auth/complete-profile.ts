@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
-import { adminAuth } from '../../../lib/firebase';
-import { usersCol, Timestamp } from '../../../lib/firestore';
+import { supabase } from '../../../lib/supabase';
 
 export const prerender = false;
 
@@ -12,13 +11,15 @@ const json = (data: unknown, status = 200) =>
 
 export const POST: APIRoute = async (context) => {
   try {
-    const sessionCookie = context.cookies.get('session')?.value;
-    if (!sessionCookie) {
+    const accessToken = context.cookies.get('sb-access-token')?.value;
+    if (!accessToken) {
       return json({ error: 'Unauthorized' }, 401);
     }
 
-    const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
-    const firebaseUser = await adminAuth.getUser(decoded.uid);
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(accessToken);
+    if (authError || !authUser) {
+      return json({ error: 'Unauthorized' }, 401);
+    }
 
     const body = await context.request.json();
     const { name, role, companyName, phone, website } = body;
@@ -31,21 +32,24 @@ export const POST: APIRoute = async (context) => {
       return json({ error: 'Invalid role' }, 400);
     }
 
-    const now = Timestamp.now();
-    await usersCol().doc(decoded.uid).set({
-      email: firebaseUser.email!,
+    const { error: upsertError } = await supabase.from('users').upsert({
+      id: authUser.id,
+      email: authUser.email!,
       name,
       role,
       phone: phone || null,
       website: website || null,
-      companyName: companyName || null,
-      companyDesc: null,
-      avatarUrl: firebaseUser.photoURL || null,
-      isVerified: false,
-      stripeCustomerId: null,
-      createdAt: now,
-      updatedAt: now,
+      company_name: companyName || null,
+      company_desc: null,
+      avatar_url: authUser.user_metadata?.avatar_url || null,
+      is_verified: false,
+      stripe_customer_id: null,
     });
+
+    if (upsertError) {
+      console.error('Upsert error:', upsertError);
+      return json({ error: 'Failed to complete profile' }, 500);
+    }
 
     return json({ success: true, role });
   } catch (error) {

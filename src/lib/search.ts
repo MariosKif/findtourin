@@ -1,4 +1,4 @@
-import { toursCol, favouritesCol, docsToArray, type TourDoc } from './firestore';
+import { supabase } from './supabase';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -20,111 +20,66 @@ export interface SearchParams {
 
 export async function searchTours(params: SearchParams) {
   const page = params.page || 1;
+  const offset = (page - 1) * ITEMS_PER_PAGE;
 
-  let query: FirebaseFirestore.Query = toursCol().where('status', '==', 'active');
+  let query = supabase
+    .from('tours')
+    .select('*, favourites(count)', { count: 'exact' })
+    .eq('status', 'active');
 
-  if (params.category) {
-    query = query.where('category', '==', params.category);
+  if (params.category) query = query.eq('category', params.category);
+  if (params.country) query = query.eq('country', params.country);
+  if (params.city) query = query.eq('city', params.city);
+  if (params.departureCountry) query = query.eq('departure_country', params.departureCountry);
+  if (params.departureCity) query = query.eq('departure_city', params.departureCity);
+  if (params.minPrice !== undefined) query = query.gte('price', params.minPrice);
+  if (params.maxPrice !== undefined) query = query.lte('price', params.maxPrice);
+  if (params.dateFrom) query = query.gte('start_date', params.dateFrom);
+  if (params.dateTo) query = query.lte('start_date', params.dateTo);
+
+  if (params.q) {
+    const q = `%${params.q}%`;
+    query = query.or(`name.ilike.${q},description.ilike.${q},country.ilike.${q},city.ilike.${q},category.ilike.${q}`);
   }
 
-  if (params.country) {
-    query = query.where('country', '==', params.country);
-  }
-
-  if (params.city) {
-    query = query.where('city', '==', params.city);
-  }
-
-  if (params.departureCountry) {
-    query = query.where('departureCountry', '==', params.departureCountry);
-  }
-
-  if (params.departureCity) {
-    query = query.where('departureCity', '==', params.departureCity);
+  if (params.destination) {
+    const dest = `%${params.destination}%`;
+    query = query.or(`country.ilike.${dest},city.ilike.${dest}`);
   }
 
   switch (params.sort) {
     case 'price_asc':
-      query = query.orderBy('price', 'asc');
+      query = query.order('price', { ascending: true });
       break;
     case 'price_desc':
-      query = query.orderBy('price', 'desc');
+      query = query.order('price', { ascending: false });
       break;
     case 'name':
-      query = query.orderBy('name', 'asc');
+      query = query.order('name', { ascending: true });
       break;
     case 'newest':
     default:
-      query = query.orderBy('createdAt', 'desc');
+      query = query.order('created_at', { ascending: false });
   }
 
-  const snapshot = await query.get();
-  let allTours = docsToArray<TourDoc>(snapshot);
+  query = query.range(offset, offset + ITEMS_PER_PAGE - 1);
 
-  if (params.q) {
-    const q = params.q.toLowerCase();
-    allTours = allTours.filter(t =>
-      t.name.toLowerCase().includes(q) ||
-      t.description.toLowerCase().includes(q) ||
-      t.country.toLowerCase().includes(q) ||
-      t.city.toLowerCase().includes(q) ||
-      t.category.toLowerCase().includes(q) ||
-      (t.departureCountry || '').toLowerCase().includes(q) ||
-      (t.departureCity || '').toLowerCase().includes(q)
-    );
-  }
+  const { data: tours, count, error } = await query;
+  if (error) throw error;
 
-  if (params.destination) {
-    const dest = params.destination.toLowerCase();
-    allTours = allTours.filter(t =>
-      t.country.toLowerCase().includes(dest) ||
-      t.city.toLowerCase().includes(dest)
-    );
-  }
-
-  if (params.minPrice !== undefined) {
-    allTours = allTours.filter(t => t.price >= params.minPrice!);
-  }
-  if (params.maxPrice !== undefined) {
-    allTours = allTours.filter(t => t.price <= params.maxPrice!);
-  }
-
-  if (params.dateFrom) {
-    const fromDate = new Date(params.dateFrom);
-    allTours = allTours.filter(t => t.startDate && new Date(t.startDate as any) >= fromDate);
-  }
-  if (params.dateTo) {
-    const toDate = new Date(params.dateTo);
-    allTours = allTours.filter(t => t.startDate && new Date(t.startDate as any) <= toDate);
-  }
-
-  const total = allTours.length;
+  const total = count || 0;
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
-  const offset = (page - 1) * ITEMS_PER_PAGE;
-  const paginatedTours = allTours.slice(offset, offset + ITEMS_PER_PAGE);
 
-  // Get favourite counts for paginated tours
-  const favouriteCounts = new Map<string, number>();
-  await Promise.all(
-    paginatedTours.map(async (tour) => {
-      try {
-        const snapshot = await favouritesCol()
-          .where('tourId', '==', tour.id)
-          .count()
-          .get();
-        favouriteCounts.set(tour.id, snapshot.data().count);
-      } catch {
-        favouriteCounts.set(tour.id, 0);
-      }
-    })
-  );
-
-  const toursWithImages = paginatedTours.map(tour => ({
-    ...tour,
-    images: tour.images || [],
-    thumbnail: tour.images?.[0]?.url || null,
-    favouriteCount: favouriteCounts.get(tour.id) || 0,
-  }));
+  const toursWithImages = (tours || []).map((tour: any) => {
+    const favouriteCount = tour.favourites?.[0]?.count || 0;
+    const { favourites: _fav, ...rest } = tour;
+    return {
+      ...rest,
+      images: rest.images || [],
+      thumbnail: rest.images?.[0]?.url || null,
+      favouriteCount,
+    };
+  });
 
   return {
     tours: toursWithImages,

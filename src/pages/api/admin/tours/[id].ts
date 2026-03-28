@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { toursCol, Timestamp } from '../../../../lib/firestore';
+import { supabase } from '../../../../lib/supabase';
 import { getAuthenticatedUser } from '../../../../lib/auth-helpers';
 
 export const prerender = false;
@@ -23,11 +23,16 @@ export const PUT: APIRoute = async (context) => {
   const body = await context.request.json();
   const { status } = body;
 
-  await toursCol().doc(id).update({ status, updatedAt: Timestamp.now() });
-  const updated = await toursCol().doc(id).get();
-  if (!updated.exists) return json({ error: 'Tour not found' }, 404);
+  const { data: updated, error } = await supabase
+    .from('tours')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
 
-  return json({ id: updated.id, ...updated.data() });
+  if (error || !updated) return json({ error: 'Tour not found' }, 404);
+
+  return json(updated);
 };
 
 export const DELETE: APIRoute = async (context) => {
@@ -35,6 +40,6 @@ export const DELETE: APIRoute = async (context) => {
   const { id } = context.params;
   if (!id) return json({ error: 'Missing tour ID' }, 400);
 
-  await toursCol().doc(id).delete();
+  await supabase.from('tours').delete().eq('id', id);
   return json({ success: true });
 };

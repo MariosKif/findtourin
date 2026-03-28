@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
-import { adminAuth } from '../../../lib/firebase';
-import { usersCol, docToObj, Timestamp, type UserDoc } from '../../../lib/firestore';
+import { supabase } from '../../../lib/supabase';
 
 export const prerender = false;
 
@@ -13,27 +12,42 @@ const json = (data: unknown, status = 200) =>
 export const POST: APIRoute = async (context) => {
   try {
     const body = await context.request.json();
-    const { idToken } = body;
+    const { access_token, refresh_token } = body;
 
-    if (!idToken) {
-      return json({ error: 'ID token is required' }, 400);
+    if (!access_token || !refresh_token) {
+      return json({ error: 'Tokens are required' }, 400);
     }
 
-    const decoded = await adminAuth.verifyIdToken(idToken);
+    // Verify the token
+    const { data: { user: authUser }, error } = await supabase.auth.getUser(access_token);
 
-    const expiresIn = 60 * 60 * 24 * 14 * 1000;
-    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+    if (error || !authUser) {
+      return json({ error: 'Authentication failed' }, 401);
+    }
 
-    context.cookies.set('session', sessionCookie, {
+    // Set auth cookies
+    context.cookies.set('sb-access-token', access_token, {
       httpOnly: true,
       secure: import.meta.env.PROD,
       sameSite: 'lax',
       path: '/',
-      maxAge: expiresIn / 1000,
+      maxAge: 60 * 60 * 24 * 14,
     });
 
-    const userDoc = await usersCol().doc(decoded.uid).get();
-    const profile = docToObj<UserDoc>(userDoc);
+    context.cookies.set('sb-refresh-token', refresh_token, {
+      httpOnly: true,
+      secure: import.meta.env.PROD,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 14,
+    });
+
+    // Check if profile exists
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', authUser.id)
+      .single();
 
     if (profile) {
       return json({ success: true, role: profile.role, needsProfile: false });

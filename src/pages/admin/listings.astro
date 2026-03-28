@@ -2,35 +2,34 @@
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import Badge from '../../components/ui/Badge.astro';
-import { toursCol, usersCol, docsToArray, type TourDoc } from '../../lib/firestore';
+import { supabase } from '../../lib/supabase';
 import { formatDate, formatPrice } from '../../lib/utils';
 
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
 
-const toursArray = docsToArray<TourDoc>(await toursCol().get())
-  .sort((a, b) => {
-    const aDate = a.createdAt ? new Date(a.createdAt as any).getTime() : 0;
-    const bDate = b.createdAt ? new Date(b.createdAt as any).getTime() : 0;
-    return bDate - aDate;
-  });
+const { data: toursData } = await supabase
+  .from('tours')
+  .select('*')
+  .order('created_at', { ascending: false });
 
-// Batch-fetch agency profiles for unique agencyIds
-const agencyIds = [...new Set(toursArray.map(t => t.agencyId).filter(Boolean))];
+const toursArray = toursData || [];
+
+// Batch-fetch agency profiles
+const agencyIds = [...new Set(toursArray.map(t => t.agency_id).filter(Boolean))];
 const agencyMap = new Map<string, any>();
-const agencyChunks = [];
-for (let i = 0; i < agencyIds.length; i += 10) {
-  agencyChunks.push(agencyIds.slice(i, i + 10));
-}
-for (const chunk of agencyChunks) {
-  const snapshot = await usersCol().where('__name__', 'in', chunk).get();
-  snapshot.docs.forEach(doc => {
-    agencyMap.set(doc.id, doc.data());
-  });
+
+if (agencyIds.length > 0) {
+  const { data: agencies } = await supabase
+    .from('users')
+    .select('*')
+    .in('id', agencyIds);
+
+  (agencies || []).forEach(a => agencyMap.set(a.id, a));
 }
 
 const allTours = toursArray.map(t => {
-  const agency = agencyMap.get(t.agencyId);
+  const agency = agencyMap.get(t.agency_id);
   return {
     ...t,
     agencyName: agency?.name || null,
@@ -82,7 +81,7 @@ const statusVariant: Record<string, string> = {
               </td>
               <td class="px-4 py-3 text-gray-600 text-xs">{t.category}</td>
               <td class="px-4 py-3 text-gray-900 font-medium">{formatPrice(Number(t.price), t.currency)}</td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{formatDate(t.createdAt)}</td>
+              <td class="px-4 py-3 text-gray-500 text-xs">{formatDate(t.created_at)}</td>
               <td class="px-4 py-3">
                 <button class="delete-tour-btn text-xs text-red-600 hover:underline" data-tour-id={t.id}>
                   Delete

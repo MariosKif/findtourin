@@ -3,7 +3,7 @@ export const prerender = false;
 import DashboardLayout from '../../../../layouts/DashboardLayout.astro';
 import TourForm from '../../../../components/tours/TourForm.astro';
 import ImageUpload from '../../../../components/ui/ImageUpload.astro';
-import { toursCol, docToObj, type TourDoc } from '../../../../lib/firestore';
+import { supabase } from '../../../../lib/supabase';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
@@ -12,13 +12,16 @@ const { id } = Astro.params;
 if (!id) return Astro.redirect('/dashboard/tours');
 
 const tourId = id;
-const tourDoc = await toursCol().doc(tourId).get();
-const tour = docToObj<TourDoc>(tourDoc);
+const { data: tour } = await supabase
+  .from('tours')
+  .select('*')
+  .eq('id', tourId)
+  .single();
 
 if (!tour) return Astro.redirect('/dashboard/tours');
-if (tour.agencyId !== user.id && user.role !== 'admin') return Astro.redirect('/dashboard/tours');
+if (tour.agency_id !== user.id && user.role !== 'admin') return Astro.redirect('/dashboard/tours');
 
-// Images are now stored in the tour document
+// Images are stored in the tour document
 const images = (tour.images || []).map((img: any, index: number) => ({
   ...img,
   id: `${tourId}_${index}`,
@@ -40,7 +43,7 @@ const images = (tour.images || []).map((img: any, index: number) => ({
         <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {images.map((img) => (
             <div class="relative group rounded-lg overflow-hidden aspect-square">
-              <img src={img.url} alt={img.altText || 'Tour image'} class="w-full h-full object-cover" />
+              <img src={img.url} alt={img.alt_text || 'Tour image'} class="w-full h-full object-cover" />
               <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <button
                   data-image-id={img.id}

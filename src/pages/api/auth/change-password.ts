@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { adminAuth } from '../../../lib/firebase';
+import { supabase } from '../../../lib/supabase';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
 
 export const prerender = false;
@@ -24,7 +24,13 @@ export const POST: APIRoute = async (context) => {
       return json({ error: 'New password must be at least 8 characters' }, 400);
     }
 
-    await adminAuth.updateUser(user.id, { password: newPassword });
+    const { error } = await supabase.auth.admin.updateUserById(user.id, {
+      password: newPassword,
+    });
+
+    if (error) {
+      return json({ error: 'Failed to update password' }, 500);
+    }
 
     return json({ success: true });
   } catch (error) {

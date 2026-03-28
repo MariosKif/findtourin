@@ -1,20 +1,27 @@
-import { adminAuth } from './firebase';
-import { usersCol, docToObj, type UserDoc } from './firestore';
+import { supabase } from './supabase';
 import type { AstroCookies } from 'astro';
+import type { User } from '../types';
 
 interface AuthContext {
   request: Request;
   cookies: AstroCookies;
 }
 
-export async function getAuthenticatedUser(context: AuthContext) {
-  const sessionCookie = context.cookies.get('session')?.value;
-  if (!sessionCookie) return null;
+export async function getAuthenticatedUser(context: AuthContext): Promise<User | null> {
+  const accessToken = context.cookies.get('sb-access-token')?.value;
+  if (!accessToken) return null;
 
   try {
-    const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
-    const userDoc = await usersCol().doc(decoded.uid).get();
-    return docToObj<UserDoc>(userDoc);
+    const { data: { user: authUser }, error } = await supabase.auth.getUser(accessToken);
+    if (error || !authUser) return null;
+
+    const { data: profile } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', authUser.id)
+      .single();
+
+    return profile;
   } catch {
     return null;
   }

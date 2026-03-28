@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { adminDb } from './firebase';
+import { supabase } from './supabase';
 
 export const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-01-27.acacia',
@@ -7,14 +7,15 @@ export const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY || process.en
 
 async function getListingFeeCents(): Promise<number> {
   try {
-    const doc = await adminDb.collection('config').doc('pricing').get();
-    if (doc.exists) {
-      return doc.data()?.listingFeeCents ?? 4900;
-    }
+    const { data } = await supabase
+      .from('config')
+      .select('value')
+      .eq('key', 'pricing')
+      .single();
+    return data?.value?.listing_fee_cents ?? 4900;
   } catch {
-    // Fallback if Firestore is unavailable
+    return 4900;
   }
-  return 4900;
 }
 
 export async function createCheckoutSession(params: {

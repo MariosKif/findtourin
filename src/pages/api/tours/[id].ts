@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { toursCol, docToObj, Timestamp, type TourDoc } from '../../../lib/firestore';
+import { supabase } from '../../../lib/supabase';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
 import { deleteImage } from '../../../lib/storage';
 
@@ -16,9 +16,13 @@ export const GET: APIRoute = async ({ params }) => {
     const { id } = params;
     if (!id) return json({ error: 'Tour ID is required' }, 400);
 
-    const tourDoc = await toursCol().doc(id).get();
-    const tour = docToObj<TourDoc>(tourDoc);
-    if (!tour) return json({ error: 'Tour not found' }, 404);
+    const { data: tour, error } = await supabase
+      .from('tours')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !tour) return json({ error: 'Tour not found' }, 404);
 
     return json(tour);
   } catch (error) {
@@ -35,29 +39,56 @@ export const PUT: APIRoute = async (context) => {
     const { id } = context.params;
     if (!id) return json({ error: 'Tour ID is required' }, 400);
 
-    const tourDoc = await toursCol().doc(id).get();
-    const existing = docToObj<TourDoc>(tourDoc);
+    const { data: existing } = await supabase
+      .from('tours')
+      .select('*')
+      .eq('id', id)
+      .single();
+
     if (!existing) return json({ error: 'Tour not found' }, 404);
-    if (existing.agencyId !== user.id && user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
+    if (existing.agency_id !== user.id && user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
 
     const body = await context.request.json();
-    const updateData: Record<string, any> = { updatedAt: Timestamp.now() };
+    const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
 
     const fields = ['name', 'description', 'country', 'city', 'currency', 'category',
-                    'departureCountry', 'departureCity', 'contactEmail', 'contactPhone',
-                    'contactWebsite', 'durationDays', 'maxParticipants'];
+                    'departure_country', 'departure_city', 'contact_email', 'contact_phone',
+                    'contact_website', 'duration_days', 'max_participants'];
 
-    for (const field of fields) {
+    // Map camelCase body keys to snake_case DB columns
+    const keyMap: Record<string, string> = {
+      departureCountry: 'departure_country',
+      departureCity: 'departure_city',
+      contactEmail: 'contact_email',
+      contactPhone: 'contact_phone',
+      contactWebsite: 'contact_website',
+      durationDays: 'duration_days',
+      maxParticipants: 'max_participants',
+    };
+
+    for (const [bodyKey, dbKey] of Object.entries(keyMap)) {
+      if (body[bodyKey] !== undefined) updateData[dbKey] = body[bodyKey] || null;
+    }
+
+    // Direct fields (same name in body and DB)
+    for (const field of ['name', 'description', 'country', 'city', 'currency', 'category']) {
       if (body[field] !== undefined) updateData[field] = body[field] || null;
     }
+
     if (body.price !== undefined) updateData.price = Number(body.price);
-    if (body.startDate !== undefined) updateData.startDate = body.startDate ? Timestamp.fromDate(new Date(body.startDate)) : null;
-    if (body.endDate !== undefined) updateData.endDate = body.endDate ? Timestamp.fromDate(new Date(body.endDate)) : null;
+    if (body.startDate !== undefined) updateData.start_date = body.startDate || null;
+    if (body.endDate !== undefined) updateData.end_date = body.endDate || null;
 
-    await toursCol().doc(id).update(updateData);
-    const updated = await toursCol().doc(id).get();
+    const { data: updated, error } = await supabase
+      .from('tours')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
 
-    return json({ id: updated.id, ...updated.data() });
+    if (error) throw error;
+
+    return json(updated);
   } catch (error) {
     console.error('Error updating tour:', error);
     return json({ error: 'Failed to update tour' }, 500);
@@ -72,18 +103,25 @@ export const DELETE: APIRoute = async (context) => {
     const { id } = context.params;
     if (!id) return json({ error: 'Tour ID is required' }, 400);
 
-    const tourDoc = await toursCol().doc(id).get();
-    const existing = docToObj<TourDoc>(tourDoc);
+    const { data: existing } = await supabase
+      .from('tours')
+      .select('*')
+      .eq('id', id)
+      .single();
+
     if (!existing) return json({ error: 'Tour not found' }, 404);
-    if (existing.agencyId !== user.id && user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
+    if (existing.agency_id !== user.id && user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
 
     for (const image of (existing.images || [])) {
-      try { await deleteImage(image.storagePath); } catch (err) {
-        console.error(`Failed to delete image:`, err);
+      try { await deleteImage(image.storage_path); } catch (err) {
+        console.error('Failed to delete image:', err);
       }
     }
 
-    await toursCol().doc(id).update({ status: 'deleted', updatedAt: Timestamp.now() });
+    await supabase
+      .from('tours')
+      .update({ status: 'deleted', updated_at: new Date().toISOString() })
+      .eq('id', id);
 
     return json({ success: true, message: 'Tour deleted' });
   } catch (error) {

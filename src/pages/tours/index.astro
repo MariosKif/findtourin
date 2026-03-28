@@ -108,50 +108,45 @@ const endItem = Math.min(currentPage * perPage, results.total);
       </div>
     )}
 
-    <div class="flex flex-col lg:flex-row gap-8">
-      <!-- Filters Sidebar -->
-      <aside class="w-full lg:w-72 shrink-0">
-        <TourFilters currentFilters={params} />
-      </aside>
+    {/* Filters Bar */}
+    <div class="mb-6">
+      <TourFilters currentFilters={params} />
+    </div>
 
-      <!-- Results -->
-      <div class="flex-1">
-        <!-- Sort + result count bar -->
-        <div class="flex items-center justify-between mb-6">
-          <p class="text-sm text-gray-600">
-            {results.total > 0 ? (
-              <>Showing {startItem}–{endItem} of {results.total} tours</>
-            ) : (
-              <>No tours found</>
-            )}
-          </p>
-          <div class="flex items-center gap-2">
-            <label for="inline-sort" class="text-sm text-gray-500">Sort:</label>
-            <select
-              id="inline-sort"
-              class="appearance-none rounded-lg border border-gray-200 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-200"
-              onchange="const url = new URL(window.location.href); url.searchParams.set('sort', this.value); window.location.href = url.toString();"
-            >
-              <option value="newest" selected={params.sort === 'newest' || !params.sort}>Newest</option>
-              <option value="price_asc" selected={params.sort === 'price_asc'}>Price: Low to High</option>
-              <option value="price_desc" selected={params.sort === 'price_desc'}>Price: High to Low</option>
-              <option value="name" selected={params.sort === 'name'}>Name</option>
-            </select>
-          </div>
-        </div>
-
-        <TourGrid tours={results.tours} />
-
-        {results.totalPages > 1 && (
-          <div class="mt-8">
-            <Pagination
-              currentPage={results.page}
-              totalPages={results.totalPages}
-              baseUrl={`/tours?${url.searchParams.toString().replace(/&?page=\d+/, '')}`}
-            />
-          </div>
+    {/* Sort + result count bar */}
+    <div class="flex items-center justify-between mb-6">
+      <p class="text-sm text-gray-600">
+        {results.total > 0 ? (
+          <>Showing {startItem}–{endItem} of {results.total} tours</>
+        ) : (
+          <>No tours found</>
         )}
+      </p>
+      <div class="flex items-center gap-2">
+        <label for="inline-sort" class="text-sm text-gray-500">Sort:</label>
+        <select
+          id="inline-sort"
+          class="appearance-none rounded-lg border border-gray-200 bg-white px-3 py-1.5 pr-8 text-sm text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-200"
+          onchange="const url = new URL(window.location.href); url.searchParams.set('sort', this.value); window.location.href = url.toString();"
+        >
+          <option value="newest" selected={params.sort === 'newest' || !params.sort}>Newest</option>
+          <option value="price_asc" selected={params.sort === 'price_asc'}>Price: Low to High</option>
+          <option value="price_desc" selected={params.sort === 'price_desc'}>Price: High to Low</option>
+          <option value="name" selected={params.sort === 'name'}>Name</option>
+        </select>
       </div>
     </div>
+
+    <TourGrid tours={results.tours} />
+
+    {results.totalPages > 1 && (
+      <div class="mt-8">
+        <Pagination
+          currentPage={results.page}
+          totalPages={results.totalPages}
+          baseUrl={`/tours?${url.searchParams.toString().replace(/&?page=\d+/, '')}`}
+        />
+      </div>
+    )}
   </div>
 </PublicLayout>

@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
-import { adminAuth } from '../../../../lib/firebase';
-import { usersCol, docToObj, Timestamp, type UserDoc } from '../../../../lib/firestore';
+import { supabase } from '../../../../lib/supabase';
 import { getAuthenticatedUser } from '../../../../lib/auth-helpers';
 
 export const prerender = false;
@@ -21,9 +20,13 @@ export const GET: APIRoute = async (context) => {
   const { id } = context.params;
   if (!id) return json({ error: 'Missing user ID' }, 400);
 
-  const userDoc = await usersCol().doc(id).get();
-  const user = docToObj<UserDoc>(userDoc);
-  if (!user) return json({ error: 'User not found' }, 404);
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !user) return json({ error: 'User not found' }, 404);
 
   return json(user);
 };
@@ -34,15 +37,20 @@ export const PUT: APIRoute = async (context) => {
   if (!id) return json({ error: 'Missing user ID' }, 400);
 
   const body = await context.request.json();
-  const updateData: Record<string, any> = { updatedAt: Timestamp.now() };
+  const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
   if (body.role !== undefined) updateData.role = body.role;
-  if (body.isVerified !== undefined) updateData.isVerified = body.isVerified;
+  if (body.isVerified !== undefined) updateData.is_verified = body.isVerified;
 
-  await usersCol().doc(id).update(updateData);
-  const updated = await usersCol().doc(id).get();
-  if (!updated.exists) return json({ error: 'User not found' }, 404);
+  const { data: updated, error } = await supabase
+    .from('users')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
 
-  return json({ id: updated.id, ...updated.data() });
+  if (error || !updated) return json({ error: 'User not found' }, 404);
+
+  return json(updated);
 };
 
 export const DELETE: APIRoute = async (context) => {
@@ -50,7 +58,11 @@ export const DELETE: APIRoute = async (context) => {
   const { id } = context.params;
   if (!id) return json({ error: 'Missing user ID' }, 400);
 
-  try { await adminAuth.deleteUser(id); } catch { /* user may not exist in Auth */ }
-  await usersCol().doc(id).delete();
+  // Delete from auth (also cascades to users table due to FK)
+  try { await supabase.auth.admin.deleteUser(id); } catch { /* user may not exist in Auth */ }
+
+  // Also explicitly delete from users table in case cascade didn't fire
+  await supabase.from('users').delete().eq('id', id);
+
   return json({ success: true });
 };

@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { contactMessagesCol, Timestamp } from '../../lib/firestore';
+import { supabase } from '../../lib/supabase';
 
 export const prerender = false;
 
@@ -23,16 +23,15 @@ export const POST: APIRoute = async ({ request }) => {
       return json({ error: 'Invalid email address' }, 400);
     }
 
-    const docRef = await contactMessagesCol().add({
-      name,
-      email,
-      subject,
-      message,
-      isRead: false,
-      createdAt: Timestamp.now(),
-    });
+    const { data: msg, error } = await supabase
+      .from('contact_messages')
+      .insert({ name, email, subject, message })
+      .select('id')
+      .single();
 
-    return json({ success: true, message: 'Message sent successfully', id: docRef.id }, 201);
+    if (error) throw error;
+
+    return json({ success: true, message: 'Message sent successfully', id: msg.id }, 201);
   } catch (error) {
     console.error('Error saving contact message:', error);
     return json({ error: 'Failed to send message' }, 500);

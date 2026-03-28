@@ -10,7 +10,7 @@ interface Tour {
   category: string;
   price: string;
   currency: string;
-  createdAt: Date;
+  created_at: string;
 }
 
 interface Props {
@@ -77,7 +77,7 @@ const statusLabel: Record<string, string> = {
             <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
               {formatPrice(tour.price, tour.currency)}
             </td>
-            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{formatDate(tour.createdAt)}</td>
+            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{formatDate(tour.created_at)}</td>
             <td class="whitespace-nowrap px-6 py-4 text-right">
               <div class="flex items-center justify-end gap-2">
                 <Button href={`/dashboard/tours/${tour.id}/edit`} variant="ghost" size="sm">Edit</Button>

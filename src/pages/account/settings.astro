@@ -3,8 +3,7 @@ export const prerender = false;
 import AccountLayout from '../../layouts/AccountLayout.astro';
 import Button from '../../components/ui/Button.astro';
 import Badge from '../../components/ui/Badge.astro';
-import { adminAuth } from '../../lib/firebase';
-import { usersCol } from '../../lib/firestore';
+import { supabase } from '../../lib/supabase';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
@@ -13,15 +12,14 @@ let isOAuthUser = false;
 let memberSinceFormatted = '';
 
 try {
-  const firebaseUser = await adminAuth.getUser(user.id);
-  isOAuthUser = firebaseUser.providerData.some(p => p.providerId === 'google.com')
-    && !firebaseUser.providerData.some(p => p.providerId === 'password');
+  // Check auth provider (Supabase stores providers in auth.users)
+  const { data: { user: authUser } } = await supabase.auth.admin.getUserById(user.id);
+  if (authUser) {
+    const providers = authUser.app_metadata?.providers || [];
+    isOAuthUser = providers.includes('google') && !providers.includes('email');
+  }
 
-  const userDoc = await usersCol().doc(user.id).get();
-  const userData = userDoc.data();
-  const createdAt = userData?.createdAt?.toDate?.()
-    ? userData.createdAt.toDate()
-    : new Date();
+  const createdAt = user.created_at ? new Date(user.created_at) : new Date();
   memberSinceFormatted = createdAt.toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',

@@ -1,6 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
-import { adminAuth } from './lib/firebase';
-import { usersCol, docToObj, type UserDoc } from './lib/firestore';
+import { supabase } from './lib/supabase';
 
 export const onRequest = defineMiddleware(async (context, next) => {
   if (context.url.pathname.startsWith('/api/')) {
@@ -8,17 +7,23 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   try {
-    const sessionCookie = context.cookies.get('session')?.value;
-    if (sessionCookie) {
-      const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
-      const userDoc = await usersCol().doc(decoded.uid).get();
-      const profile = docToObj<UserDoc>(userDoc);
-      if (profile) {
-        context.locals.user = profile;
+    const accessToken = context.cookies.get('sb-access-token')?.value;
+    if (accessToken) {
+      const { data: { user: authUser } } = await supabase.auth.getUser(accessToken);
+      if (authUser) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authUser.id)
+          .single();
+
+        if (profile) {
+          context.locals.user = profile;
+        }
       }
     }
   } catch {
-    // Invalid or expired session cookie, continue without user
+    // Invalid or expired session, continue without user
   }
 
   if (context.url.pathname.startsWith('/dashboard')) {

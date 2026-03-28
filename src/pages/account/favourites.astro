@@ -3,31 +3,32 @@ export const prerender = false;
 import AccountLayout from '../../layouts/AccountLayout.astro';
 import TourCard from '../../components/tours/TourCard.astro';
 import Button from '../../components/ui/Button.astro';
-import { favouritesCol, toursCol } from '../../lib/firestore';
+import { supabase } from '../../lib/supabase';
 import { DEMO_TOURS } from '../../lib/demo-tours';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
 
-const favSnapshot = await favouritesCol().where('userId', '==', user.id).get();
-const tourIds = favSnapshot.docs.map(doc => doc.data().tourId);
+const { data: favData } = await supabase
+  .from('favourites')
+  .select('tour_id')
+  .eq('user_id', user.id);
+
+const tourIds = (favData || []).map(f => f.tour_id);
 
 const allTours: any[] = [];
 if (tourIds.length > 0) {
-  const chunks = [];
-  for (let i = 0; i < tourIds.length; i += 10) {
-    chunks.push(tourIds.slice(i, i + 10));
-  }
-  for (const chunk of chunks) {
-    const snapshot = await toursCol().where('__name__', 'in', chunk).get();
-    snapshot.docs.forEach(doc => {
-      const data = doc.data();
-      allTours.push({ id: doc.id, ...data, thumbnail: data.images?.[0]?.url || null });
-    });
-  }
+  const { data: toursData } = await supabase
+    .from('tours')
+    .select('*')
+    .in('id', tourIds);
+
+  (toursData || []).forEach(tour => {
+    allTours.push({ ...tour, thumbnail: tour.images?.[0]?.url || null });
+  });
 }
 
-// Fallback to demo tours for IDs not found in Firestore
+// Fallback to demo tours for IDs not found in database
 const foundIds = new Set(allTours.map(t => t.id));
 const missingIds = tourIds.filter(id => !foundIds.has(id));
 for (const missingId of missingIds) {

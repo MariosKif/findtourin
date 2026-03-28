@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
-import { adminAuth } from '../../../lib/firebase';
-import { usersCol, docToObj, type UserDoc } from '../../../lib/firestore';
+import { supabase } from '../../../lib/supabase';
 
 export const prerender = false;
 
@@ -13,27 +12,43 @@ const json = (data: unknown, status = 200) =>
 export const POST: APIRoute = async (context) => {
   try {
     const body = await context.request.json();
-    const { idToken } = body;
+    const { email, password } = body;
 
-    if (!idToken) {
-      return json({ error: 'ID token is required' }, 400);
+    if (!email || !password) {
+      return json({ error: 'Email and password are required' }, 400);
     }
 
-    const decoded = await adminAuth.verifyIdToken(idToken);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    const expiresIn = 60 * 60 * 24 * 14 * 1000;
-    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+    if (error) {
+      return json({ error: 'Invalid email or password' }, 401);
+    }
 
-    context.cookies.set('session', sessionCookie, {
+    const { session } = data;
+
+    // Set auth cookies
+    context.cookies.set('sb-access-token', session.access_token, {
       httpOnly: true,
       secure: import.meta.env.PROD,
       sameSite: 'lax',
       path: '/',
-      maxAge: expiresIn / 1000,
+      maxAge: 60 * 60 * 24 * 14, // 14 days
     });
 
-    const userDoc = await usersCol().doc(decoded.uid).get();
-    const profile = docToObj<UserDoc>(userDoc);
+    context.cookies.set('sb-refresh-token', session.refresh_token, {
+      httpOnly: true,
+      secure: import.meta.env.PROD,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 14,
+    });
+
+    // Fetch user profile for role
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
 
     return json({ success: true, role: profile?.role || 'user' });
   } catch (error) {

@@ -2,18 +2,18 @@
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import Badge from '../../components/ui/Badge.astro';
-import { usersCol, docsToArray, type UserDoc } from '../../lib/firestore';
+import { supabase } from '../../lib/supabase';
 import { formatDate } from '../../lib/utils';
 
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
 
-const allUsers = docsToArray<UserDoc>(await usersCol().get())
-  .sort((a, b) => {
-    const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return bDate - aDate;
-  });
+const { data } = await supabase
+  .from('users')
+  .select('*')
+  .order('created_at', { ascending: false });
+
+const allUsers = data || [];
 ---
 
 <DashboardLayout title="Manage Users">
@@ -36,7 +36,7 @@ const allUsers = docsToArray<UserDoc>(await usersCol().get())
               <td class="px-4 py-3">
                 <div>
                   <p class="font-medium text-gray-900">{u.name}</p>
-                  {u.companyName && <p class="text-xs text-gray-500">{u.companyName}</p>}
+                  {u.company_name && <p class="text-xs text-gray-500">{u.company_name}</p>}
                 </div>
               </td>
               <td class="px-4 py-3 text-gray-600">{u.email}</td>
@@ -48,15 +48,15 @@ const allUsers = docsToArray<UserDoc>(await usersCol().get())
                 </select>
               </td>
               <td class="px-4 py-3">
-                <Badge variant={u.isVerified ? 'success' : 'neutral'} size="sm">
-                  {u.isVerified ? 'Yes' : 'No'}
+                <Badge variant={u.is_verified ? 'success' : 'neutral'} size="sm">
+                  {u.is_verified ? 'Yes' : 'No'}
                 </Badge>
               </td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{formatDate(u.createdAt)}</td>
+              <td class="px-4 py-3 text-gray-500 text-xs">{formatDate(u.created_at)}</td>
               <td class="px-4 py-3">
                 <div class="flex gap-2">
-                  <button class="verify-btn text-xs text-primary-600 hover:underline" data-user-id={u.id} data-verified={String(!u.isVerified)}>
-                    {u.isVerified ? 'Unverify' : 'Verify'}
+                  <button class="verify-btn text-xs text-primary-600 hover:underline" data-user-id={u.id} data-verified={String(!u.is_verified)}>
+                    {u.is_verified ? 'Unverify' : 'Verify'}
                   </button>
                   <button class="delete-user-btn text-xs text-red-600 hover:underline" data-user-id={u.id}>
                     Delete

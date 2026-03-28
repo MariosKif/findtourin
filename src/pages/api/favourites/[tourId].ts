@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
+import { supabase } from '../../../lib/supabase';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
-import { favouritesCol } from '../../../lib/firestore';
 
 export const prerender = false;
 
@@ -18,14 +18,11 @@ export const DELETE: APIRoute = async (context) => {
     const { tourId } = context.params;
     if (!tourId) return json({ error: 'Tour ID is required' }, 400);
 
-    const snapshot = await favouritesCol()
-      .where('userId', '==', user.id)
-      .where('tourId', '==', tourId)
-      .get();
-
-    const batch = favouritesCol().firestore.batch();
-    snapshot.docs.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
+    await supabase
+      .from('favourites')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('tour_id', tourId);
 
     return json({ success: true });
   } catch (error) {

@@ -1,21 +1,22 @@
 ---
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
-import { usersCol, toursCol, paymentsCol } from '../../lib/firestore';
+import { supabase } from '../../lib/supabase';
 
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
 
-const [usersSnapshot, toursSnapshot, paymentsSnapshot] = await Promise.all([
-  usersCol().get(),
-  toursCol().get(),
-  paymentsCol().where('status', '==', 'completed').get(),
+const [usersResult, toursResult, paymentsResult] = await Promise.all([
+  supabase.from('users').select('*', { count: 'exact', head: true }),
+  supabase.from('tours').select('*'),
+  supabase.from('payments').select('amount').eq('status', 'completed'),
 ]);
 
-const userCount = usersSnapshot.size;
-const tourCount = toursSnapshot.size;
-const activeCount = toursSnapshot.docs.filter(doc => doc.data().status === 'active').length;
-const revenue = paymentsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+const userCount = usersResult.count || 0;
+const allTours = toursResult.data || [];
+const tourCount = allTours.length;
+const activeCount = allTours.filter(t => t.status === 'active').length;
+const revenue = (paymentsResult.data || []).reduce((sum, p) => sum + (p.amount || 0), 0);
 ---
 
 <DashboardLayout title="Admin Dashboard">

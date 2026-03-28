@@ -9,16 +9,15 @@ interface Props {
     description: string;
     country: string;
     city: string;
-    departureCountry?: string | null;
-    departureCity?: string | null;
+    departure_country?: string | null;
+    departure_city?: string | null;
     price: string;
     currency: string;
     category: string;
-    durationDays: number | null;
+    duration_days?: number | null;
     thumbnail: string | null;
     rating?: number;
-    reviewCount?: number;
-    bookingCount?: number;
+    review_count?: number;
   }[];
 }
 

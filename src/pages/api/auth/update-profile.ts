@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
+import { supabase } from '../../../lib/supabase';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
-import { usersCol, Timestamp } from '../../../lib/firestore';
 
 export const prerender = false;
 
@@ -20,18 +20,25 @@ export const POST: APIRoute = async (context) => {
     const body = await context.request.json();
     const { name, phone, website, companyName, companyDesc } = body;
 
-    const updateData: Record<string, any> = { updatedAt: Timestamp.now() };
+    const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
     if (name !== undefined) updateData.name = name;
     if (phone !== undefined) updateData.phone = phone || null;
     if (website !== undefined) updateData.website = website || null;
-    if (companyName !== undefined) updateData.companyName = companyName || null;
-    if (companyDesc !== undefined) updateData.companyDesc = companyDesc || null;
+    if (companyName !== undefined) updateData.company_name = companyName || null;
+    if (companyDesc !== undefined) updateData.company_desc = companyDesc || null;
 
-    await usersCol().doc(user.id).update(updateData);
+    const { data: updated, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', user.id)
+      .select()
+      .single();
 
-    const updated = await usersCol().doc(user.id).get();
+    if (error) {
+      return json({ error: 'Failed to update profile' }, 500);
+    }
 
-    return json({ success: true, user: { id: updated.id, ...updated.data() } });
+    return json({ success: true, user: updated });
   } catch (error) {
     console.error('Update profile error:', error);
     return json({ error: 'Failed to update profile' }, 500);

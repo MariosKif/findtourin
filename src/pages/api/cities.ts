@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { toursCol } from '../../lib/firestore';
+import { supabase } from '../../lib/supabase';
 
 export const prerender = false;
 
@@ -15,17 +15,18 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   try {
-    const countryField = field === 'departureCity' ? 'departureCountry' : 'country';
-    const cityField = field === 'departureCity' ? 'departureCity' : 'city';
+    const countryField = field === 'departureCity' ? 'departure_country' : 'country';
+    const cityField = field === 'departureCity' ? 'departure_city' : 'city';
 
-    const snapshot = await toursCol()
-      .where('status', '==', 'active')
-      .where(countryField, '==', country)
-      .get();
+    const { data: tours } = await supabase
+      .from('tours')
+      .select(cityField)
+      .eq('status', 'active')
+      .eq(countryField, country);
 
     const cities = new Set<string>();
-    snapshot.docs.forEach(doc => {
-      const val = doc.data()[cityField];
+    (tours || []).forEach(tour => {
+      const val = tour[cityField];
       if (val) cities.add(val);
     });
 

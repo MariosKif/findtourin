@@ -4,7 +4,7 @@ import PublicLayout from '../../layouts/PublicLayout.astro';
 import TourGallery from '../../components/tours/TourGallery.astro';
 import TourInfo from '../../components/tours/TourInfo.astro';
 import AgencyContactCard from '../../components/tours/AgencyContactCard.astro';
-import { toursCol, usersCol, docToObj, FieldValue, type TourDoc, type UserDoc } from '../../lib/firestore';
+import { supabase } from '../../lib/supabase';
 import { getDemoTourBySlug, DEMO_AGENCY, DEMO_REVIEWS } from '../../lib/demo-tours';
 
 const { slug } = Astro.params;
@@ -15,10 +15,13 @@ let images: any[] = [];
 let agency: any;
 
 try {
-  const snapshot = await toursCol().where('slug', '==', slug).limit(1).get();
-  if (!snapshot.empty) {
-    tour = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-  }
+  const { data: tourData } = await supabase
+    .from('tours')
+    .select('*')
+    .eq('slug', slug)
+    .limit(1)
+    .single();
+  if (tourData) tour = tourData;
 } catch {
   // DB unavailable — fall through to demo lookup
 }
@@ -31,17 +34,22 @@ if (!tour || tour.status !== 'active') {
 
 // Increment view count (fire-and-forget)
 if (tour?.id && !tour.id.startsWith('demo-')) {
-  toursCol().doc(tour.id).update({
-    viewCount: FieldValue.increment(1),
-  }).catch(() => {});
+  supabase
+    .from('tours')
+    .update({ view_count: (tour.view_count || 0) + 1 })
+    .eq('id', tour.id)
+    .then(() => {});
 }
 
 try {
-  // Images are now stored in the tour document
   images = tour.images || [];
-  if (tour.agencyId) {
-    const agencyDoc = await usersCol().doc(tour.agencyId).get();
-    agency = docToObj<UserDoc>(agencyDoc);
+  if (tour.agency_id) {
+    const { data: agencyData } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', tour.agency_id)
+      .single();
+    agency = agencyData;
   }
 } catch {
   // DB unavailable — use demo defaults
@@ -51,10 +59,10 @@ const reviews = DEMO_REVIEWS[slug] || [];
 
 const tourWithAgency = {
   ...tour,
-  agencyName: agency?.companyName || agency?.name || DEMO_AGENCY.companyName,
-  agencyVerified: agency?.isVerified || DEMO_AGENCY.isVerified,
+  agencyName: agency?.company_name || agency?.name || DEMO_AGENCY.companyName,
+  agencyVerified: agency?.is_verified || DEMO_AGENCY.isVerified,
   rating: tour.rating,
-  reviewCount: tour.reviewCount,
+  review_count: tour.review_count ?? tour.reviewCount,
 };
 ---
 
@@ -76,7 +84,7 @@ const tourWithAgency = {
     <div class="flex flex-col lg:flex-row gap-8">
       <!-- Main Content -->
       <div class="flex-1">
-        <TourGallery images={images.map(img => ({ url: img.url, altText: img.altText || '' }))} />
+        <TourGallery images={images.map(img => ({ url: img.url, altText: img.alt_text || img.altText || '' }))} />
         <div class="mt-8">
           <TourInfo tour={tour} reviews={reviews} />
         </div>

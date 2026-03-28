@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
-import { adminAuth } from '../../../lib/firebase';
-import { usersCol, Timestamp } from '../../../lib/firestore';
+import { supabase } from '../../../lib/supabase';
 
 export const prerender = false;
 
@@ -23,48 +22,64 @@ export const POST: APIRoute = async (context) => {
       return json({ error: 'Invalid role' }, 400);
     }
 
-    const userRecord = await adminAuth.createUser({
+    // Create auth user
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
-      displayName: name,
-      emailVerified: true,
+      email_confirm: true,
+      user_metadata: { name },
     });
 
-    const now = Timestamp.now();
-    await usersCol().doc(userRecord.uid).set({
+    if (authError) {
+      if (authError.message.includes('already') || authError.message.includes('exists')) {
+        return json({ error: 'Email already in use' }, 400);
+      }
+      return json({ error: 'Registration failed' }, 500);
+    }
+
+    // Create user profile
+    const { error: profileError } = await supabase.from('users').insert({
+      id: authData.user.id,
       email,
       name,
       role: role || 'user',
       phone: phone || null,
       website: website || null,
-      companyName: companyName || null,
-      companyDesc: null,
-      avatarUrl: null,
-      isVerified: false,
-      stripeCustomerId: null,
-      createdAt: now,
-      updatedAt: now,
+      company_name: companyName || null,
+      company_desc: null,
+      avatar_url: null,
+      is_verified: false,
+      stripe_customer_id: null,
     });
 
-    const { idToken } = body;
-    if (idToken) {
-      const expiresIn = 60 * 60 * 24 * 14 * 1000;
-      const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
-      context.cookies.set('session', sessionCookie, {
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
+    }
+
+    // Sign in to get session
+    const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (signInData?.session) {
+      context.cookies.set('sb-access-token', signInData.session.access_token, {
         httpOnly: true,
         secure: import.meta.env.PROD,
         sameSite: 'lax',
         path: '/',
-        maxAge: expiresIn / 1000,
+        maxAge: 60 * 60 * 24 * 14,
+      });
+
+      context.cookies.set('sb-refresh-token', signInData.session.refresh_token, {
+        httpOnly: true,
+        secure: import.meta.env.PROD,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 14,
       });
     }
 
     return json({ success: true, role: role || 'user' });
   } catch (error: any) {
     console.error('Registration error:', error);
-    if (error.code === 'auth/email-already-exists') {
-      return json({ error: 'Email already in use' }, 400);
-    }
     return json({ error: 'Registration failed' }, 500);
   }
 };

@@ -9,12 +9,12 @@ declare namespace App {
       role: string;
       phone?: string | null;
       website?: string | null;
-      companyName?: string | null;
-      companyDesc?: string | null;
-      avatarUrl?: string | null;
-      isVerified?: boolean;
-      stripeCustomerId?: string | null;
-      createdAt?: string;
+      company_name?: string | null;
+      company_desc?: string | null;
+      avatar_url?: string | null;
+      is_verified?: boolean;
+      stripe_customer_id?: string | null;
+      created_at?: string;
     };
   }
 }

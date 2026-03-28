@@ -3,7 +3,8 @@ import type { APIRoute } from 'astro';
 export const prerender = false;
 
 export const POST: APIRoute = async (context) => {
-  context.cookies.delete('session', { path: '/' });
+  context.cookies.delete('sb-access-token', { path: '/' });
+  context.cookies.delete('sb-refresh-token', { path: '/' });
 
   return new Response(JSON.stringify({ success: true }), {
     status: 200,

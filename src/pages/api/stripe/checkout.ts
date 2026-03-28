@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { toursCol, docToObj, type TourDoc } from '../../../lib/firestore';
+import { supabase } from '../../../lib/supabase';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
 import { createCheckoutSession } from '../../../lib/stripe';
 
@@ -21,10 +21,14 @@ export const POST: APIRoute = async (context) => {
     const { tourId } = body;
     if (!tourId) return json({ error: 'Missing tourId' }, 400);
 
-    const tourDoc = await toursCol().doc(tourId).get();
-    const tour = docToObj<TourDoc>(tourDoc);
+    const { data: tour } = await supabase
+      .from('tours')
+      .select('*')
+      .eq('id', tourId)
+      .single();
+
     if (!tour) return json({ error: 'Tour not found' }, 404);
-    if (tour.agencyId !== user.id) return json({ error: 'Forbidden' }, 403);
+    if (tour.agency_id !== user.id) return json({ error: 'Forbidden' }, 403);
 
     const origin = new URL(context.request.url).origin;
     const checkoutSession = await createCheckoutSession({

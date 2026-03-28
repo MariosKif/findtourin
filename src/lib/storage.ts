@@ -1,31 +1,33 @@
-import { adminStorage } from './firebase';
+import { supabase } from './supabase';
 
-const bucket = adminStorage.bucket();
+const BUCKET = 'tour-images';
 
 export async function uploadImage(file: Buffer, fileName: string): Promise<{ url: string; storagePath: string }> {
   const storagePath = `tours/${Date.now()}-${fileName}`;
-  const fileRef = bucket.file(storagePath);
 
-  await fileRef.save(file, {
-    metadata: {
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(storagePath, file, {
       contentType: getContentType(fileName),
-    },
-  });
+      upsert: false,
+    });
 
-  await fileRef.makePublic();
+  if (error) throw new Error(`Upload failed: ${error.message}`);
 
-  const url = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+  const { data: { publicUrl } } = supabase.storage
+    .from(BUCKET)
+    .getPublicUrl(storagePath);
 
-  return { url, storagePath };
+  return { url: publicUrl, storagePath };
 }
 
 export async function deleteImage(storagePath: string) {
-  try {
-    await bucket.file(storagePath).delete();
-  } catch (error: any) {
-    if (error.code !== 404) {
-      throw new Error(`Delete failed: ${error.message}`);
-    }
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .remove([storagePath]);
+
+  if (error && !error.message.includes('Not found')) {
+    throw new Error(`Delete failed: ${error.message}`);
   }
 }
 

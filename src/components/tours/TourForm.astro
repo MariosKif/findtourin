@@ -9,18 +9,18 @@ interface Props {
     description: string;
     country: string;
     city: string;
-    departureCountry: string | null;
-    departureCity: string | null;
+    departure_country?: string | null;
+    departure_city?: string | null;
     price: string;
     currency: string;
-    startDate: Date | null;
-    endDate: Date | null;
-    durationDays: number | null;
-    maxParticipants: number | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    duration_days?: number | null;
+    max_participants?: number | null;
     category: string;
-    contactEmail: string | null;
-    contactPhone: string | null;
-    contactWebsite: string | null;
+    contact_email?: string | null;
+    contact_phone?: string | null;
+    contact_website?: string | null;
   };
   errors?: Record<string, string>;
 }
@@ -28,7 +28,7 @@ interface Props {
 const { tour, errors = {} } = Astro.props;
 const isEdit = !!tour;
 
-function formatDateForInput(date: Date | null | undefined): string {
+function formatDateForInput(date: string | null | undefined): string {
   if (!date) return '';
   const d = new Date(date);
   return d.toISOString().split('T')[0];
@@ -97,7 +97,7 @@ function formatDateForInput(date: Date | null | undefined): string {
         name="departureCountry"
         label="Departure Country"
         placeholder="e.g. Greece"
-        value={tour?.departureCountry || ''}
+        value={tour?.departure_country || ''}
         items={COUNTRIES}
       />
 
@@ -107,7 +107,7 @@ function formatDateForInput(date: Date | null | undefined): string {
         name="departureCity"
         label="Departure City"
         placeholder="e.g. Athens"
-        value={tour?.departureCity || ''}
+        value={tour?.departure_city || ''}
         apiUrl="/api/cities?field=departureCity"
         dependsOn="tour-departure-country"
       />
@@ -203,7 +203,7 @@ function formatDateForInput(date: Date | null | undefined): string {
         id="tour-start-date"
         type="date"
         name="startDate"
-        value={formatDateForInput(tour?.startDate)}
+        value={formatDateForInput(tour?.start_date)}
         class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
       />
       {errors.startDate && <p class="text-sm text-red-600">{errors.startDate}</p>}
@@ -216,7 +216,7 @@ function formatDateForInput(date: Date | null | undefined): string {
         id="tour-end-date"
         type="date"
         name="endDate"
-        value={formatDateForInput(tour?.endDate)}
+        value={formatDateForInput(tour?.end_date)}
         class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
       />
       {errors.endDate && <p class="text-sm text-red-600">{errors.endDate}</p>}
@@ -232,7 +232,7 @@ function formatDateForInput(date: Date | null | undefined): string {
         id="tour-duration"
         type="number"
         name="durationDays"
-        value={tour?.durationDays ?? ''}
+        value={tour?.duration_days ?? ''}
         min="1"
         placeholder="e.g. 5"
         class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
@@ -247,7 +247,7 @@ function formatDateForInput(date: Date | null | undefined): string {
         id="tour-participants"
         type="number"
         name="maxParticipants"
-        value={tour?.maxParticipants ?? ''}
+        value={tour?.max_participants ?? ''}
         min="1"
         placeholder="e.g. 20"
         class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
@@ -299,7 +299,7 @@ function formatDateForInput(date: Date | null | undefined): string {
           id="tour-contact-email"
           type="email"
           name="contactEmail"
-          value={tour?.contactEmail || ''}
+          value={tour?.contact_email || ''}
           placeholder="email@agency.com"
           class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
         />
@@ -313,7 +313,7 @@ function formatDateForInput(date: Date | null | undefined): string {
           id="tour-contact-phone"
           type="tel"
           name="contactPhone"
-          value={tour?.contactPhone || ''}
+          value={tour?.contact_phone || ''}
           placeholder="+30 123 456 7890"
           class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
         />
@@ -327,7 +327,7 @@ function formatDateForInput(date: Date | null | undefined): string {
           id="tour-contact-website"
           type="url"
           name="contactWebsite"
-          value={tour?.contactWebsite || ''}
+          value={tour?.contact_website || ''}
           placeholder="https://www.agency.com"
           class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:ring-offset-0"
         />

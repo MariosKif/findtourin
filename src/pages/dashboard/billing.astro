@@ -2,36 +2,40 @@
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import BillingHistory from '../../components/dashboard/BillingHistory.astro';
-import { paymentsCol, toursCol } from '../../lib/firestore';
+import { supabase } from '../../lib/supabase';
 import { formatPrice } from '../../lib/utils';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
 
-const paymentsSnapshot = await paymentsCol().where('agencyId', '==', user.id).orderBy('createdAt', 'desc').get();
+const { data: paymentsData } = await supabase
+  .from('payments')
+  .select('*')
+  .eq('agency_id', user.id)
+  .order('created_at', { ascending: false });
 
-const userPayments: any[] = [];
-for (const doc of paymentsSnapshot.docs) {
-  const data = doc.data();
-  let tourName = null;
-  if (data.tourId) {
-    try {
-      const tourDoc = await toursCol().doc(data.tourId).get();
-      if (tourDoc.exists) {
-        tourName = tourDoc.data()?.name || null;
-      }
-    } catch {}
-  }
-  userPayments.push({
-    id: doc.id,
-    amount: data.amount,
-    currency: data.currency,
-    status: data.status,
-    createdAt: data.createdAt?.toDate?.()?.toISOString?.() || data.createdAt,
-    tourName,
-    tourId: data.tourId,
-  });
+const payments = paymentsData || [];
+
+// Batch-fetch tour names
+const tourIds = [...new Set(payments.map(p => p.tour_id).filter(Boolean))];
+const tourNameMap = new Map<string, string>();
+if (tourIds.length > 0) {
+  const { data: tours } = await supabase
+    .from('tours')
+    .select('id, name')
+    .in('id', tourIds);
+  (tours || []).forEach(t => tourNameMap.set(t.id, t.name));
 }
+
+const userPayments = payments.map(p => ({
+  id: p.id,
+  amount: p.amount,
+  currency: p.currency,
+  status: p.status,
+  createdAt: p.created_at,
+  tourName: tourNameMap.get(p.tour_id) || null,
+  tourId: p.tour_id,
+}));
 
 const totalSpent = userPayments
   .filter((p) => p.status === 'completed')

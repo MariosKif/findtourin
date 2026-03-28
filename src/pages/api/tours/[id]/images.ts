@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { toursCol, docToObj, Timestamp, type TourDoc } from '../../../../lib/firestore';
+import { supabase } from '../../../../lib/supabase';
 import { getAuthenticatedUser } from '../../../../lib/auth-helpers';
 import { deleteImage } from '../../../../lib/storage';
 
@@ -19,10 +19,14 @@ export const POST: APIRoute = async (context) => {
     const { id: tourId } = context.params;
     if (!tourId) return json({ error: 'Tour ID is required' }, 400);
 
-    const tourDoc = await toursCol().doc(tourId).get();
-    const tour = docToObj<TourDoc>(tourDoc);
+    const { data: tour } = await supabase
+      .from('tours')
+      .select('*')
+      .eq('id', tourId)
+      .single();
+
     if (!tour) return json({ error: 'Tour not found' }, 404);
-    if (tour.agencyId !== user.id) return json({ error: 'Forbidden' }, 403);
+    if (tour.agency_id !== user.id) return json({ error: 'Forbidden' }, 403);
 
     const images = tour.images || [];
     if (images.length >= 5) return json({ error: 'Maximum 5 images allowed per tour' }, 400);
@@ -33,15 +37,20 @@ export const POST: APIRoute = async (context) => {
 
     const newImage = {
       url,
-      storagePath: publicId,
+      storage_path: publicId,
       position: images.length,
-      altText: altText || null,
+      alt_text: altText || null,
     };
 
-    await toursCol().doc(tourId).update({
-      images: [...images, newImage],
-      updatedAt: Timestamp.now(),
-    });
+    const { error } = await supabase
+      .from('tours')
+      .update({
+        images: [...images, newImage],
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', tourId);
+
+    if (error) throw error;
 
     return json(newImage, 201);
   } catch (error) {
@@ -58,31 +67,38 @@ export const DELETE: APIRoute = async (context) => {
     const { id: tourId } = context.params;
     if (!tourId) return json({ error: 'Tour ID is required' }, 400);
 
-    const tourDoc = await toursCol().doc(tourId).get();
-    const tour = docToObj<TourDoc>(tourDoc);
+    const { data: tour } = await supabase
+      .from('tours')
+      .select('*')
+      .eq('id', tourId)
+      .single();
+
     if (!tour) return json({ error: 'Tour not found' }, 404);
-    if (tour.agencyId !== user.id) return json({ error: 'Forbidden' }, 403);
+    if (tour.agency_id !== user.id) return json({ error: 'Forbidden' }, 403);
 
     const body = await context.request.json();
     const { publicId } = body;
     if (!publicId) return json({ error: 'Missing required field: publicId' }, 400);
 
     const images = tour.images || [];
-    const imageToDelete = images.find(img => img.storagePath === publicId);
+    const imageToDelete = images.find((img: any) => img.storage_path === publicId);
     if (!imageToDelete) return json({ error: 'Image not found' }, 404);
 
     try { await deleteImage(publicId); } catch (err) {
-      console.error(`Failed to delete image from storage:`, err);
+      console.error('Failed to delete image from storage:', err);
     }
 
     const updatedImages = images
-      .filter(img => img.storagePath !== publicId)
-      .map((img, i) => ({ ...img, position: i }));
+      .filter((img: any) => img.storage_path !== publicId)
+      .map((img: any, i: number) => ({ ...img, position: i }));
 
-    await toursCol().doc(tourId).update({
-      images: updatedImages,
-      updatedAt: Timestamp.now(),
-    });
+    await supabase
+      .from('tours')
+      .update({
+        images: updatedImages,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', tourId);
 
     return json({ success: true, message: 'Image deleted' });
   } catch (error) {

@@ -1,4 +1,5 @@
 ---
+export const prerender = true;
 import { getCollection } from 'astro:content';
 import PublicLayout from '../../layouts/PublicLayout.astro';
 import BlogCard from '../../components/blog/BlogCard.astro';
@@ -14,8 +15,6 @@ const otherPosts = sortedPosts.filter(p => p.id !== featuredPost?.id);
 // Get unique categories
 const categories = [...new Set(sortedPosts.map(p => p.data.category))].sort();
 
-// Reading time for featured
-const featuredBody = featuredPost ? await featuredPost.render() : null;
 ---
 
 <PublicLayout title="Travel Blog" description="Travel tips, destination guides, and expert advice for your next adventure.">

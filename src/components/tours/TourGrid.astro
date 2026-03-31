@@ -34,11 +34,25 @@ const popularSearches = [
 ---
 
 {tours.length > 0 ? (
-  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+  <div class="tour-grid">
     {tours.map((tour) => (
       <TourCard tour={tour} />
     ))}
   </div>
+
+  <style>
+    .tour-grid {
+      display: grid;
+      gap: 24px;
+      row-gap: 40px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 550px) { .tour-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 740px) { .tour-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 950px) { .tour-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 1128px) { .tour-grid { grid-template-columns: repeat(5, 1fr); } }
+    @media (min-width: 1440px) { .tour-grid { grid-template-columns: repeat(6, 1fr); } }
+  </style>
 ) : (
   <div class="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 px-6 py-16 text-center">
     <svg class="mb-4 h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

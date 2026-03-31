@@ -54,7 +54,7 @@ const rowId = `row-${category.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
     class="category-scroll flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 lg:mx-0 lg:px-0"
   >
     {tours.map((tour) => (
-      <div class="flex-shrink-0 snap-start w-[260px] sm:w-[280px] lg:w-[calc((100%-6*1rem)/7)]">
+      <div class="flex-shrink-0 snap-start w-[260px] sm:w-[280px] md:w-[240px] lg:w-[220px] xl:w-[240px]">
         <TourCard tour={tour} />
       </div>
     ))}

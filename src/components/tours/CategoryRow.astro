@@ -1,0 +1,99 @@
+---
+import TourCard from './TourCard.astro';
+
+interface Props {
+  category: string;
+  tours: any[];
+}
+
+const { category, tours } = Astro.props;
+const rowId = `row-${category.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+---
+
+<section class="mb-10">
+  {/* Category Header */}
+  <div class="flex items-center justify-between mb-4">
+    <a
+      href={`/tours?category=${encodeURIComponent(category)}`}
+      class="group flex items-center gap-2"
+    >
+      <h2 class="font-heading text-xl sm:text-2xl font-normal text-gray-900 group-hover:text-primary-600 transition-colors">
+        {category}
+      </h2>
+      <svg class="w-5 h-5 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+      </svg>
+    </a>
+
+    {/* Desktop navigation arrows */}
+    <div class="hidden sm:flex items-center gap-2">
+      <button
+        class="row-scroll-left flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 text-gray-500 hover:border-gray-900 hover:text-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        data-row={rowId}
+        aria-label="Scroll left"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <button
+        class="row-scroll-right flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 text-gray-500 hover:border-gray-900 hover:text-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        data-row={rowId}
+        aria-label="Scroll right"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  {/* Horizontal scroll container */}
+  <div
+    id={rowId}
+    class="category-scroll flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 lg:mx-0 lg:px-0"
+  >
+    {tours.map((tour) => (
+      <div class="flex-shrink-0 snap-start w-[260px] sm:w-[280px] lg:w-[calc((100%-6*1rem)/7)]">
+        <TourCard tour={tour} />
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .category-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .category-scroll::-webkit-scrollbar {
+    display: none;
+  }
+</style>
+
+<script>
+  function initCategoryRows() {
+    document.querySelectorAll('.row-scroll-left').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const rowId = (btn as HTMLElement).dataset.row;
+        const container = document.getElementById(rowId!);
+        if (container) {
+          container.scrollBy({ left: -600, behavior: 'smooth' });
+        }
+      });
+    });
+
+    document.querySelectorAll('.row-scroll-right').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const rowId = (btn as HTMLElement).dataset.row;
+        const container = document.getElementById(rowId!);
+        if (container) {
+          container.scrollBy({ left: 600, behavior: 'smooth' });
+        }
+      });
+    });
+  }
+
+  initCategoryRows();
+  document.addEventListener('astro:after-swap', initCategoryRows);
+</script>

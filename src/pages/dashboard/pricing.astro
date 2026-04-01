@@ -1,0 +1,297 @@
+---
+export const prerender = false;
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { PRICING_TIERS, ANNUAL_DISCOUNT, formatCents, calculatePricePerListing } from '../../lib/pricing';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/auth/login');
+---
+
+<DashboardLayout title="Choose Your Plan">
+  {/* Header */}
+  <div class="flex items-center gap-3 mb-8">
+    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100">
+      <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+      </svg>
+    </div>
+    <div>
+      <h1 class="text-xl font-semibold text-gray-900">Choose Your Plan</h1>
+      <p class="text-sm text-gray-500">Select the number of tour listings you need</p>
+    </div>
+  </div>
+
+  {/* Billing toggle */}
+  <div class="flex items-center justify-center gap-3 mb-8">
+    <span id="label-monthly" class="text-sm font-medium text-gray-900">Monthly</span>
+    <button id="billing-toggle" class="relative w-14 h-7 bg-gray-200 rounded-full transition-colors cursor-pointer" aria-label="Toggle billing period">
+      <span id="toggle-dot" class="absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-sm transition-transform"></span>
+    </button>
+    <span id="label-annual" class="text-sm font-medium text-gray-400">
+      Annual <span class="text-green-600 text-xs font-semibold ml-1">Save 10%</span>
+    </span>
+  </div>
+
+  {/* Tier cards */}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+    {PRICING_TIERS.map((tier, i) => {
+      const monthlyPrice = calculatePricePerListing(tier.minListings, 'monthly');
+      const annualPrice = calculatePricePerListing(tier.minListings, 'annual');
+      const isPopular = tier.label === 'Growth';
+
+      return (
+        <div
+          class:list={[
+            'tier-card relative bg-white rounded-xl border-2 p-6 transition-all cursor-pointer hover:shadow-lg',
+            isPopular ? 'border-primary-500 shadow-md' : 'border-gray-200 hover:border-primary-300',
+          ]}
+          data-min={tier.minListings}
+          data-max={tier.maxListings || 999}
+          data-discount={tier.discount}
+          data-label={tier.label}
+        >
+          {isPopular && (
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+              Popular
+            </span>
+          )}
+
+          <h3 class="font-semibold text-gray-900 text-lg">{tier.label}</h3>
+          <p class="text-sm text-gray-500 mt-1">
+            {tier.maxListings ? `${tier.minListings}-${tier.maxListings}` : `${tier.minListings}+`} listings
+          </p>
+
+          <div class="mt-4">
+            <div class="price-monthly">
+              <span class="text-3xl font-bold text-gray-900">€{formatCents(monthlyPrice)}</span>
+              <span class="text-sm text-gray-500"> / listing / mo</span>
+            </div>
+            <div class="price-annual hidden">
+              <span class="text-3xl font-bold text-gray-900">€{formatCents(annualPrice)}</span>
+              <span class="text-sm text-gray-500"> / listing / mo</span>
+            </div>
+          </div>
+
+          {tier.discount > 0 && (
+            <p class="mt-2 text-sm text-green-600 font-medium">
+              {Math.round(tier.discount * 100)}% volume discount
+            </p>
+          )}
+
+          {tier.discount === 0 && (
+            <p class="mt-2 text-sm text-gray-400">No minimum commitment</p>
+          )}
+        </div>
+      );
+    })}
+  </div>
+
+  {/* Listing count selector */}
+  <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">How many tour listings do you need?</h2>
+
+    <div class="flex items-center gap-4 mb-6">
+      <button id="btn-decrease" class="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
+      </button>
+      <input
+        id="listing-count"
+        type="number"
+        min="1"
+        max="100"
+        value="1"
+        class="w-24 text-center text-2xl font-bold text-gray-900 border border-gray-300 rounded-lg py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+      />
+      <button id="btn-increase" class="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+      </button>
+    </div>
+
+    {/* Quick select buttons */}
+    <div class="flex flex-wrap gap-2 mb-6">
+      {[1, 5, 10, 20, 30, 50].map(n => (
+        <button class="quick-select px-4 py-2 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:border-primary-300 hover:text-primary-600 hover:bg-primary-50 transition-colors" data-count={n}>
+          {n} {n === 1 ? 'listing' : 'listings'}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  {/* Price summary */}
+  <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Price Summary</h2>
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-gray-600"><span id="summary-count">1</span> listing(s) × €<span id="summary-per-listing">3.99</span>/mo</span>
+        <span class="font-medium text-gray-900">€<span id="summary-subtotal">3.99</span></span>
+      </div>
+      <div id="summary-discount-row" class="flex items-center justify-between hidden">
+        <span class="text-green-600">Volume discount (<span id="summary-discount-pct">0</span>%)</span>
+        <span class="font-medium text-green-600">-€<span id="summary-discount-amount">0.00</span></span>
+      </div>
+      <div id="summary-annual-row" class="flex items-center justify-between hidden">
+        <span class="text-green-600">Annual discount (10%)</span>
+        <span class="font-medium text-green-600">-€<span id="summary-annual-amount">0.00</span></span>
+      </div>
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-gray-500">VAT (24%)</span>
+        <span class="text-gray-500">€<span id="summary-vat">0.96</span></span>
+      </div>
+      <div class="border-t border-gray-200 pt-3 flex items-center justify-between">
+        <span class="font-semibold text-gray-900">Total <span id="summary-period-label">per month</span></span>
+        <span class="text-2xl font-bold text-gray-900">€<span id="summary-total">4.95</span></span>
+      </div>
+    </div>
+  </div>
+
+  {/* Checkout button */}
+  <form id="checkout-form" method="POST" action="/api/stripe/checkout">
+    <input type="hidden" name="listingCount" id="form-listing-count" value="1" />
+    <input type="hidden" name="billingPeriod" id="form-billing-period" value="monthly" />
+    <button
+      type="submit"
+      class="w-full py-4 rounded-xl bg-primary-600 text-white font-semibold text-lg hover:bg-primary-700 transition-colors"
+    >
+      Continue to Payment
+    </button>
+  </form>
+
+  <p class="text-center text-xs text-gray-400 mt-4">
+    Secure payment powered by Stripe. You can cancel anytime.
+  </p>
+</DashboardLayout>
+
+<script>
+  const BASE_PRICE = 399;
+  const VAT_RATE = 0.24;
+  const ANNUAL_DISCOUNT = 0.10;
+  const TIERS = [
+    { min: 1, max: 9, discount: 0 },
+    { min: 10, max: 19, discount: 0.10 },
+    { min: 20, max: 29, discount: 0.15 },
+    { min: 30, max: 39, discount: 0.20 },
+    { min: 40, max: 999, discount: 0.25 },
+  ];
+
+  let count = 1;
+  let isAnnual = false;
+
+  const countInput = document.getElementById('listing-count') as HTMLInputElement;
+  const toggle = document.getElementById('billing-toggle') as HTMLElement;
+  const toggleDot = document.getElementById('toggle-dot') as HTMLElement;
+  const labelMonthly = document.getElementById('label-monthly') as HTMLElement;
+  const labelAnnual = document.getElementById('label-annual') as HTMLElement;
+
+  function getTier(n: number) {
+    for (let i = TIERS.length - 1; i >= 0; i--) {
+      if (n >= TIERS[i].min) return TIERS[i];
+    }
+    return TIERS[0];
+  }
+
+  function fmt(cents: number) {
+    return (cents / 100).toFixed(2);
+  }
+
+  function update() {
+    count = Math.max(1, Math.min(100, parseInt(countInput.value) || 1));
+    countInput.value = String(count);
+
+    const tier = getTier(count);
+    let perListing = Math.round(BASE_PRICE * (1 - tier.discount));
+    if (isAnnual) perListing = Math.round(perListing * (1 - ANNUAL_DISCOUNT));
+
+    const subtotal = perListing * count;
+    const vat = Math.round(subtotal * VAT_RATE);
+    const total = isAnnual ? (subtotal + vat) * 12 : subtotal + vat;
+
+    // Update summary
+    document.getElementById('summary-count')!.textContent = String(count);
+    document.getElementById('summary-per-listing')!.textContent = fmt(perListing);
+    document.getElementById('summary-subtotal')!.textContent = fmt(isAnnual ? subtotal * 12 : subtotal);
+    document.getElementById('summary-vat')!.textContent = fmt(isAnnual ? vat * 12 : vat);
+    document.getElementById('summary-total')!.textContent = fmt(total);
+    document.getElementById('summary-period-label')!.textContent = isAnnual ? 'per year' : 'per month';
+
+    // Discount rows
+    const discountRow = document.getElementById('summary-discount-row')!;
+    if (tier.discount > 0) {
+      discountRow.classList.remove('hidden');
+      document.getElementById('summary-discount-pct')!.textContent = String(Math.round(tier.discount * 100));
+      const savedPerListing = Math.round(BASE_PRICE * tier.discount);
+      document.getElementById('summary-discount-amount')!.textContent = fmt(savedPerListing * count * (isAnnual ? 12 : 1));
+    } else {
+      discountRow.classList.add('hidden');
+    }
+
+    const annualRow = document.getElementById('summary-annual-row')!;
+    if (isAnnual) {
+      annualRow.classList.remove('hidden');
+      const baseAfterVolume = Math.round(BASE_PRICE * (1 - tier.discount));
+      const annualSaved = Math.round(baseAfterVolume * ANNUAL_DISCOUNT) * count * 12;
+      document.getElementById('summary-annual-amount')!.textContent = fmt(annualSaved);
+    } else {
+      annualRow.classList.add('hidden');
+    }
+
+    // Toggle price display
+    document.querySelectorAll('.price-monthly').forEach(el => el.classList.toggle('hidden', isAnnual));
+    document.querySelectorAll('.price-annual').forEach(el => el.classList.toggle('hidden', !isAnnual));
+
+    // Highlight active tier card
+    document.querySelectorAll('.tier-card').forEach(card => {
+      const min = parseInt((card as HTMLElement).dataset.min || '0');
+      const max = parseInt((card as HTMLElement).dataset.max || '999');
+      const isActive = count >= min && count <= max;
+      card.classList.toggle('border-primary-500', isActive);
+      card.classList.toggle('shadow-md', isActive);
+      card.classList.toggle('border-gray-200', !isActive);
+    });
+
+    // Update form hidden fields
+    (document.getElementById('form-listing-count') as HTMLInputElement).value = String(count);
+    (document.getElementById('form-billing-period') as HTMLInputElement).value = isAnnual ? 'annual' : 'monthly';
+  }
+
+  // Event listeners
+  document.getElementById('btn-decrease')?.addEventListener('click', () => {
+    countInput.value = String(Math.max(1, count - 1));
+    update();
+  });
+
+  document.getElementById('btn-increase')?.addEventListener('click', () => {
+    countInput.value = String(Math.min(100, count + 1));
+    update();
+  });
+
+  countInput.addEventListener('input', update);
+
+  toggle.addEventListener('click', () => {
+    isAnnual = !isAnnual;
+    toggleDot.style.transform = isAnnual ? 'translateX(28px)' : 'translateX(0)';
+    toggle.classList.toggle('bg-primary-600', isAnnual);
+    toggle.classList.toggle('bg-gray-200', !isAnnual);
+    labelMonthly.classList.toggle('text-gray-900', !isAnnual);
+    labelMonthly.classList.toggle('text-gray-400', isAnnual);
+    labelAnnual.classList.toggle('text-gray-900', isAnnual);
+    labelAnnual.classList.toggle('text-gray-400', !isAnnual);
+    update();
+  });
+
+  document.querySelectorAll('.quick-select').forEach(btn => {
+    btn.addEventListener('click', () => {
+      countInput.value = (btn as HTMLElement).dataset.count || '1';
+      update();
+    });
+  });
+
+  document.querySelectorAll('.tier-card').forEach(card => {
+    card.addEventListener('click', () => {
+      countInput.value = (card as HTMLElement).dataset.min || '1';
+      update();
+    });
+  });
+
+  // Initial
+  update();
+</script>

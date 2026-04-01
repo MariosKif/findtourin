@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../../lib/supabase';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
 import { stripe } from '../../../lib/stripe';
-import { calculateTotal, formatCents, type BillingPeriod } from '../../../lib/pricing';
+import { getPlan, formatCents, type BillingPeriod } from '../../../lib/pricing';
 
 export const prerender = false;
 
@@ -18,35 +17,26 @@ export const POST: APIRoute = async (context) => {
     if (!user) return json({ error: 'Unauthorized' }, 401);
     if (user.role !== 'agency' && user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
 
-    // Support both form data and JSON
     const contentType = context.request.headers.get('content-type') || '';
-    let listingCount = 1;
+    let planId = 'starter';
     let billingPeriod: BillingPeriod = 'monthly';
-    let tourId: string | null = null;
 
     if (contentType.includes('application/x-www-form-urlencoded')) {
       const formData = await context.request.formData();
-      listingCount = parseInt(formData.get('listingCount') as string) || 1;
+      planId = (formData.get('planId') as string) || 'starter';
       billingPeriod = (formData.get('billingPeriod') as BillingPeriod) || 'monthly';
     } else {
       const body = await context.request.json();
-      listingCount = body.listingCount || 1;
+      planId = body.planId || 'starter';
       billingPeriod = body.billingPeriod || 'monthly';
-      tourId = body.tourId || null;
     }
 
-    // Clamp listing count
-    listingCount = Math.max(1, Math.min(100, listingCount));
+    const plan = getPlan(planId);
+    if (!plan) return json({ error: 'Invalid plan' }, 400);
 
-    const pricing = calculateTotal(listingCount, billingPeriod);
     const origin = new URL(context.request.url).origin;
-
+    const priceCents = billingPeriod === 'annual' ? plan.annualPriceCents : plan.monthlyPriceCents;
     const periodLabel = billingPeriod === 'annual' ? 'year' : 'month';
-    const description = `${listingCount} tour listing${listingCount > 1 ? 's' : ''} — €${formatCents(pricing.pricePerListingCents)}/listing/${periodLabel === 'year' ? 'mo (billed annually)' : 'mo'}`;
-
-    if (pricing.tier.discount > 0) {
-      // Include discount info
-    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -56,27 +46,26 @@ export const POST: APIRoute = async (context) => {
           price_data: {
             currency: 'eur',
             product_data: {
-              name: `FindToursIn — ${listingCount} Tour Listing${listingCount > 1 ? 's' : ''}`,
-              description,
+              name: `FindToursIn ${plan.name} Plan`,
+              description: `${plan.maxListings} tour listings, ${plan.maxImagesPerTour >= 999 ? 'unlimited' : plan.maxImagesPerTour} images/tour — billed ${periodLabel}ly`,
             },
-            unit_amount: pricing.totalCents,
+            unit_amount: priceCents,
           },
           quantity: 1,
         },
       ],
       metadata: {
         agencyId: user.id,
-        listingCount: String(listingCount),
+        planId,
+        planName: plan.name,
         billingPeriod,
-        pricePerListing: String(pricing.pricePerListingCents),
-        tierLabel: pricing.tier.label,
-        tourId: tourId || '',
+        maxListings: String(plan.maxListings),
+        maxImagesPerTour: String(plan.maxImagesPerTour),
       },
-      success_url: `${origin}/dashboard?payment=success`,
+      success_url: `${origin}/dashboard?payment=success&plan=${planId}`,
       cancel_url: `${origin}/dashboard/pricing?payment=cancelled`,
     });
 
-    // If form submission, redirect directly
     if (contentType.includes('application/x-www-form-urlencoded')) {
       return context.redirect(session.url!);
     }

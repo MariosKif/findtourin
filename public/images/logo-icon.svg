@@ -1,16 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 78" fill="none">
-  <!-- Outer pin shape - dark red/pink -->
-  <path d="M32 0C14.3 0 0 14.3 0 32c0 22 28 44 30.5 46a2.5 2.5 0 003 0C36 76 64 54 64 32 64 14.3 49.7 0 32 0z" fill="#DC3055"/>
-  <!-- Upper swirl - darker red -->
-  <path d="M32 0C20 0 10 6 5 15c6 7 16 11 27 11 14 0 25-6 30-15C56 4 45 0 32 0z" fill="#B8243E"/>
-  <!-- Inner swirl band - light pink -->
-  <path d="M64 32c0-5-1-9.5-3-13.5C55 26 44 31 30 31c-9 0-17-2.5-23-7-2 3-3 5.5-3.5 8.5C6 37 16 42 30 42 46 42 58 37 64 32z" fill="#F8A4B8" opacity="0.8"/>
+  <!-- Outer pin shape - primary blue -->
+  <path d="M32 0C14.3 0 0 14.3 0 32c0 22 28 44 30.5 46a2.5 2.5 0 003 0C36 76 64 54 64 32 64 14.3 49.7 0 32 0z" fill="#4361ee"/>
+  <!-- Upper swirl - darker blue -->
+  <path d="M32 0C20 0 10 6 5 15c6 7 16 11 27 11 14 0 25-6 30-15C56 4 45 0 32 0z" fill="#3a56d4"/>
+  <!-- Inner swirl band - light blue -->
+  <path d="M64 32c0-5-1-9.5-3-13.5C55 26 44 31 30 31c-9 0-17-2.5-23-7-2 3-3 5.5-3.5 8.5C6 37 16 42 30 42 46 42 58 37 64 32z" fill="#a5b4fc" opacity="0.8"/>
   <!-- White inner teardrop/pin shape -->
   <path d="M32 14c-9.9 0-18 8.1-18 18 0 12 15.5 24 17 25.2a1.5 1.5 0 002 0C34.5 56 50 44 50 32c0-9.9-8.1-18-18-18z" fill="white"/>
-  <!-- Swirl inside white area - pink -->
-  <path d="M32 14c-5 0-9.5 2-13 5.5 3.5 4 9 6.5 15 6.5 7 0 13-3 16-7.5C46 15.5 39.5 14 32 14z" fill="#F8A4B8" opacity="0.6"/>
-  <!-- Circle for checkmark -->
-  <circle cx="32" cy="35" r="10" fill="#DC3055"/>
+  <!-- Swirl inside white area - light blue -->
+  <path d="M32 14c-5 0-9.5 2-13 5.5 3.5 4 9 6.5 15 6.5 7 0 13-3 16-7.5C46 15.5 39.5 14 32 14z" fill="#a5b4fc" opacity="0.6"/>
+  <!-- Circle for checkmark - primary blue -->
+  <circle cx="32" cy="35" r="10" fill="#4361ee"/>
   <!-- Checkmark -->
   <path d="M27 35l3.5 3.5L38 31" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>

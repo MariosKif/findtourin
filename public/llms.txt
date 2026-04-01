@@ -1,0 +1,34 @@
+# FindToursIn
+
+> FindToursIn is a tour discovery platform connecting travellers with trusted tour agencies across Southeast Europe and the Mediterranean. Browse tours in Greece, Turkey, Italy, Bulgaria, Albania and more.
+
+## Main Pages
+
+- [Homepage](https://www.findtoursin.com/) - Discover curated tours worldwide
+- [Browse Tours](https://www.findtoursin.com/tours) - Search and filter tours by destination, category, price
+- [Travel Blog](https://www.findtoursin.com/blog) - Travel tips, destination guides, and expert advice
+- [About Us](https://www.findtoursin.com/about) - Our mission and team
+- [Contact](https://www.findtoursin.com/contact) - Get in touch
+
+## Tour Categories
+
+Adventure, Cultural, Food & Wine, Nature, City Tours, Beach & Island, Historical, Wildlife, Hiking & Trekking, Photography, Wellness & Spa, Cruise
+
+## Key Destinations
+
+Greece (Santorini, Mykonos, Athens, Crete, Corfu, Rhodes), Turkey (Cappadocia, Istanbul), Italy (Amalfi Coast, Rome, Florence), Bulgaria (Plovdiv, Veliko Tarnovo), Albania (Ksamil, Berat)
+
+## Blog Topics
+
+- Best travel destinations
+- Sustainable travel tips
+- How to choose a tour agency
+- Destination guides and travel advice
+
+## For Agencies
+
+Tour agencies can list their tours on FindToursIn. Visit https://www.findtoursin.com/auth/register to create an agency account.
+
+## RSS Feed
+
+https://www.findtoursin.com/blog/rss.xml

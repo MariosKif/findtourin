@@ -95,4 +95,33 @@ import { FEATURED_TOURS } from '../lib/demo-tours';
       );
     });
   </script>
+
+  <!-- Organization Schema -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "FindToursIn",
+    "url": "https://www.findtoursin.com",
+    "logo": "https://www.findtoursin.com/images/logo-icon.svg",
+    "description": "Tour discovery platform connecting travellers with trusted tour agencies across Southeast Europe and the Mediterranean.",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer service",
+      "url": "https://www.findtoursin.com/contact"
+    },
+    "sameAs": []
+  })} />
+
+  <!-- WebSite Schema with SearchAction -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "FindToursIn",
+    "url": "https://www.findtoursin.com",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://www.findtoursin.com/tours?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  })} />
 </PublicLayout>

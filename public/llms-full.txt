@@ -1,0 +1,65 @@
+# FindToursIn - Full Site Documentation
+
+## Overview
+
+FindToursIn (https://www.findtoursin.com) is a tour discovery and booking platform focused on Southeast Europe and the Mediterranean. The platform connects travellers with trusted tour agencies, offering curated experiences across Greece, Turkey, Italy, Bulgaria, Albania, and beyond.
+
+## Site Structure
+
+### Public Pages (Indexable)
+
+#### Homepage (/)
+The main landing page featuring a hero section with rotating destination names, popular destinations grid, featured tours, category browsing, and a search bar.
+
+#### Tours (/tours)
+The main tour listing page. When no filters are active, tours are displayed in Airbnb-style horizontal category rows. When filters are applied, a traditional grid view is shown with sorting and pagination. Available filters: search text, destination country, departing from, category, price range, travel dates.
+
+#### Tour Detail (/tours/[slug])
+Individual tour pages with gallery, description, pricing, duration, contact information, and agency details. Includes TouristTrip schema markup.
+
+#### Blog (/blog)
+Travel blog with SEO-optimized articles. Features a featured post hero, category filtering, and individual post pages with table of contents, related posts, breadcrumbs, and BlogPosting JSON-LD schema.
+
+#### Blog Posts (/blog/[slug])
+Individual blog articles with full structured data, FAQ sections for AI snippets, internal linking, and author information.
+
+#### Blog Tags (/blog/tag/[tag])
+Tag and category archive pages listing related blog posts.
+
+#### About (/about)
+Information about FindToursIn's mission, team, and values.
+
+#### Contact (/contact)
+Contact form for enquiries.
+
+### Tour Categories Available
+- Adventure - Outdoor activities, extreme sports, expeditions
+- Cultural - Historical sites, local traditions, museum tours
+- Food & Wine - Culinary experiences, wine tastings, cooking classes
+- Nature - National parks, wildlife, scenic landscapes
+- City Tours - Urban exploration, architecture, city highlights
+- Beach & Island - Coastal experiences, island hopping, water activities
+- Historical - Archaeological sites, ancient ruins, heritage tours
+- Wildlife - Animal safaris, bird watching, marine life
+- Hiking & Trekking - Mountain trails, gorge walks, multi-day treks
+- Photography - Scenic photography tours and workshops
+- Wellness & Spa - Yoga retreats, thermal baths, spa experiences
+- Cruise - Boat tours, sailing, coastal cruises
+
+### Key Destinations
+**Greece:** Santorini, Mykonos, Athens, Crete, Corfu, Rhodes, Zakynthos, Meteora, Delphi
+**Turkey:** Cappadocia, Istanbul, Ephesus, Antalya, Pamukkale, Fethiye
+**Italy:** Amalfi Coast, Rome, Florence, Tuscany, Cinque Terre, Sardinia, Naples
+**Bulgaria:** Plovdiv, Veliko Tarnovo, Sofia, Rila
+**Albania:** Ksamil, Berat, Saranda, Theth
+
+### For Tour Agencies
+Agencies can register at /auth/register, create tour listings with up to 5-10 images, set pricing, and manage their portfolio through a dashboard. Subscription plans available: Starter, Professional, Enterprise, Ultimate.
+
+## Content Feeds
+- RSS: https://www.findtoursin.com/blog/rss.xml
+- Sitemap: https://www.findtoursin.com/sitemap-index.xml
+
+## Contact
+Website: https://www.findtoursin.com
+Contact page: https://www.findtoursin.com/contact

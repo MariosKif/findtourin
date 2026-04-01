@@ -47,5 +47,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
   }
 
+  const protectedPrefixes = ['/dashboard', '/admin', '/account', '/auth'];
+  const isProtected = protectedPrefixes.some(p => context.url.pathname.startsWith(p));
+
+  if (isProtected) {
+    const response = await next();
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return response;
+  }
+
   return next();
 });

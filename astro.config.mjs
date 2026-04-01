@@ -9,7 +9,12 @@ export default defineConfig({
   site: 'https://www.findtoursin.com',
   output: 'server',
   adapter: vercel(),
-  integrations: [mdx(), sitemap()],
+  integrations: [mdx(), sitemap({
+    filter: (page) => {
+      const excluded = ['/dashboard', '/admin', '/auth', '/account', '/api'];
+      return !excluded.some(prefix => page.includes(prefix));
+    },
+  })],
   vite: {
     plugins: [tailwindcss()],
   },

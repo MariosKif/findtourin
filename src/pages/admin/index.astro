@@ -1,145 +1,496 @@
 ---
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import Badge from '../../components/ui/Badge.astro';
 import { supabase } from '../../lib/supabase';
+import { formatDate, formatPrice } from '../../lib/utils';
 
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
 
-// Fetch stats
-const [usersResult, toursResult, paymentsResult] = await Promise.all([
-  supabase.from('users').select('id, role', { count: 'exact' }),
-  supabase.from('tours').select('id, status, name, slug, created_at, agency_id'),
-  supabase.from('payments').select('amount').eq('status', 'completed'),
+// Fetch all data in parallel
+const [toursResult, usersResult, paymentsResult] = await Promise.all([
+  supabase.from('tours').select('*').order('created_at', { ascending: false }),
+  supabase.from('users').select('*').order('created_at', { ascending: false }),
+  supabase.from('payments').select('*').order('created_at', { ascending: false }),
 ]);
 
-const allUsers = usersResult.data || [];
-const totalUsers = allUsers.length;
-const activeAgencies = allUsers.filter(u => u.role === 'agency').length;
 const allTours = toursResult.data || [];
-const totalTours = allTours.length;
-const pendingTours = allTours.filter(t => t.status === 'pending_payment');
-const pendingCount = pendingTours.length;
+const allUsers = usersResult.data || [];
+const allPayments = paymentsResult.data || [];
 
-// Recent activity: latest 8 users
-const { data: recentUsers } = await supabase
-  .from('users')
-  .select('id, name, email, created_at')
-  .order('created_at', { ascending: false })
-  .limit(8);
+// Stats
+const totalListings = allTours.length;
+const totalUsers = allUsers.length;
+const activeSubscriptions = allPayments.filter(p => p.status === 'completed').length;
+const hiddenListings = allTours.filter(t => t.status === 'inactive').length;
+const pendingApproval = allTours.filter(t => t.status === 'pending_payment').length;
 
-// Format date helper
-function formatRelativeDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) + ', ' +
-    date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+// Completed payments for subscriptions tab
+const completedPayments = allPayments.filter(p => p.status === 'completed');
+
+// Batch-fetch user profiles for payments
+const paymentUserIds = [...new Set(completedPayments.map(p => p.user_id).filter(Boolean))];
+const paymentUserMap = new Map<string, any>();
+if (paymentUserIds.length > 0) {
+  const { data: paymentUsers } = await supabase
+    .from('users')
+    .select('id, name, email')
+    .in('id', paymentUserIds);
+  (paymentUsers || []).forEach(u => paymentUserMap.set(u.id, u));
 }
+
+// Status helpers
+const statusVariant: Record<string, 'success' | 'warning' | 'neutral' | 'danger' | 'info'> = {
+  active: 'success',
+  pending_payment: 'warning',
+  inactive: 'neutral',
+  deleted: 'danger',
+};
+
+const statusLabel: Record<string, string> = {
+  active: 'Active',
+  pending_payment: 'Pending',
+  inactive: 'Hidden',
+  deleted: 'Deleted',
+};
+
+const roleVariant: Record<string, 'info' | 'success' | 'neutral'> = {
+  admin: 'info',
+  agency: 'success',
+  user: 'neutral',
+};
 ---
 
-<DashboardLayout title="Platform Overview">
-  {/* Header */}
+<DashboardLayout title="Admin Control Panel">
+  <!-- Header -->
   <div class="flex items-center gap-3 mb-8">
-    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100">
-      <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+    <div class="flex items-center justify-center w-11 h-11 rounded-xl bg-primary-100">
+      <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.77 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" />
       </svg>
     </div>
-    <h1 class="text-xl font-semibold text-gray-900">Platform Overview</h1>
-  </div>
-
-  {/* Stat Cards */}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    {/* Total Users */}
-    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50">
-        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      </div>
-      <div>
-        <p class="text-sm text-gray-500">Total Users</p>
-        <p class="text-2xl font-bold text-gray-900">{totalUsers}</p>
-      </div>
-    </div>
-
-    {/* Active Agencies */}
-    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50">
-        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      </div>
-      <div>
-        <p class="text-sm text-gray-500">Active Agencies</p>
-        <p class="text-2xl font-bold text-gray-900">{activeAgencies}</p>
-      </div>
-    </div>
-
-    {/* Total Tours */}
-    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50">
-        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-        </svg>
-      </div>
-      <div>
-        <p class="text-sm text-gray-500">Total Tours</p>
-        <p class="text-2xl font-bold text-gray-900">{totalTours}</p>
-      </div>
-    </div>
-
-    {/* Pending Approvals */}
-    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50">
-        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </div>
-      <div>
-        <p class="text-sm text-gray-500">Pending Approvals</p>
-        <p class="text-2xl font-bold text-gray-900">{pendingCount}</p>
-      </div>
+    <div>
+      <h1 class="text-xl font-bold text-gray-900">Admin Control Panel</h1>
+      <p class="text-sm text-gray-500">Manage your platform</p>
     </div>
   </div>
 
-  {/* Two Panels */}
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    {/* Pending Approvals Panel */}
-    <div class="bg-white rounded-xl border border-gray-200 p-6 min-h-[320px]">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Pending Approvals</h2>
-      {pendingTours.length > 0 ? (
-        <div class="space-y-3">
-          {pendingTours.slice(0, 6).map((tour) => (
-            <a href={`/admin/listings`} class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
-              <div>
-                <p class="text-sm font-medium text-gray-900">{tour.name}</p>
-                <p class="text-xs text-gray-500">Submitted {formatRelativeDate(tour.created_at)}</p>
-              </div>
-              <span class="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">Pending</span>
-            </a>
-          ))}
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+    <!-- Total Listings -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-primary-50">
+          <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+          </svg>
         </div>
+        <span class="text-sm text-gray-500">Total Listings</span>
+      </div>
+      <p class="text-3xl font-bold text-gray-900">{totalListings}</p>
+    </div>
+
+    <!-- Total Users -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </div>
+        <span class="text-sm text-gray-500">Total Users</span>
+      </div>
+      <p class="text-3xl font-bold text-gray-900">{totalUsers}</p>
+    </div>
+
+    <!-- Active Subscriptions -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-green-50">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+        </div>
+        <span class="text-sm text-gray-500">Active Subscriptions</span>
+      </div>
+      <p class="text-3xl font-bold text-gray-900">{activeSubscriptions}</p>
+    </div>
+
+    <!-- Hidden Listings -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-orange-50">
+          <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+          </svg>
+        </div>
+        <span class="text-sm text-gray-500">Hidden Listings</span>
+      </div>
+      <p class="text-3xl font-bold text-gray-900">{hiddenListings}</p>
+    </div>
+
+    <!-- Pending Approval -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50">
+          <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <span class="text-sm text-gray-500">Pending Approval</span>
+      </div>
+      <p class="text-3xl font-bold text-gray-900">{pendingApproval}</p>
+    </div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="border-b border-gray-200 mb-6">
+    <nav class="flex gap-0 -mb-px" id="tab-nav">
+      <button data-tab="listings" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 transition-colors">
+        Listings
+      </button>
+      <button data-tab="users" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 transition-colors">
+        Users
+      </button>
+      <button data-tab="subscriptions" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 transition-colors">
+        Subscriptions
+      </button>
+      <button data-tab="blog" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 transition-colors">
+        Blog
+      </button>
+    </nav>
+  </div>
+
+  <!-- Tab Content: Listings -->
+  <div id="tab-listings" class="tab-panel">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      {allTours.length === 0 ? (
+        <div class="p-12 text-center text-gray-400">No listings found</div>
       ) : (
-        <div class="flex items-center justify-center h-48 text-gray-400 text-sm">
-          No pending approvals
+        <div class="divide-y divide-gray-100">
+          {allTours.map(tour => (
+            <div class="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors">
+              <!-- Tour Image -->
+              <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                {tour.image_url ? (
+                  <img src={tour.image_url} alt={tour.name} class="w-full h-full object-cover" />
+                ) : (
+                  <div class="w-full h-full flex items-center justify-center text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              <!-- Tour Info -->
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-gray-900 truncate">{tour.name}</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                  {tour.category && <span class="text-xs text-gray-500">{tour.category}</span>}
+                  {tour.category && (tour.country || tour.city) && <span class="text-xs text-gray-300">&bull;</span>}
+                  {(tour.country || tour.city) && (
+                    <span class="text-xs text-gray-500">
+                      {[tour.city, tour.country].filter(Boolean).join(', ')}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <!-- Status Badge -->
+              <div class="shrink-0">
+                <Badge variant={statusVariant[tour.status] || 'neutral'} size="sm">
+                  {statusLabel[tour.status] || tour.status}
+                </Badge>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex items-center gap-2 shrink-0">
+                {tour.status !== 'active' && (
+                  <button
+                    data-action="approve"
+                    data-tour-id={tour.id}
+                    class="action-btn inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Approve
+                  </button>
+                )}
+                {tour.status !== 'inactive' && tour.status !== 'deleted' && (
+                  <button
+                    data-action="hide"
+                    data-tour-id={tour.id}
+                    class="action-btn inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    </svg>
+                    Hide
+                  </button>
+                )}
+                {tour.status !== 'deleted' && (
+                  <button
+                    data-action="reject"
+                    data-tour-id={tour.id}
+                    class="action-btn inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Reject
+                  </button>
+                )}
+                <button
+                  data-action="delete"
+                  data-tour-id={tour.id}
+                  class="action-btn inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
+  </div>
 
-    {/* Recent Activity Panel */}
-    <div class="bg-white rounded-xl border border-gray-200 p-6 min-h-[320px]">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
-      <div class="space-y-1">
-        {(recentUsers || []).map((u) => (
-          <div class="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-gray-50 transition-colors">
-            <div class="flex items-center gap-3">
-              <span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>
-              <p class="text-sm text-gray-700">New registration: <span class="font-medium">{u.name}</span></p>
-            </div>
-            <p class="text-xs text-gray-400 whitespace-nowrap">{formatRelativeDate(u.created_at)}</p>
-          </div>
-        ))}
-      </div>
+  <!-- Tab Content: Users -->
+  <div id="tab-users" class="tab-panel hidden">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      {allUsers.length === 0 ? (
+        <div class="p-12 text-center text-gray-400">No users found</div>
+      ) : (
+        <div class="divide-y divide-gray-100">
+          {allUsers.map(u => {
+            const initials = (u.name || u.email || '?').split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+            return (
+              <div class="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors">
+                <!-- Avatar -->
+                <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center shrink-0">
+                  <span class="text-sm font-semibold text-white">{initials}</span>
+                </div>
+
+                <!-- User Info -->
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-gray-900 truncate">{u.name || 'Unnamed'}</p>
+                  <p class="text-xs text-gray-500 truncate">{u.email}</p>
+                </div>
+
+                <!-- Role Badge -->
+                <div class="shrink-0">
+                  <Badge variant={roleVariant[u.role] || 'neutral'} size="sm">
+                    {u.role || 'user'}
+                  </Badge>
+                </div>
+
+                <!-- Delete Button (not for admins) -->
+                {u.role !== 'admin' && (
+                  <button
+                    data-action="delete-user"
+                    data-user-id={u.id}
+                    class="action-btn inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors shrink-0"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   </div>
+
+  <!-- Tab Content: Subscriptions -->
+  <div id="tab-subscriptions" class="tab-panel hidden">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      {completedPayments.length === 0 ? (
+        <div class="p-12 text-center text-gray-400">No subscriptions found</div>
+      ) : (
+        <div class="divide-y divide-gray-100">
+          {completedPayments.map(payment => {
+            const pUser = paymentUserMap.get(payment.user_id);
+            return (
+              <div class="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors">
+                <!-- Icon -->
+                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                  <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+
+                <!-- User Info -->
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-gray-900 truncate">{pUser?.name || 'Unknown User'}</p>
+                  <p class="text-xs text-gray-500 truncate">{pUser?.email || payment.user_id}</p>
+                </div>
+
+                <!-- Amount -->
+                <div class="text-right shrink-0">
+                  <p class="text-sm font-semibold text-gray-900">{formatPrice(payment.amount)}</p>
+                  <p class="text-xs text-gray-500">{formatDate(payment.created_at)}</p>
+                </div>
+
+                <!-- Status Badge -->
+                <div class="shrink-0">
+                  <Badge variant="success" size="sm">Completed</Badge>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  </div>
+
+  <!-- Tab Content: Blog -->
+  <div id="tab-blog" class="tab-panel hidden">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+      <div class="flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 mx-auto mb-4">
+        <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-900 mb-1">Blog Management</h3>
+      <p class="text-sm text-gray-500">Blog management coming soon</p>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
 </DashboardLayout>
+
+<script>
+  // Tab switching
+  function initTabs() {
+    const tabBtns = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
+    const tabPanels = document.querySelectorAll<HTMLElement>('.tab-panel');
+
+    function activateTab(tabId: string) {
+      tabBtns.forEach(btn => {
+        const isActive = btn.dataset.tab === tabId;
+        btn.classList.toggle('border-primary-600', isActive);
+        btn.classList.toggle('text-primary-600', isActive);
+        btn.classList.toggle('font-semibold', isActive);
+        btn.classList.toggle('border-transparent', !isActive);
+        btn.classList.toggle('text-gray-500', !isActive);
+      });
+
+      tabPanels.forEach(panel => {
+        const panelTab = panel.id.replace('tab-', '');
+        panel.classList.toggle('hidden', panelTab !== tabId);
+      });
+
+      window.location.hash = tabId;
+    }
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        if (tab) activateTab(tab);
+      });
+    });
+
+    // Set initial tab from hash
+    const hash = window.location.hash.replace('#', '');
+    const validTabs = ['listings', 'users', 'subscriptions', 'blog'];
+    activateTab(validTabs.includes(hash) ? hash : 'listings');
+  }
+
+  // Toast notification
+  function showToast(message: string, type: 'success' | 'error' = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white transition-all ${
+      type === 'success' ? 'bg-green-600' : 'bg-red-600'
+    }`;
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 2500);
+  }
+
+  // Tour actions
+  function initTourActions() {
+    document.querySelectorAll<HTMLButtonElement>('[data-tour-id]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const action = btn.dataset.action;
+        const tourId = btn.dataset.tourId;
+        if (!tourId || !action) return;
+
+        const confirmed = action === 'delete'
+          ? confirm('Are you sure you want to permanently delete this tour?')
+          : true;
+        if (!confirmed) return;
+
+        try {
+          if (action === 'delete') {
+            const res = await fetch(`/api/admin/tours/${tourId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete tour');
+            showToast('Tour deleted successfully');
+          } else {
+            const statusMap: Record<string, string> = {
+              approve: 'active',
+              hide: 'inactive',
+              reject: 'deleted',
+            };
+            const newStatus = statusMap[action];
+            if (!newStatus) return;
+
+            const res = await fetch(`/api/admin/tours/${tourId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: newStatus }),
+            });
+            if (!res.ok) throw new Error(`Failed to ${action} tour`);
+            showToast(`Tour ${action}d successfully`);
+          }
+          setTimeout(() => window.location.reload(), 800);
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Action failed', 'error');
+        }
+      });
+    });
+  }
+
+  // User actions
+  function initUserActions() {
+    document.querySelectorAll<HTMLButtonElement>('[data-action="delete-user"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const userId = btn.dataset.userId;
+        if (!userId) return;
+
+        if (!confirm('Are you sure you want to delete this user?')) return;
+
+        try {
+          const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error('Failed to delete user');
+          showToast('User deleted successfully');
+          setTimeout(() => window.location.reload(), 800);
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Action failed', 'error');
+        }
+      });
+    });
+  }
+
+  // Initialize
+  initTabs();
+  initTourActions();
+  initUserActions();
+</script>

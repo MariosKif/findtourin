@@ -23,17 +23,7 @@ const navLinks = [
         "flex items-center gap-2 font-heading text-xl transition-colors",
         isHome ? "text-white header-logo" : "text-primary-700"
       ]}>
-        <svg class="w-8 h-8 shrink-0" viewBox="0 0 64 64" fill="none">
-          <path d="M32 4C19.85 4 10 13.85 10 26c0 14.4 18.8 31.2 20.5 32.8a2 2 0 002.9 0C35.2 57.2 54 40.4 54 26 54 13.85 44.15 4 32 4z" class:list={[isHome ? "fill-white header-pin" : "fill-primary-500"]} />
-          <path d="M32 4c-7.5 0-14 3.6-18.2 9.2C17.4 16.8 24.2 19 32 19c10 0 18.5-4 22-10C49.8 6 41.5 4 32 4z" class:list={[isHome ? "fill-white/70 header-swirl" : "fill-primary-400"]} />
-          <path d="M54 26c0-3.2-.6-6.2-1.8-9-3.5 6-12 10-22.2 10-7 0-13.2-1.8-17.6-4.8C11.5 24 11 25 10.6 26.2c1.4 4 8.6 7.8 18.4 7.8C42 34 51 30 54 26z" class:list={[isHome ? "fill-white/40 header-swirl2" : "fill-primary-300/70"]} />
-          <circle cx="32" cy="26" r="11" fill="white" />
-          <path d="M32 16.5l3 8.5h-6l3-8.5z" class:list={[isHome ? "fill-white/60 header-needle" : "fill-primary-600"]} />
-          <path d="M32 35.5l-3-8.5h6l-3 8.5z" class:list={[isHome ? "fill-white/30 header-needle-s" : "fill-primary-300"]} />
-          <path d="M41.5 26l-8.5 3v-6l8.5 3z" class:list={[isHome ? "fill-white/30 header-needle-s" : "fill-primary-300"]} />
-          <path d="M22.5 26l8.5-3v6l-8.5-3z" class:list={[isHome ? "fill-white/30 header-needle-s" : "fill-primary-300"]} />
-          <circle cx="32" cy="26" r="3.5" class:list={[isHome ? "fill-white header-center" : "fill-secondary-500"]} />
-        </svg>
+        <img src="/images/logo-icon.svg" alt="FindToursIn" class="w-10 h-10 shrink-0" />
         FindToursIn
       </a>
 
@@ -234,13 +224,6 @@ const navLinks = [
     const navLinks = header.querySelectorAll('.header-nav-link') as NodeListOf<HTMLElement>;
     const navActive = header.querySelector('.header-nav-active') as HTMLElement;
     const cta = header.querySelector('.header-cta') as HTMLElement;
-    const pin = header.querySelector('.header-pin') as HTMLElement;
-    const swirl = header.querySelector('.header-swirl') as HTMLElement;
-    const swirl2 = header.querySelector('.header-swirl2') as HTMLElement;
-    const needle = header.querySelector('.header-needle') as HTMLElement;
-    const needleS = header.querySelectorAll('.header-needle-s') as NodeListOf<HTMLElement>;
-    const center = header.querySelector('.header-center') as HTMLElement;
-
     window.addEventListener('scroll', () => {
       const scrolled = window.scrollY > 80;
 
@@ -248,12 +231,6 @@ const navLinks = [
         header.classList.remove('bg-transparent');
         header.classList.add('bg-white/90', 'backdrop-blur-md', 'border-b', 'border-gray-100');
         if (logo) { logo.classList.remove('text-white'); logo.classList.add('text-primary-700'); }
-        if (pin) { pin.classList.remove('fill-white'); pin.classList.add('fill-primary-500'); }
-        if (swirl) { swirl.classList.remove('fill-white/70'); swirl.classList.add('fill-primary-400'); }
-        if (swirl2) { swirl2.classList.remove('fill-white/40'); swirl2.classList.add('fill-primary-300/70'); }
-        if (needle) { needle.classList.remove('fill-white/60'); needle.classList.add('fill-primary-600'); }
-        needleS.forEach(n => { n.classList.remove('fill-white/30'); n.classList.add('fill-primary-300'); });
-        if (center) { center.classList.remove('fill-white'); center.classList.add('fill-secondary-500'); }
         navLinks.forEach(l => { l.classList.remove('text-white/80', 'hover:text-white'); l.classList.add('text-gray-600', 'hover:text-primary-600'); });
         if (navActive) { navActive.classList.remove('text-white', 'border-white'); navActive.classList.add('text-primary-600', 'border-primary-500'); }
         if (cta) { cta.classList.remove('border-white', 'text-white', 'hover:bg-white', 'hover:text-gray-900'); cta.classList.add('border-gray-900', 'text-gray-900', 'hover:bg-gray-900', 'hover:text-white'); }
@@ -261,12 +238,6 @@ const navLinks = [
         header.classList.add('bg-transparent');
         header.classList.remove('bg-white/90', 'backdrop-blur-md', 'border-b', 'border-gray-100');
         if (logo) { logo.classList.add('text-white'); logo.classList.remove('text-primary-700'); }
-        if (pin) { pin.classList.add('fill-white'); pin.classList.remove('fill-primary-500'); }
-        if (swirl) { swirl.classList.add('fill-white/70'); swirl.classList.remove('fill-primary-400'); }
-        if (swirl2) { swirl2.classList.add('fill-white/40'); swirl2.classList.remove('fill-primary-300/70'); }
-        if (needle) { needle.classList.add('fill-white/60'); needle.classList.remove('fill-primary-600'); }
-        needleS.forEach(n => { n.classList.add('fill-white/30'); n.classList.remove('fill-primary-300'); });
-        if (center) { center.classList.add('fill-white'); center.classList.remove('fill-secondary-500'); }
         navLinks.forEach(l => { l.classList.add('text-white/80', 'hover:text-white'); l.classList.remove('text-gray-600', 'hover:text-primary-600'); });
         if (navActive) { navActive.classList.add('text-white', 'border-white'); navActive.classList.remove('text-primary-600', 'border-primary-500'); }
         if (cta) { cta.classList.add('border-white', 'text-white', 'hover:bg-white', 'hover:text-gray-900'); cta.classList.remove('border-gray-900', 'text-gray-900', 'hover:bg-gray-900', 'hover:text-white'); }

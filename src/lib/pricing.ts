@@ -1,5 +1,5 @@
 // Subscription pricing model
-// 4 tiers with annual discount of ~17%
+// 4 tiers with annual discount of 15%
 
 export interface PricingPlan {
   id: string;
@@ -17,7 +17,7 @@ export const PLANS: PricingPlan[] = [
     id: 'starter',
     name: 'Starter',
     monthlyPriceCents: 3999,
-    annualPriceCents: 39900,
+    annualPriceCents: 40790,
     maxListings: 15,
     maxImagesPerTour: 5,
     features: [
@@ -31,7 +31,7 @@ export const PLANS: PricingPlan[] = [
     id: 'professional',
     name: 'Professional',
     monthlyPriceCents: 6999,
-    annualPriceCents: 69900,
+    annualPriceCents: 71390,
     maxListings: 30,
     maxImagesPerTour: 10,
     popular: true,
@@ -46,7 +46,7 @@ export const PLANS: PricingPlan[] = [
     id: 'enterprise',
     name: 'Enterprise',
     monthlyPriceCents: 12999,
-    annualPriceCents: 129900,
+    annualPriceCents: 132590,
     maxListings: 60,
     maxImagesPerTour: 999,
     features: [
@@ -60,7 +60,7 @@ export const PLANS: PricingPlan[] = [
     id: 'ultimate',
     name: 'Ultimate',
     monthlyPriceCents: 24999,
-    annualPriceCents: 249900,
+    annualPriceCents: 254990,
     maxListings: 140,
     maxImagesPerTour: 999,
     features: [

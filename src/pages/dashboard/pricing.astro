@@ -31,7 +31,7 @@ if (!user) return Astro.redirect('/auth/login');
     </button>
     <span id="label-annual" class="text-sm font-semibold text-gray-400 transition-colors">
       Annual
-      <span class="inline-flex items-center ml-1.5 px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Save up to 17%</span>
+      <span class="inline-flex items-center ml-1.5 px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Save 15%</span>
     </span>
   </div>
 
@@ -76,7 +76,7 @@ if (!user) return Astro.redirect('/auth/login');
             <div class="flex items-baseline gap-1">
               <span class="text-4xl font-extrabold text-gray-900">&euro;{formatCents(monthlyEquiv)}</span>
             </div>
-            <p class="text-sm text-gray-500 mt-1">per month</p>
+            <p class="text-sm text-gray-500 mt-1">per month <span class="text-gray-400">+ VAT</span></p>
           </div>
 
           {/* Annual pricing */}
@@ -84,7 +84,7 @@ if (!user) return Astro.redirect('/auth/login');
             <div class="flex items-baseline gap-1">
               <span class="text-4xl font-extrabold text-gray-900">&euro;{formatCents(annualEquiv)}</span>
             </div>
-            <p class="text-sm text-gray-500 mt-1">per month, billed annually</p>
+            <p class="text-sm text-gray-500 mt-1">per month, billed annually <span class="text-gray-400">+ VAT</span></p>
           </div>
 
           {/* Cost per listing */}

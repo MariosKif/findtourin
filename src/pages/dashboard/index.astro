@@ -7,7 +7,7 @@ import { formatPrice } from '../../lib/utils';
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
 
-// Fetch all user's tours
+// Fetch tours
 const { data: allUserTours } = await supabase
   .from('tours')
   .select('*')
@@ -17,6 +17,7 @@ const tours = allUserTours || [];
 const totalListings = tours.length;
 const activeListings = tours.filter(t => t.status === 'active').length;
 const pendingPayment = tours.filter(t => t.status === 'pending_payment').length;
+const totalViews = tours.reduce((sum, t) => sum + (t.view_count || 0), 0);
 
 // Total spent
 const { data: paymentsData } = await supabase
@@ -27,94 +28,85 @@ const { data: paymentsData } = await supabase
 
 const totalSpent = (paymentsData || []).reduce((sum, p) => sum + (p.amount || 0), 0);
 
-// Recent listings (last 5)
+// Recent listings
 const recentTours = [...tours]
   .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   .slice(0, 5);
 
-// Top performing tours by views
+// Top performing
 const topTours = [...tours]
   .filter(t => t.status === 'active')
   .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
   .slice(0, 5);
 
-const statusVariant: Record<string, string> = {
-  active: 'bg-green-50 text-green-700',
-  pending_payment: 'bg-amber-50 text-amber-700',
-  inactive: 'bg-gray-50 text-gray-600',
-  deleted: 'bg-red-50 text-red-600',
+const statusColors: Record<string, string> = {
+  active: 'bg-green-100 text-green-700',
+  pending_payment: 'bg-amber-100 text-amber-700',
+  inactive: 'bg-gray-100 text-gray-600',
+  deleted: 'bg-red-100 text-red-600',
 };
 ---
 
-<DashboardLayout title="Dashboard Overview">
-  {/* Header */}
-  <div class="flex items-center gap-3 mb-8">
-    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100">
-      <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-      </svg>
-    </div>
+<DashboardLayout title="Dashboard">
+  {/* Subscription status banner */}
+  <div class="bg-gray-50 rounded-xl p-4 flex items-center justify-between mb-6">
     <div>
-      <h1 class="text-xl font-semibold text-gray-900">Dashboard Overview</h1>
-      <p class="text-sm text-gray-500">Welcome back, {user.name}</p>
+      <p class="text-sm font-medium text-gray-900">Subscription Status</p>
+      <p class="text-xs text-gray-500">Manage your subscription to keep listings active</p>
     </div>
+    <a href="/dashboard/subscription" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors">
+      View Subscription
+    </a>
   </div>
 
-  {/* Stat Cards */}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50">
-        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+  {/* Stats grid */}
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-center gap-3 mb-2">
+        <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
+        <span class="text-sm text-gray-500">Total Views</span>
       </div>
-      <div>
-        <p class="text-sm text-gray-500">Total Listings</p>
-        <p class="text-2xl font-bold text-gray-900">{totalListings}</p>
-      </div>
+      <p class="text-2xl font-bold text-gray-900">{totalViews.toLocaleString()}</p>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-green-50">
-        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-center gap-3 mb-2">
+        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
+        <span class="text-sm text-gray-500">Active Listings</span>
       </div>
-      <div>
-        <p class="text-sm text-gray-500">Active Listings</p>
-        <p class="text-2xl font-bold text-gray-900">{activeListings}</p>
-      </div>
+      <p class="text-2xl font-bold text-gray-900">{activeListings}</p>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-50">
-        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-center gap-3 mb-2">
+        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
+        <span class="text-sm text-gray-500">Pending</span>
       </div>
-      <div>
-        <p class="text-sm text-gray-500">Pending Payment</p>
-        <p class="text-2xl font-bold text-gray-900">{pendingPayment}</p>
-      </div>
+      <p class="text-2xl font-bold text-gray-900">{pendingPayment}</p>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-purple-50">
-        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-center gap-3 mb-2">
+        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
+        <span class="text-sm text-gray-500">Total Listings</span>
       </div>
-      <div>
-        <p class="text-sm text-gray-500">Total Spent</p>
-        <p class="text-2xl font-bold text-gray-900">{formatPrice(totalSpent / 100)}</p>
-      </div>
+      <p class="text-2xl font-bold text-gray-900">{totalListings}</p>
     </div>
   </div>
 
-  {/* Two Panels */}
+  {/* Two panels */}
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     {/* Recent Listings */}
-    <div class="bg-white rounded-xl border border-gray-200 p-6 min-h-[320px]">
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-semibold text-gray-900">Recent Listings</h2>
         <a href="/dashboard/tours" class="text-sm text-primary-600 hover:underline">View all</a>
@@ -123,49 +115,65 @@ const statusVariant: Record<string, string> = {
         <div class="space-y-1">
           {recentTours.map((tour) => (
             <a href={`/dashboard/tours/${tour.id}/edit`} class="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-gray-50 transition-colors">
-              <div>
-                <p class="text-sm font-medium text-gray-900">{tour.name}</p>
-                <p class="text-xs text-gray-500">{tour.country} &middot; {tour.category}</p>
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                  {tour.images?.[0]?.url ? (
+                    <img src={tour.images[0].url} alt="" class="w-full h-full object-cover" />
+                  ) : (
+                    <div class="w-full h-full bg-gray-200" />
+                  )}
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-gray-900 truncate">{tour.name}</p>
+                  <p class="text-xs text-gray-500">{tour.country} · {tour.category}</p>
+                </div>
               </div>
-              <span class:list={['text-xs font-medium px-2 py-1 rounded-full', statusVariant[tour.status] || 'bg-gray-50 text-gray-600']}>
+              <span class:list={['text-xs font-medium px-2 py-1 rounded-full shrink-0 ml-2', statusColors[tour.status] || 'bg-gray-100 text-gray-600']}>
                 {tour.status === 'pending_payment' ? 'Pending' : tour.status}
               </span>
             </a>
           ))}
         </div>
       ) : (
-        <div class="flex flex-col items-center justify-center h-48 text-gray-400 text-sm">
+        <div class="flex flex-col items-center justify-center h-40 text-gray-400 text-sm">
           <p>No listings yet</p>
-          <a href="/dashboard/tours/new" class="mt-2 text-primary-600 hover:underline text-sm">Create your first tour</a>
+          <a href="/dashboard/tours/new" class="mt-2 text-primary-600 hover:underline">Create your first tour</a>
         </div>
       )}
     </div>
 
-    {/* Tour Performance */}
-    <div class="bg-white rounded-xl border border-gray-200 p-6 min-h-[320px]">
+    {/* Top Performing */}
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-gray-900">Tour Performance</h2>
+        <h2 class="text-lg font-semibold text-gray-900">Top Performing</h2>
         <a href="/dashboard/analytics" class="text-sm text-primary-600 hover:underline">View all</a>
       </div>
       {topTours.length > 0 ? (
         <div class="space-y-1">
           {topTours.map((tour) => (
             <div class="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-gray-50 transition-colors">
-              <p class="text-sm font-medium text-gray-900 truncate mr-4">{tour.name}</p>
-              <div class="flex items-center gap-4 shrink-0">
-                <span class="flex items-center gap-1 text-xs text-gray-500" title="Views">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  {tour.view_count || 0}
-                </span>
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                  {tour.images?.[0]?.url ? (
+                    <img src={tour.images[0].url} alt="" class="w-full h-full object-cover" />
+                  ) : (
+                    <div class="w-full h-full bg-gray-200" />
+                  )}
+                </div>
+                <p class="text-sm font-medium text-gray-900 truncate">{tour.name}</p>
+              </div>
+              <div class="flex items-center gap-1 text-sm text-gray-500 shrink-0 ml-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                {tour.view_count || 0}
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div class="flex items-center justify-center h-48 text-gray-400 text-sm">
+        <div class="flex items-center justify-center h-40 text-gray-400 text-sm">
           No active tours yet
         </div>
       )}

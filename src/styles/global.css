@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --color-primary-50: #f0f3ff;
@@ -60,4 +61,107 @@ h1, h2 {
 
 .wishlist-heartbeat {
   animation: heartbeat 0.6s ease-in-out;
+}
+
+/* Blog content typography */
+.blog-content {
+  --tw-prose-headings: var(--color-gray-900);
+  --tw-prose-links: var(--color-primary-600);
+  color: #374151;
+  line-height: 1.8;
+}
+
+.blog-content h2 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 400;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  color: #111827;
+  scroll-margin-top: 6rem;
+}
+
+.blog-content h3 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 400;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  color: #1f2937;
+  scroll-margin-top: 6rem;
+}
+
+.blog-content p {
+  margin-bottom: 1.25rem;
+  line-height: 1.8;
+}
+
+.blog-content a {
+  color: var(--color-primary-600);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--color-primary-200);
+  transition: text-decoration-color 0.2s;
+}
+
+.blog-content a:hover {
+  text-decoration-color: var(--color-primary-600);
+}
+
+.blog-content blockquote {
+  background: #f0f3ff;
+  border-left: 4px solid var(--color-primary-400);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+  font-style: normal;
+  color: #374151;
+}
+
+.blog-content blockquote p {
+  margin-bottom: 0;
+}
+
+.blog-content ul, .blog-content ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.blog-content li {
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+}
+
+.blog-content li strong {
+  color: #111827;
+}
+
+.blog-content table {
+  margin: 1.5rem 0;
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.blog-content th {
+  background: #f9fafb;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.blog-content td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.blog-content img {
+  border-radius: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.blog-content hr {
+  margin: 2rem 0;
+  border-color: #e5e7eb;
 }

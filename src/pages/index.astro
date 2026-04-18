@@ -1,16 +1,97 @@
 ---
+export const prerender = false;
 import PublicLayout from '../layouts/PublicLayout.astro';
 import HeroSection from '../components/home/HeroSection.astro';
 import FeaturedTours from '../components/home/FeaturedTours.astro';
 import HowItWorks from '../components/home/HowItWorks.astro';
 import PopularDestinations from '../components/home/PopularDestinations.astro';
 import { FEATURED_TOURS } from '../lib/demo-tours';
+import { supabase } from '../lib/supabase';
+import { TOUR_LIST_SELECT, normalizeTour } from '../lib/tour-helpers';
+
+// --- Real data from DB (with safe fallback) ---
+let featuredTours: any[] = FEATURED_TOURS as any[];
+let stats = { tours: 0, agencies: 0, countries: 0 };
+let realDestinations: { city: string; country: string; image: string }[] | undefined = undefined;
+
+try {
+  const { data: toursData } = await supabase
+    .from('tours')
+    .select(TOUR_LIST_SELECT)
+    .eq('status', 'active')
+    .order('view_count', { ascending: false })
+    .limit(50);
+
+  if (toursData && toursData.length > 0) {
+    // Featured: top 6 by views
+    featuredTours = toursData.slice(0, 6).map(normalizeTour);
+
+    // Stats
+    const { count: totalTours } = await supabase
+      .from('tours')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active');
+
+    const agencyIds = new Set<string>();
+    const countries = new Set<string>();
+    toursData.forEach((t: any) => {
+      if (t.agency_id) agencyIds.add(t.agency_id);
+      if (t.country) countries.add(t.country);
+    });
+
+    stats = {
+      tours: totalTours || toursData.length,
+      agencies: agencyIds.size,
+      countries: countries.size,
+    };
+
+    // Destinations: pick up to 8 unique cities with tours, prefer most-viewed
+    const seen = new Set<string>();
+    const picked: { city: string; country: string; image: string }[] = [];
+    const DEFAULT_CITY_IMG: Record<string, string> = {
+      Santorini: "https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=400&h=560&fit=crop",
+      Mykonos: "https://images.unsplash.com/photo-1601581875309-fafbf2d3ed3a?w=400&h=560&fit=crop",
+      Corfu: "https://images.unsplash.com/photo-1580137189272-c9379f8864fd?w=400&h=560&fit=crop",
+      Crete: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=400&h=560&fit=crop",
+      "Veliko Tarnovo": "/images/veliko.jpg",
+      Ksamil: "https://images.unsplash.com/photo-1596005554384-d293674c91d7?w=400&h=560&fit=crop",
+      Istanbul: "https://images.unsplash.com/photo-1541432901042-2d8bd64b4a9b?w=400&h=560&fit=crop",
+      Athens: "https://images.unsplash.com/photo-1555993539-1732b0258235?w=400&h=560&fit=crop",
+      Rhodes: "https://images.unsplash.com/photo-1504512485720-7d83a16ee930?w=400&h=560&fit=crop",
+      Meteora: "https://images.unsplash.com/photo-1586956214029-4a41d7a7d24a?w=400&h=560&fit=crop",
+      Heraklion: "https://images.unsplash.com/photo-1602867741746-6df80f40b3f6?w=400&h=560&fit=crop",
+      Zakynthos: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400&h=560&fit=crop",
+      Siena: "https://images.unsplash.com/photo-1537799943037-f5da89a65689?w=400&h=560&fit=crop",
+      Naples: "https://images.unsplash.com/photo-1534445867742-43195f401b6c?w=400&h=560&fit=crop",
+      Fethiye: "https://images.unsplash.com/photo-1604873660580-1b2b5e3c5e94?w=400&h=560&fit=crop",
+      Izmir: "https://images.unsplash.com/photo-1568322503975-e8bbc926ce08?w=400&h=560&fit=crop",
+      "La Spezia": "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=400&h=560&fit=crop",
+      Ioannina: "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=400&h=560&fit=crop",
+      Litochoro: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=560&fit=crop",
+      Delphi: "https://images.unsplash.com/photo-1603565816030-6b389eeb23cb?w=400&h=560&fit=crop",
+    };
+    for (const t of toursData) {
+      if (!t.city || !t.country) continue;
+      const key = `${t.city}|${t.country}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const img = DEFAULT_CITY_IMG[t.city] || t.images?.[0]?.url || '/images/hero-bg.jpg';
+      picked.push({ city: t.city, country: t.country, image: img });
+      if (picked.length === 8) break;
+    }
+    if (picked.length > 0) realDestinations = picked;
+  }
+} catch {
+  // DB unavailable — silently fall through to demo data
+}
+
+const heroStats = stats.tours > 0 ? stats : undefined;
 ---
 
 <PublicLayout title="FindToursIn" description="Discover amazing tours worldwide. Browse curated travel experiences from trusted agencies.">
-  <HeroSection />
-  <FeaturedTours tours={FEATURED_TOURS} />
-  <PopularDestinations />
+  <HeroSection stats={heroStats} />
+  <FeaturedTours tours={featuredTours} />
+  <PopularDestinations destinations={realDestinations} />
   <HowItWorks />
 
   <!-- CTA Section -->

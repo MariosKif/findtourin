@@ -1,9 +1,5 @@
-// src/lib/tour-helpers.ts
-// Single source of truth for turning raw Supabase `tours` rows into the
-// shape consumed by `TourCard.astro` (which expects `favouriteCount`,
-// `thumbnail`, and `images`). All list queries should use TOUR_LIST_SELECT
-// so the favourites aggregate is present on every row.
-
+// Every tour-list query must use TOUR_LIST_SELECT — silently falling back to
+// `select('*')` drops the favourites aggregate and makes favouriteCount read as 0.
 export const TOUR_LIST_SELECT = '*, favourites(count)';
 
 export interface RawTour {

@@ -6,6 +6,7 @@ import TourFilters from '../../components/tours/TourFilters.astro';
 import CategoryRow from '../../components/tours/CategoryRow.astro';
 import Pagination from '../../components/ui/Pagination.astro';
 import { searchTours, type SearchParams, CATEGORIES } from '../../lib/search';
+import { TOUR_LIST_SELECT, normalizeTour } from '../../lib/tour-helpers';
 import { supabase } from '../../lib/supabase';
 import { DEMO_TOURS } from '../../lib/demo-tours';
 
@@ -40,29 +41,21 @@ if (!hasFilters) {
   try {
     const { data: allTours } = await supabase
       .from('tours')
-      .select('*')
+      .select(TOUR_LIST_SELECT)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(100);
 
     if (allTours && allTours.length > 0) {
-      // Group by category
+      const normalized = allTours.map(normalizeTour);
       const grouped = new Map<string, any[]>();
-      for (const tour of allTours) {
+      for (const tour of normalized) {
         const cat = tour.category || 'Other';
         if (!grouped.has(cat)) grouped.set(cat, []);
         const group = grouped.get(cat)!;
-        if (group.length < 7) {
-          group.push({
-            ...tour,
-            images: tour.images || [],
-            thumbnail: tour.images?.[0]?.url || null,
-            favouriteCount: 0,
-          });
-        }
+        if (group.length < 7) group.push(tour);
       }
 
-      // Order categories by the predefined CATEGORIES order, then extras
       for (const cat of CATEGORIES) {
         const tours = grouped.get(cat);
         if (tours && tours.length > 0) {
@@ -70,11 +63,8 @@ if (!hasFilters) {
           grouped.delete(cat);
         }
       }
-      // Add any remaining categories not in the predefined list
       for (const [cat, tours] of grouped) {
-        if (tours.length > 0) {
-          categoryGroups.push({ category: cat, tours });
-        }
+        if (tours.length > 0) categoryGroups.push({ category: cat, tours });
       }
     }
   } catch {

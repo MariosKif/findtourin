@@ -1,0 +1,209 @@
+---
+export const prerender = false;
+import PublicLayout from '../../../../../layouts/PublicLayout.astro';
+import TourCard from '../../../../../components/tours/TourCard.astro';
+import { supabase } from '../../../../../lib/supabase';
+import { slugify, getCountryCopy } from '../../../../../lib/destinations';
+import { TOUR_LIST_SELECT, normalizeTour } from '../../../../../lib/tour-helpers';
+
+const { category: categorySlug, country: countrySlug } = Astro.params;
+if (!categorySlug || !countrySlug) return Astro.redirect('/tours');
+
+const { data: allTours } = await supabase
+  .from('tours')
+  .select(TOUR_LIST_SELECT)
+  .eq('status', 'active');
+
+const tours = (allTours || []).filter(
+  (t: any) =>
+    t.country && t.category &&
+    slugify(t.country) === countrySlug &&
+    slugify(t.category) === categorySlug,
+);
+
+if (tours.length === 0) {
+  return Astro.redirect(`/tours/in/${countrySlug}`);
+}
+
+const countryName = tours[0].country as string;
+const categoryName = tours[0].category as string;
+const copy = getCountryCopy(countryName);
+
+// Group by city inside this category+country for cross-linking
+const cityMap = new Map<string, number>();
+for (const t of tours) {
+  if (t.city) cityMap.set(t.city, (cityMap.get(t.city) || 0) + 1);
+}
+const cities = Array.from(cityMap.entries())
+  .map(([city, count]) => ({ city, count }))
+  .sort((a, b) => b.count - a.count);
+
+const tourCount = tours.length;
+const priceFrom = Math.min(...tours.map((t: any) => Number(t.price) || Infinity).filter((n: number) => isFinite(n)));
+const heroImage = tours.find((t: any) => t.images?.[0]?.url)?.images?.[0]?.url || copy.heroImage;
+
+const toursGridData = tours
+  .sort((a: any, b: any) => (b.view_count || 0) - (a.view_count || 0))
+  .map(normalizeTour);
+
+const pageTitle = `${categoryName} in ${countryName} — ${tourCount} Tours from €${priceFrom}`;
+const metaDescription = `${tourCount} ${categoryName.toLowerCase()} tours in ${countryName}. Browse itineraries, compare prices, contact agencies directly. No commission, no booking fees.`;
+const canonical = `https://www.findtoursin.com/tours/category/${categorySlug}/in/${countrySlug}`;
+
+const faqs = [
+  {
+    q: `How many ${categoryName.toLowerCase()} tours are available in ${countryName}?`,
+    a: `FindToursIn lists ${tourCount} active ${categoryName.toLowerCase()} ${tourCount === 1 ? 'tour' : 'tours'} in ${countryName}, ranging from single-day experiences to multi-day trips. Prices start at €${priceFrom}.`,
+  },
+  {
+    q: `Where in ${countryName} can I do ${categoryName.toLowerCase()} tours?`,
+    a: cities.length > 0
+      ? `${categoryName} tours in ${countryName} are offered in: ${cities.slice(0, 6).map((c) => `${c.city} (${c.count})`).join(', ')}.`
+      : `Tours are offered across ${countryName}; see individual listings for the departure city.`,
+  },
+  {
+    q: `When is the best time for ${categoryName.toLowerCase()} tours in ${countryName}?`,
+    a: copy.whenToVisit,
+  },
+  {
+    q: `How do I book?`,
+    a: `Open any tour on FindToursIn and contact the agency directly via the email, phone, or website listed. We charge no booking fee and no commission.`,
+  },
+];
+---
+
+<PublicLayout title={pageTitle} description={metaDescription} image={heroImage}>
+  <section class="relative h-[320px] sm:h-[400px] overflow-hidden">
+    <img src={heroImage} alt={`${categoryName} in ${countryName}`} class="absolute inset-0 w-full h-full object-cover" fetchpriority="high" />
+    <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/30 to-black/70"></div>
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-end py-10">
+      <nav class="text-sm text-white/80 mb-3">
+        <a href="/" class="hover:text-white">Home</a>
+        <span class="mx-2">/</span>
+        <a href="/tours" class="hover:text-white">Tours</a>
+        <span class="mx-2">/</span>
+        <a href={`/tours/in/${countrySlug}`} class="hover:text-white">{countryName}</a>
+        <span class="mx-2">/</span>
+        <span class="text-white">{categoryName}</span>
+      </nav>
+      <h1 class="font-heading text-4xl sm:text-5xl font-normal text-white leading-tight">
+        {categoryName} in {countryName}
+      </h1>
+      <p class="mt-3 text-lg text-white/90 max-w-2xl">{tourCount} {tourCount === 1 ? 'tour' : 'tours'} from €{priceFrom} across {cities.length} {cities.length === 1 ? 'location' : 'locations'}</p>
+    </div>
+  </section>
+
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Intro -->
+    <section class="max-w-3xl mb-10">
+      <p class="text-lg text-gray-700 leading-relaxed">
+        Looking for {categoryName.toLowerCase()} experiences in {countryName}? FindToursIn gathers {tourCount} options from trusted local agencies.
+        {countryName === copy.name ? copy.tagline : ''} Browse itineraries, compare prices and duration, then contact the agency directly — no booking fee, no commission.
+      </p>
+    </section>
+
+    <!-- Cities with this category -->
+    {cities.length > 1 && (
+      <section class="mb-10">
+        <h2 class="font-heading text-xl font-normal text-gray-900 mb-4">{categoryName} by city</h2>
+        <div class="flex flex-wrap gap-2">
+          {cities.map((c) => (
+            <a
+              href={`/tours/in/${countrySlug}/${slugify(c.city)}`}
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:border-primary-400 hover:text-primary-700 hover:bg-primary-50 transition-colors"
+            >
+              {c.city}
+              <span class="text-xs text-gray-400">{c.count}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Tours grid -->
+    <section class="mb-12">
+      <h2 class="font-heading text-2xl font-normal text-gray-900 mb-6">All {categoryName.toLowerCase()} tours in {countryName}</h2>
+      {toursGridData.length > 0 ? (
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
+          {toursGridData.map((t: any) => (
+            <TourCard tour={t} />
+          ))}
+        </div>
+      ) : (
+        <p class="text-gray-500">No tours listed yet.</p>
+      )}
+    </section>
+
+    <!-- Cross-link back to country + category hubs -->
+    <section class="grid gap-4 sm:grid-cols-2 mb-12">
+      <a href={`/tours/in/${countrySlug}`} class="p-6 rounded-2xl bg-gray-50 border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+        <p class="text-sm text-gray-500">All tours in</p>
+        <p class="font-heading text-xl text-gray-900">{countryName} &rarr;</p>
+      </a>
+      <a href={`/tours?category=${encodeURIComponent(categoryName)}`} class="p-6 rounded-2xl bg-gray-50 border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+        <p class="text-sm text-gray-500">All</p>
+        <p class="font-heading text-xl text-gray-900">{categoryName} tours worldwide &rarr;</p>
+      </a>
+    </section>
+
+    <!-- FAQ -->
+    <section class="max-w-3xl mb-12">
+      <h2 class="font-heading text-2xl font-normal text-gray-900 mb-6">Frequently asked questions</h2>
+      <div class="divide-y divide-gray-200 border-y border-gray-200">
+        {faqs.map((item) => (
+          <details class="group py-5">
+            <summary class="flex items-center justify-between cursor-pointer list-none">
+              <span class="font-medium text-gray-900">{item.q}</span>
+              <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <p class="mt-3 text-gray-600 leading-relaxed">{item.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+  </div>
+
+  <!-- CollectionPage + ItemList + BreadcrumbList + FAQ -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": pageTitle,
+    "description": metaDescription,
+    "url": canonical,
+    "about": { "@type": "TouristDestination", "name": countryName },
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.findtoursin.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Tours", "item": "https://www.findtoursin.com/tours" },
+      { "@type": "ListItem", "position": 3, "name": countryName, "item": `https://www.findtoursin.com/tours/in/${countrySlug}` },
+      { "@type": "ListItem", "position": 4, "name": categoryName, "item": canonical },
+    ],
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": toursGridData.slice(0, 10).map((t: any, i: number) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "url": `https://www.findtoursin.com/tours/${t.slug}`,
+      "name": t.name,
+    })),
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqs.map((item) => ({
+      "@type": "Question",
+      "name": item.q,
+      "acceptedAnswer": { "@type": "Answer", "text": item.a },
+    })),
+  })} />
+</PublicLayout>

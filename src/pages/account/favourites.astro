@@ -5,6 +5,7 @@ import TourCard from '../../components/tours/TourCard.astro';
 import Button from '../../components/ui/Button.astro';
 import { supabase } from '../../lib/supabase';
 import { DEMO_TOURS } from '../../lib/demo-tours';
+import { TOUR_LIST_SELECT, normalizeTour } from '../../lib/tour-helpers';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
@@ -20,11 +21,11 @@ const allTours: any[] = [];
 if (tourIds.length > 0) {
   const { data: toursData } = await supabase
     .from('tours')
-    .select('*')
+    .select(TOUR_LIST_SELECT)
     .in('id', tourIds);
 
-  (toursData || []).forEach(tour => {
-    allTours.push({ ...tour, thumbnail: tour.images?.[0]?.url || null });
+  (toursData || []).forEach((tour: any) => {
+    allTours.push(normalizeTour(tour));
   });
 }
 
@@ -34,10 +35,7 @@ const missingIds = tourIds.filter(id => !foundIds.has(id));
 for (const missingId of missingIds) {
   const demoTour = DEMO_TOURS.find(t => t.id === missingId);
   if (demoTour) {
-    allTours.push({
-      ...demoTour,
-      thumbnail: (demoTour as any).images?.[0]?.url || null,
-    });
+    allTours.push(normalizeTour(demoTour as any));
   }
 }
 

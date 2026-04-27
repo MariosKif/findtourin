@@ -2,7 +2,10 @@ import Stripe from 'stripe';
 import { supabase } from './supabase';
 
 export const stripe = new Stripe(import.meta.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-01-27.acacia',
+  // Pinned API version — the value is intentionally older than the Stripe SDK's
+  // current LatestApiVersion type, so cast to keep TS happy without changing
+  // the wire version (response shapes stay stable).
+  apiVersion: '2025-01-27.acacia' as Stripe.StripeConfig['apiVersion'],
 });
 
 async function getListingFeeCents(): Promise<number> {

@@ -44,7 +44,8 @@ export const GET: APIRoute = async ({ request }) => {
 
     // Deduplicate and sort
     const values = new Set<string>();
-    (data || []).forEach(row => {
+    const rows = (data || []) as unknown as Record<string, string | null>[];
+    rows.forEach(row => {
       const val = row[field];
       if (val) values.add(val);
     });

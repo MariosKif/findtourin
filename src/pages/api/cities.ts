@@ -25,7 +25,7 @@ export const GET: APIRoute = async ({ request }) => {
       .eq(countryField, country);
 
     const cities = new Set<string>();
-    (tours || []).forEach(tour => {
+    (tours || []).forEach((tour: Record<string, string | null>) => {
       const val = tour[cityField];
       if (val) cities.add(val);
     });

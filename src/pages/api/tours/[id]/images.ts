@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabase } from '../../../../lib/supabase';
 import { getAuthenticatedUser } from '../../../../lib/auth-helpers';
 import { deleteImage } from '../../../../lib/storage';
+import { getActivePlanForUser } from '../../../../lib/subscriptions';
 
 export const prerender = false;
 
@@ -29,7 +30,13 @@ export const POST: APIRoute = async (context) => {
     if (tour.agency_id !== user.id) return json({ error: 'Forbidden' }, 403);
 
     const images = tour.images || [];
-    if (images.length >= 5) return json({ error: 'Maximum 5 images allowed per tour' }, 400);
+    const { plan } = await getActivePlanForUser(tour.agency_id);
+    if (images.length >= plan.maxImagesPerTour) {
+      return json(
+        { error: `Your ${plan.name} plan allows ${plan.maxImagesPerTour} image${plan.maxImagesPerTour === 1 ? '' : 's'} per tour. Upgrade your plan to add more.` },
+        400,
+      );
+    }
 
     const body = await context.request.json();
     const { url, publicId, altText } = body;

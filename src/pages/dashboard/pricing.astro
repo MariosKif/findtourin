@@ -418,4 +418,40 @@ if (!user) return Astro.redirect('/auth/login');
 
   applyBtn?.addEventListener('click', applyCode);
   codeInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyCode(); } });
+
+  // Intercept submits on plan-card forms when they're pointing at the redeem
+  // endpoint, so failures land inline on this page instead of the raw JSON
+  // response body. The Stripe path keeps its native form POST.
+  document.querySelectorAll<HTMLFormElement>('[data-plan-id] form').forEach((form) => {
+    form.addEventListener('submit', async (e) => {
+      if (!form.action.includes('/api/discount-codes/redeem')) return;
+      e.preventDefault();
+      const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+
+      const fd = new FormData(form);
+      const planId = String(fd.get('planId') || '');
+      const body = {
+        code: String(fd.get('discountCode') || ''),
+        planId,
+      };
+      try {
+        const res = await fetch('/api/discount-codes/redeem', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          window.location.href = `/dashboard?activated=${encodeURIComponent(planId)}`;
+          return;
+        }
+        const data = await res.json().catch(() => ({}));
+        showFeedback(data.error || 'Failed to redeem code', false);
+      } catch {
+        showFeedback('Network error — please try again.', false);
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+  });
 </script>

@@ -35,12 +35,17 @@ export interface ValidationFailure {
 export async function findByCode(rawCode: string): Promise<DiscountCode | null> {
   const code = rawCode.trim().toUpperCase();
   if (!code) return null;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('discount_codes')
     .select('*')
     .eq('code', code)
     .limit(1)
     .maybeSingle();
+  if (error) {
+    // Outage / schema drift / RLS quirk — caller should see a real error,
+    // not a silent "not found".
+    throw new Error(`Failed to look up discount code: ${error.message}`);
+  }
   return (data as DiscountCode) || null;
 }
 
@@ -61,52 +66,32 @@ export async function validateForPlan(
 }
 
 /**
- * Sequentially deactivates any prior active subscription for this user, then
- * inserts a new one (source='discount_code'). The two writes are NOT wrapped
- * in a single transaction; the partial unique index on
- * subscriptions(user_id) where is_active=true is the consistency guard under
- * concurrent redemptions — the loser surfaces as "Concurrent redemption
- * detected".
- * The DB trigger bumps discount_codes.current_redemptions on insert.
- * Throws if validation fails (re-checked here against stale preview state).
+ * Atomically redeem a code by delegating to the redeem_discount_code Postgres
+ * function. The function takes a row lock on the discount_codes row, re-checks
+ * is_active / max_redemptions / applies_to_plans, deactivates any prior active
+ * subscription for the user, and inserts the new one — all in one transaction.
+ * This closes the deactivate→insert race window and the cap TOCTOU that the
+ * previous JS implementation had.
+ *
+ * Validation failures from the function arrive as Postgres P0001 errors with
+ * the user-facing message in `error.message`, which we surface verbatim.
  */
 export async function redeemForUser(args: {
   rawCode: string;
   planId: string;
   userId: string;
-}): Promise<{ subscriptionId: string; code: DiscountCode }> {
-  const validation = await validateForPlan(args.rawCode, args.planId);
-  if (!validation.valid) {
-    throw new Error(validation.message);
+}): Promise<{ subscriptionId: string }> {
+  const { data, error } = await supabase.rpc('redeem_discount_code', {
+    p_raw_code: args.rawCode,
+    p_plan_id: args.planId,
+    p_user_id: args.userId,
+  });
+  if (error) {
+    throw new Error(error.message || 'Failed to redeem code');
   }
-  const now = new Date().toISOString();
-
-  const { error: deactivateError } = await supabase
-    .from('subscriptions')
-    .update({ is_active: false, deactivated_at: now, updated_at: now })
-    .eq('user_id', args.userId)
-    .eq('is_active', true);
-  if (deactivateError) {
-    throw new Error(`Failed to deactivate prior subscription: ${deactivateError.message}`);
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row?.subscription_id) {
+    throw new Error('Failed to redeem code');
   }
-
-  const { data, error } = await supabase
-    .from('subscriptions')
-    .insert({
-      user_id: args.userId,
-      plan_id: args.planId,
-      source: 'discount_code',
-      discount_code_id: validation.code.id,
-      is_active: true,
-      started_at: now,
-    })
-    .select('id')
-    .single();
-  if (error || !data) {
-    if ((error as { code?: string } | null)?.code === '23505') {
-      throw new Error('Concurrent redemption detected, please retry.');
-    }
-    throw new Error(error?.message || 'Failed to create subscription');
-  }
-  return { subscriptionId: data.id, code: validation.code };
+  return { subscriptionId: row.subscription_id as string };
 }

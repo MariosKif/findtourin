@@ -61,10 +61,14 @@ export async function validateForPlan(
 }
 
 /**
- * Atomically redeem a code: deactivate any prior active subscription for this user,
- * then insert a new active subscription (source='discount_code').
- * The DB trigger bumps discount_codes.current_redemptions.
- * Throws if validation fails (re-checked here to prevent races).
+ * Sequentially deactivates any prior active subscription for this user, then
+ * inserts a new one (source='discount_code'). The two writes are NOT wrapped
+ * in a single transaction; the partial unique index on
+ * subscriptions(user_id) where is_active=true is the consistency guard under
+ * concurrent redemptions — the loser surfaces as "Concurrent redemption
+ * detected".
+ * The DB trigger bumps discount_codes.current_redemptions on insert.
+ * Throws if validation fails (re-checked here against stale preview state).
  */
 export async function redeemForUser(args: {
   rawCode: string;
@@ -77,11 +81,14 @@ export async function redeemForUser(args: {
   }
   const now = new Date().toISOString();
 
-  await supabase
+  const { error: deactivateError } = await supabase
     .from('subscriptions')
     .update({ is_active: false, deactivated_at: now, updated_at: now })
     .eq('user_id', args.userId)
     .eq('is_active', true);
+  if (deactivateError) {
+    throw new Error(`Failed to deactivate prior subscription: ${deactivateError.message}`);
+  }
 
   const { data, error } = await supabase
     .from('subscriptions')
@@ -96,6 +103,9 @@ export async function redeemForUser(args: {
     .select('id')
     .single();
   if (error || !data) {
+    if ((error as { code?: string } | null)?.code === '23505') {
+      throw new Error('Concurrent redemption detected, please retry.');
+    }
     throw new Error(error?.message || 'Failed to create subscription');
   }
   return { subscriptionId: data.id, code: validation.code };

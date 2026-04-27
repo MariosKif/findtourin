@@ -35,6 +35,15 @@ if (!user) return Astro.redirect('/auth/login');
     </span>
   </div>
 
+  <!-- Discount code entry -->
+  <div class="max-w-md mx-auto mb-10 bg-white rounded-2xl border border-gray-200 p-4">
+    <div class="flex gap-2">
+      <input id="code-input" placeholder="Discount code" class="flex-1 px-3 py-2 rounded-lg border border-gray-200 uppercase text-sm" />
+      <button id="code-apply" type="button" class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800">Apply</button>
+    </div>
+    <p id="code-feedback" class="mt-2 text-sm hidden"></p>
+  </div>
+
   <!-- Plan Cards Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-16">
     {PLANS.map((plan) => {
@@ -334,4 +343,79 @@ if (!user) return Astro.redirect('/auth/login');
 
   // Initialize
   updatePricing();
+</script>
+
+<script>
+  const codeInput = document.getElementById('code-input') as HTMLInputElement;
+  const applyBtn = document.getElementById('code-apply') as HTMLButtonElement;
+  const feedback = document.getElementById('code-feedback') as HTMLParagraphElement;
+
+  function showFeedback(msg: string, ok: boolean) {
+    feedback.textContent = msg;
+    feedback.className = `mt-2 text-sm ${ok ? 'text-green-700' : 'text-red-600'}`;
+  }
+
+  function resetCard(card: Element) {
+    const form = card.querySelector('form') as HTMLFormElement | null;
+    const btn = card.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+    if (form) form.action = '/api/stripe/checkout';
+    if (btn) btn.textContent = 'Get Started';
+    const hidden = form?.querySelector<HTMLInputElement>('input[name="discountCode"]');
+    hidden?.remove();
+  }
+
+  async function applyCode() {
+    const raw = codeInput.value.trim().toUpperCase();
+    if (!raw) return;
+    applyBtn.disabled = true;
+
+    const cards = Array.from(document.querySelectorAll<HTMLDivElement>('[data-plan-id]'));
+    cards.forEach(resetCard);
+
+    const results = await Promise.all(cards.map(async (card) => {
+      const planId = card.dataset.planId!;
+      const res = await fetch('/api/discount-codes/validate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: raw, planId }),
+      });
+      return { planId, card, data: await res.json().catch(() => ({})) };
+    }));
+    applyBtn.disabled = false;
+
+    const valid = results.filter(r => r.data?.valid === true);
+    if (valid.length === 0) {
+      const reason = results[0]?.data?.message || 'Code not valid';
+      showFeedback(reason, false);
+      return;
+    }
+
+    valid.forEach(({ card }) => {
+      const form = card.querySelector('form') as HTMLFormElement | null;
+      const btn = card.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+      if (form) {
+        form.action = '/api/discount-codes/redeem';
+        let hidden = form.querySelector<HTMLInputElement>('input[name="discountCode"]');
+        if (!hidden) {
+          hidden = document.createElement('input');
+          hidden.type = 'hidden';
+          hidden.name = 'discountCode';
+          form.appendChild(hidden);
+        }
+        hidden.value = raw;
+      }
+      if (btn) btn.textContent = 'Activate Free';
+    });
+
+    const total = cards.length;
+    const ok = valid.length;
+    showFeedback(
+      ok === total
+        ? `Code valid for all ${total} plans — click Activate Free.`
+        : `Code valid for ${ok} of ${total} plans.`,
+      true,
+    );
+  }
+
+  applyBtn?.addEventListener('click', applyCode);
+  codeInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyCode(); } });
 </script>

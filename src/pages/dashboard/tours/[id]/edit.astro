@@ -4,6 +4,7 @@ import DashboardLayout from '../../../../layouts/DashboardLayout.astro';
 import TourForm from '../../../../components/tours/TourForm.astro';
 import ImageUpload from '../../../../components/ui/ImageUpload.astro';
 import { supabase } from '../../../../lib/supabase';
+import { getActivePlanForUser } from '../../../../lib/subscriptions';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
@@ -21,6 +22,9 @@ const { data: tour } = await supabase
 if (!tour) return Astro.redirect('/dashboard/tours');
 if (tour.agency_id !== user.id && user.role !== 'admin') return Astro.redirect('/dashboard/tours');
 
+const { plan } = await getActivePlanForUser(tour.agency_id);
+const maxImages = plan.maxImagesPerTour;
+
 // Images are stored in the tour document
 const images = (tour.images || []).map((img: any, index: number) => ({
   ...img,
@@ -36,8 +40,8 @@ const images = (tour.images || []).map((img: any, index: number) => ({
 
     <div class="bg-white rounded-xl border border-gray-200 p-6">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Tour Images</h2>
-      <p class="text-sm text-gray-600 mb-4">Upload up to 5 images. The first image will be used as the thumbnail.</p>
-      <ImageUpload tourId={id} maxImages={5} />
+      <p class="text-sm text-gray-600 mb-4">Upload up to {maxImages} images. The first image will be used as the thumbnail.</p>
+      <ImageUpload tourId={id} maxImages={maxImages} />
 
       {images.length > 0 && (
         <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">

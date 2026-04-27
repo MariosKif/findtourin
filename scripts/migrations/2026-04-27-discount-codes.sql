@@ -13,7 +13,8 @@ create table if not exists discount_codes (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists discount_codes_code_idx on discount_codes (code);
+-- Note: discount_codes.code already has a unique B-tree index from the UNIQUE
+-- constraint above; no separate code lookup index is needed.
 create index if not exists discount_codes_active_idx on discount_codes (is_active);
 
 create table if not exists subscriptions (
@@ -52,7 +53,7 @@ begin
   end if;
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql;
 
 drop trigger if exists subscriptions_bump_redemption on subscriptions;
 create trigger subscriptions_bump_redemption

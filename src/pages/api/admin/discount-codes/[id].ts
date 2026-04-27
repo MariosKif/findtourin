@@ -11,13 +11,15 @@ const VALID_PLAN_IDS = new Set(['starter', 'professional', 'enterprise', 'ultima
 export const GET: APIRoute = async (context) => {
   const user = await getAuthenticatedUser(context);
   if (!user || user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
+  const id = context.params.id;
+  if (!id) return json({ error: 'Not found' }, 404);
   const { data: code } = await supabase
-    .from('discount_codes').select('*').eq('id', context.params.id).maybeSingle();
+    .from('discount_codes').select('*').eq('id', id).maybeSingle();
   if (!code) return json({ error: 'Not found' }, 404);
   const { data: redemptions } = await supabase
     .from('subscriptions')
     .select('id, user_id, plan_id, is_active, started_at, deactivated_at')
-    .eq('discount_code_id', context.params.id)
+    .eq('discount_code_id', id)
     .order('started_at', { ascending: false });
   return json({ code, redemptions: redemptions || [] });
 };
@@ -25,6 +27,8 @@ export const GET: APIRoute = async (context) => {
 export const PATCH: APIRoute = async (context) => {
   const user = await getAuthenticatedUser(context);
   if (!user || user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
+  const id = context.params.id;
+  if (!id) return json({ error: 'Not found' }, 404);
   let body: any;
   try { body = await context.request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
@@ -47,15 +51,23 @@ export const PATCH: APIRoute = async (context) => {
   }
 
   const { data, error } = await supabase
-    .from('discount_codes').update(updates).eq('id', context.params.id).select().maybeSingle();
-  if (error || !data) return json({ error: error?.message || 'Not found' }, 404);
+    .from('discount_codes').update(updates).eq('id', id).select().maybeSingle();
+  if (error) {
+    if ((error as { code?: string }).code === '23505') return json({ error: 'Code already exists' }, 409);
+    return json({ error: error.message }, 500);
+  }
+  if (!data) return json({ error: 'Not found' }, 404);
   return json(data);
 };
 
 export const DELETE: APIRoute = async (context) => {
   const user = await getAuthenticatedUser(context);
   if (!user || user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
-  const { error } = await supabase.from('discount_codes').delete().eq('id', context.params.id);
+  const id = context.params.id;
+  if (!id) return json({ error: 'Not found' }, 404);
+  const { data, error } = await supabase
+    .from('discount_codes').delete().eq('id', id).select();
   if (error) return json({ error: error.message }, 500);
+  if (!data || data.length === 0) return json({ error: 'Not found' }, 404);
   return json({ success: true });
 };

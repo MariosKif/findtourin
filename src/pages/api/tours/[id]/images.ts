@@ -27,7 +27,7 @@ export const POST: APIRoute = async (context) => {
       .single();
 
     if (!tour) return json({ error: 'Tour not found' }, 404);
-    if (tour.agency_id !== user.id) return json({ error: 'Forbidden' }, 403);
+    if (tour.agency_id !== user.id && user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
 
     const images = tour.images || [];
     const { plan } = await getActivePlanForUser(tour.agency_id);
@@ -81,7 +81,7 @@ export const DELETE: APIRoute = async (context) => {
       .single();
 
     if (!tour) return json({ error: 'Tour not found' }, 404);
-    if (tour.agency_id !== user.id) return json({ error: 'Forbidden' }, 403);
+    if (tour.agency_id !== user.id && user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
 
     const body = await context.request.json();
     const { publicId } = body;

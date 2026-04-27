@@ -1,0 +1,102 @@
+---
+export const prerender = false;
+import DashboardLayout from '../../../layouts/DashboardLayout.astro';
+import { supabase } from '../../../lib/supabase';
+import { PLANS } from '../../../lib/pricing';
+
+const user = Astro.locals.user;
+if (!user || user.role !== 'admin') return Astro.redirect('/auth/login');
+
+const { id } = Astro.params;
+const { data: code } = await supabase.from('discount_codes').select('*').eq('id', id).maybeSingle();
+if (!code) return Astro.redirect('/admin/discount-codes');
+
+const { data: subs } = await supabase
+  .from('subscriptions')
+  .select('id, user_id, plan_id, is_active, started_at, deactivated_at')
+  .eq('discount_code_id', id)
+  .order('started_at', { ascending: false });
+
+const userIds = [...new Set((subs || []).map(s => s.user_id))];
+const userMap = new Map<string, any>();
+if (userIds.length > 0) {
+  const { data: users } = await supabase.from('users').select('id, name, email, company_name').in('id', userIds);
+  (users || []).forEach(u => userMap.set(u.id, u));
+}
+---
+
+<DashboardLayout title={`Code ${code.code}`}>
+  <a href="/admin/discount-codes" class="text-sm text-gray-500 hover:text-gray-700">← Back</a>
+
+  <div class="flex items-start justify-between mt-2 mb-6">
+    <div>
+      <h1 class="font-mono text-3xl font-bold text-gray-900">{code.code}</h1>
+      <p class="text-sm text-gray-500 mt-1">Free access · {code.current_redemptions}/{code.max_redemptions ?? '∞'} used</p>
+      {code.description && <p class="text-sm text-gray-600 mt-2">{code.description}</p>}
+    </div>
+    <div class="flex gap-2">
+      <button id="toggle-btn" class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold hover:bg-gray-50" data-active={code.is_active.toString()}>
+        {code.is_active ? 'Disable' : 'Enable'}
+      </button>
+      <button id="delete-btn" class="px-4 py-2 rounded-lg border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50">Delete</button>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Plans</h2>
+    <p class="text-sm text-gray-700">{code.applies_to_plans.length === 0 ? 'All plans' : code.applies_to_plans.map((id: string) => PLANS.find(p => p.id === id)?.name || id).join(', ')}</p>
+  </div>
+
+  <h2 class="text-lg font-semibold text-gray-900 mb-3">Redemptions ({(subs || []).length})</h2>
+  {subs && subs.length > 0 ? (
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Agency</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Plan</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+            <th class="text-right px-4 py-3 font-medium text-gray-600">Activated</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {subs.map((s) => {
+            const u = userMap.get(s.user_id);
+            return (
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3">{u?.company_name || u?.name || s.user_id}</td>
+                <td class="px-4 py-3 text-gray-600">{s.plan_id}</td>
+                <td class="px-4 py-3">
+                  <span class:list={['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', s.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600']}>
+                    {s.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right text-gray-400 text-xs">{new Date(s.started_at).toLocaleDateString()}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <p class="text-gray-400 text-sm">No redemptions yet.</p>
+  )}
+</DashboardLayout>
+
+<script define:vars={{ codeId: code.id }}>
+  document.getElementById('toggle-btn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const wasActive = btn.dataset.active === 'true';
+    const res = await fetch(`/api/admin/discount-codes/${codeId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_active: !wasActive }),
+    });
+    if (res.ok) window.location.reload();
+    else alert('Failed to toggle');
+  });
+  document.getElementById('delete-btn')?.addEventListener('click', async () => {
+    if (!confirm('Delete this code? Redemption rows will lose their code reference but stay (subscriptions remain).')) return;
+    const res = await fetch(`/api/admin/discount-codes/${codeId}`, { method: 'DELETE' });
+    if (res.ok) window.location.href = '/admin/discount-codes';
+    else alert('Failed to delete');
+  });
+</script>

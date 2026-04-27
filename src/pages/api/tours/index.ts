@@ -3,6 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import { getAuthenticatedUser } from '../../../lib/auth-helpers';
 import { searchTours, type SearchParams } from '../../../lib/search';
 import { slugify } from '../../../lib/utils';
+import { assertCanCreateListing } from '../../../lib/subscriptions';
 
 export const prerender = false;
 
@@ -44,6 +45,16 @@ export const POST: APIRoute = async (context) => {
     const user = await getAuthenticatedUser(context);
     if (!user) return json({ error: 'Unauthorized' }, 401);
     if (user.role !== 'agency' && user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
+
+    // Plan-cap gate — admins are exempt so they can create tours for testing
+    // and on behalf of agencies during onboarding.
+    if (user.role === 'agency') {
+      try {
+        await assertCanCreateListing(user.id);
+      } catch (err: any) {
+        return json({ error: err?.message || 'Listing cap reached' }, 403);
+      }
+    }
 
     const body = await context.request.json();
     const { name, description, country, city, price, currency, category,

@@ -39,6 +39,7 @@ export const POST: APIRoute = async (context) => {
     }
     return json({ success: true, subscriptionId, planId });
   } catch (err: any) {
+    console.error('discount-code redeem failed', err);
     return json({ error: err?.message || 'Failed to redeem code' }, 400);
   }
 };

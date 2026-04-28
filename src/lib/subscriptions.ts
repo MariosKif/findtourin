@@ -20,11 +20,13 @@ export interface ActivePlan {
  * redemption.
  */
 export async function getActivePlanForUser(userId: string): Promise<ActivePlan> {
+  const nowIso = new Date().toISOString();
   const { data, error } = await supabase
     .from('subscriptions')
-    .select('id, plan_id, source')
+    .select('id, plan_id, source, expires_at')
     .eq('user_id', userId)
     .eq('is_active', true)
+    .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
     .limit(1)
     .maybeSingle();
   if (error) {

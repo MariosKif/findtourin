@@ -43,6 +43,20 @@ const topTours = [...tours]
 const capState = await getListingCapState(user.id);
 const capUsedPercent = Math.min(100, Math.round((capState.used / capState.max) * 100));
 
+const url = new URL(Astro.request.url);
+const activated = url.searchParams.get('activated');
+const codeFailed = url.searchParams.get('code_failed');
+
+const codeFailMessages: Record<string, string> = {
+  not_found: 'The code you entered was not found.',
+  inactive: 'That code is currently disabled.',
+  exhausted: 'That code has reached its redemption limit.',
+  plan_not_eligible: 'That code does not apply to your selected plan.',
+  per_user_exhausted: 'You have already redeemed that code the maximum number of times.',
+  rpc_failed: 'We could not activate the code. Contact support if this keeps happening.',
+};
+const codeFailedMessage = codeFailed ? codeFailMessages[codeFailed] || 'The discount code could not be applied.' : null;
+
 const statusColors: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
   pending_payment: 'bg-amber-100 text-amber-700',
@@ -52,6 +66,22 @@ const statusColors: Record<string, string> = {
 ---
 
 <DashboardLayout title="Dashboard">
+  {activated && (
+    <div class="mb-6 rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800 flex items-start gap-3">
+      <svg class="w-5 h-5 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <p>Your <strong class="capitalize">{activated}</strong> plan is now active. Welcome aboard!</p>
+    </div>
+  )}
+  {codeFailedMessage && (
+    <div class="mb-6 rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800 flex items-start gap-3">
+      <svg class="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <p>{codeFailedMessage} Your account is set up — you can redeem a different code from <a href="/dashboard/pricing" class="underline">the pricing page</a>.</p>
+    </div>
+  )}
   {/* Subscription status banner */}
   <div class="bg-gray-50 rounded-xl p-4 flex items-center justify-between mb-6">
     <div>

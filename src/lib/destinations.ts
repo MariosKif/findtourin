@@ -33,25 +33,25 @@ export const COUNTRY_COPY: Record<string, CountryCopy> = {
     mustSee: ['Santorini caldera', 'Acropolis of Athens', 'Meteora monasteries', 'Mykonos beaches', 'Delphi ruins', 'Zagori stone villages'],
     heroImage: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=2000&h=900&fit=crop',
   },
-  italy: {
-    name: 'Italy',
-    tagline: 'Roman ruins, Tuscan hills, and Amalfi coastline',
-    intro:
-      'Italy offers an unmatched blend of history, food and landscape. Hike the coastal trails of Cinque Terre, tour the frozen-in-time streets of Pompeii, or unwind at Tuscan thermal baths — all with local agencies who know the terrain.',
-    whenToVisit:
-      'April to June and September to October are the sweet spots: warm weather, manageable crowds, and prime harvest season in wine country. July and August are hot and packed with tourists.',
-    mustSee: ['Cinque Terre trail', 'Pompeii', 'Amalfi Coast', 'Tuscan vineyards', 'Colosseum', 'Venice canals'],
-    heroImage: 'https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=2000&h=900&fit=crop',
-  },
   turkey: {
     name: 'Turkey',
-    tagline: 'Where continents meet — ancient ruins, bazaars, and coastline',
+    tagline: 'Bridging Europe and Asia, from Istanbul to Cappadocia',
     intro:
-      'Turkey spans ancient Ephesus, Byzantine Istanbul, the hot-air balloon valleys of Cappadocia, and the turquoise Lycian coast. Our agencies specialise in archaeology tours, hammam & spa experiences, and multi-day coastal treks.',
+      "Turkey packs Roman ruins, Ottoman palaces, and surreal volcanic landscapes into a single trip. Local agencies on FindToursIn run small-group tours from Istanbul's bazaars to the hot-air-balloon dawns of Cappadocia and the Lycian coast's blue-cruise sailing.",
     whenToVisit:
-      'Spring (April–May) and autumn (September–October) are the best times: mild weather for hiking and outdoor sightseeing. Coastal resorts run June through September.',
-    mustSee: ['Cappadocia balloons', 'Ephesus', 'Hagia Sophia', 'Lycian Way', 'Pamukkale', 'Bosphorus cruise'],
-    heroImage: 'https://images.unsplash.com/photo-1641128324972-af3212f0f6bd?w=2000&h=900&fit=crop',
+      'April-June and September-October offer the best weather for sightseeing. July-August is ideal for the Aegean coast but very hot inland.',
+    mustSee: ['Hagia Sophia', 'Cappadocia balloon flights', 'Ephesus ruins', 'Pamukkale', 'Lycian Way trek', 'Bosphorus cruise'],
+    heroImage: 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=2000&h=900&fit=crop',
+  },
+  italy: {
+    name: 'Italy',
+    tagline: 'Renaissance art, alpine lakes, and the world\'s most loved cuisine',
+    intro:
+      "From Roman antiquity to Renaissance masterpieces, alpine treks to Amalfi cliffs, Italy offers the densest cultural payload per mile in Europe. Agencies on FindToursIn lead expert-guided tours through the Vatican, Tuscan vineyards, the Cinque Terre coast, and Sicilian volcanoes.",
+    whenToVisit:
+      'May-June and September-October bring warm days and lighter crowds. July-August is peak coastal season; winter is best for cities and the Dolomites.',
+    mustSee: ['Colosseum & Roman Forum', 'Vatican Museums', 'Florence Duomo', 'Cinque Terre', 'Amalfi Coast', 'Pompeii & Mount Vesuvius'],
+    heroImage: 'https://images.unsplash.com/photo-1525874684015-58379d421a52?w=2000&h=900&fit=crop',
   },
   bulgaria: {
     name: 'Bulgaria',

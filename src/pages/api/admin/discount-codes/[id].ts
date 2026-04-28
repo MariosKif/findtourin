@@ -43,6 +43,14 @@ export const PATCH: APIRoute = async (context) => {
       updates.max_redemptions = n;
     }
   }
+  if (body.max_per_user !== undefined) {
+    if (body.max_per_user === null || body.max_per_user === '') updates.max_per_user = null;
+    else {
+      const n = Number(body.max_per_user);
+      if (!Number.isInteger(n) || n < 1) return json({ error: 'max_per_user must be null or positive integer' }, 400);
+      updates.max_per_user = n;
+    }
+  }
   if (body.applies_to_plans !== undefined) {
     if (!Array.isArray(body.applies_to_plans)) return json({ error: 'applies_to_plans must be array' }, 400);
     if (body.applies_to_plans.some((p: string) => !VALID_PLAN_IDS.has(p)))

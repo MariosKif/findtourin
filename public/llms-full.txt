@@ -53,6 +53,16 @@ Contact form for enquiries.
 **Bulgaria:** Plovdiv, Veliko Tarnovo, Sofia, Rila
 **Albania:** Ksamil, Berat, Saranda, Theth
 
+### Top Country Landing Pages
+
+These pages aggregate every active tour we have for the country, with curated SEO copy, must-see lists, FAQ, and structured data:
+
+- **Greece** — https://www.findtoursin.com/tours/in/greece — 16 tours. Ancient sites, island hopping, mountain monasteries; itineraries combining Athens with Santorini, Crete, Meteora, and the Cyclades.
+- **Turkey** — https://www.findtoursin.com/tours/in/turkey — 8 tours. Hagia Sophia and Istanbul bazaars, Cappadocia hot-air-balloon dawns, Ephesus ruins, Lycian Way trekking, Bosphorus cruises.
+- **Italy** — https://www.findtoursin.com/tours/in/italy — 7 tours. Vatican and Rome, Florence Renaissance, Cinque Terre coastal hikes, Amalfi Coast drives, Pompeii and Vesuvius.
+- **Albania** — https://www.findtoursin.com/tours/in/albania — 4 tours. Ksamil's turquoise beaches, Berat Old Town, Butrint UNESCO ruins, Theth alpine treks.
+- **Bulgaria** — https://www.findtoursin.com/tours/in/bulgaria — 4 tours. Tsarevets fortress in Veliko Tarnovo, Rila Monastery, Seven Rila Lakes, Plovdiv Old Town.
+
 ### For Tour Agencies
 Agencies can register at /auth/register, create tour listings with up to 5-10 images, set pricing, and manage their portfolio through a dashboard. Subscription plans available: Starter, Professional, Enterprise, Ultimate.
 

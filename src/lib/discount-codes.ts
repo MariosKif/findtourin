@@ -9,6 +9,7 @@ export interface DiscountCode {
   description: string | null;
   max_redemptions: number | null;
   current_redemptions: number;
+  max_per_user: number | null;
   applies_to_plans: string[];
   is_active: boolean;
   created_at: string;
@@ -19,7 +20,8 @@ export type ValidationFailureReason =
   | 'not_found'
   | 'inactive'
   | 'exhausted'
-  | 'plan_not_eligible';
+  | 'plan_not_eligible'
+  | 'per_user_exhausted';
 
 export interface ValidationResult {
   valid: true;
@@ -52,6 +54,7 @@ export async function findByCode(rawCode: string): Promise<DiscountCode | null> 
 export async function validateForPlan(
   rawCode: string,
   planId: string,
+  userId?: string,
 ): Promise<ValidationResult | ValidationFailure> {
   const code = await findByCode(rawCode);
   if (!code) return { valid: false, reason: 'not_found', message: 'Code not found.' };
@@ -61,6 +64,16 @@ export async function validateForPlan(
   }
   if (code.applies_to_plans.length > 0 && !code.applies_to_plans.includes(planId)) {
     return { valid: false, reason: 'plan_not_eligible', message: 'This code does not apply to the selected plan.' };
+  }
+  if (userId && code.max_per_user !== null) {
+    const { count } = await supabase
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('discount_code_id', code.id);
+    if ((count ?? 0) >= code.max_per_user) {
+      return { valid: false, reason: 'per_user_exhausted', message: 'You have already redeemed this code the maximum number of times.' };
+    }
   }
   return { valid: true, code };
 }

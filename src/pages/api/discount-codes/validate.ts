@@ -20,6 +20,6 @@ export const POST: APIRoute = async (context) => {
   if (!code || !planId) return json({ error: 'code and planId required' }, 400);
   if (!getPlan(planId)) return json({ error: 'Unknown plan' }, 400);
 
-  const result = await validateForPlan(code, planId);
+  const result = await validateForPlan(code, planId, user.id);
   return json(result);
 };

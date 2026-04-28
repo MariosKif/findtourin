@@ -42,6 +42,10 @@ const tourCount = tours.length;
 const INDEX_MIN_TOURS = 3;
 const noIndex = tourCount < INDEX_MIN_TOURS;
 const priceFrom = Math.min(...tours.map((t: any) => Number(t.price) || Infinity).filter((n: number) => isFinite(n)));
+const priceMax = Math.max(...tours.map((t: any) => Number(t.price) || 0));
+const priceRange = isFinite(priceFrom) && priceMax > 0
+  ? (priceFrom === priceMax ? `€${priceFrom}` : `€${priceFrom}-€${priceMax}`)
+  : null;
 const heroImage = tours.find((t: any) => t.images?.[0]?.url)?.images?.[0]?.url || countryCopy.heroImage;
 
 const toursGridData = tours
@@ -187,6 +191,15 @@ const faqs = [
     "touristType": categories.map((c) => c.category),
   })} />
 
+  <!-- Place / geo for the city -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Place",
+    "name": cityName,
+    "address": { "@type": "PostalAddress", "addressLocality": cityName, "addressCountry": countryName },
+    ...(priceRange ? { "priceRange": priceRange } : {}),
+  })} />
+
   <!-- BreadcrumbList -->
   <script type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
@@ -203,6 +216,7 @@ const faqs = [
   <script type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",
+    "numberOfItems": tourCount,
     "itemListElement": toursGridData.slice(0, 10).map((t: any, i: number) => ({
       "@type": "ListItem",
       "position": i + 1,

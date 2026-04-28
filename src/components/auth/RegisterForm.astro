@@ -99,6 +99,17 @@ const roleOptions = [
       type="url"
       placeholder="https://yourcompany.com"
     />
+
+    <div>
+      <Input
+        label="Discount code (optional)"
+        name="discountCode"
+        type="text"
+        placeholder="WELCOME-FREE"
+        autocomplete="off"
+      />
+      <p class="text-xs text-gray-500 mt-1">If you have a code, we'll activate the matching plan immediately. No card needed.</p>
+    </div>
   </div>
 
   <Button type="submit" variant="primary" size="lg" class="w-full">
@@ -118,8 +129,12 @@ const roleOptions = [
     errorDiv.classList.remove('hidden');
   }
 
-  function redirectAfterLogin(data: { role?: string }) {
-    if (data.role === 'agency' || data.role === 'admin') {
+  function redirectAfterLogin(data: { role?: string; activatedPlan?: string; codeFailedReason?: string }) {
+    if (data.activatedPlan) {
+      window.location.href = `/dashboard?activated=${encodeURIComponent(data.activatedPlan)}`;
+    } else if (data.codeFailedReason) {
+      window.location.href = `/dashboard?code_failed=${encodeURIComponent(data.codeFailedReason)}`;
+    } else if (data.role === 'agency' || data.role === 'admin') {
       window.location.href = '/dashboard';
     } else {
       window.location.href = '/';
@@ -163,9 +178,11 @@ const roleOptions = [
         const companyName = formData.get('companyName') as string;
         const phone = formData.get('phone') as string;
         const website = formData.get('website') as string;
+        const discountCode = String(formData.get('discountCode') || '').trim();
         if (companyName) body.companyName = companyName;
         if (phone) body.phone = phone;
         if (website) body.website = website;
+        if (discountCode) body.discountCode = discountCode;
       }
 
       const res = await fetch('/api/auth/register', {

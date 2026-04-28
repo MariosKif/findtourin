@@ -39,6 +39,8 @@ const categories = Array.from(categoryMap.entries())
   .sort((a, b) => b.count - a.count);
 
 const tourCount = tours.length;
+const INDEX_MIN_TOURS = 3;
+const noIndex = tourCount < INDEX_MIN_TOURS;
 const priceFrom = Math.min(...tours.map((t: any) => Number(t.price) || Infinity).filter((n: number) => isFinite(n)));
 const heroImage = tours.find((t: any) => t.images?.[0]?.url)?.images?.[0]?.url || countryCopy.heroImage;
 
@@ -72,7 +74,7 @@ const faqs = [
 ];
 ---
 
-<PublicLayout title={pageTitle} description={metaDescription} image={heroImage}>
+<PublicLayout title={pageTitle} description={metaDescription} image={heroImage} noIndex={noIndex}>
   <!-- Hero -->
   <section class="relative h-[300px] sm:h-[380px] overflow-hidden">
     <img src={heroImage} alt={`Tours in ${cityName}, ${countryName}`} class="absolute inset-0 w-full h-full object-cover" fetchpriority="high" />

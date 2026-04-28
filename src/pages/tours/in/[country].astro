@@ -44,6 +44,8 @@ const categories = Array.from(categoryMap.entries())
   .sort((a, b) => b.count - a.count);
 
 const tourCount = tours.length;
+const INDEX_MIN_TOURS = 3;
+const noIndex = tourCount < INDEX_MIN_TOURS;
 const priceFrom = Math.min(...tours.map((t: any) => Number(t.price) || Infinity).filter((n: number) => isFinite(n)));
 
 const toursGridData = tours
@@ -76,7 +78,7 @@ const faqs = [
 ];
 ---
 
-<PublicLayout title={pageTitle} description={metaDescription} image={copy.heroImage}>
+<PublicLayout title={pageTitle} description={metaDescription} image={copy.heroImage} noIndex={noIndex}>
   <!-- Hero -->
   <section class="relative h-[340px] sm:h-[420px] overflow-hidden">
     <img src={copy.heroImage} alt={`Tours in ${countryName}`} class="absolute inset-0 w-full h-full object-cover" fetchpriority="high" />

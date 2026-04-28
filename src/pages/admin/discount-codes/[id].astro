@@ -31,7 +31,7 @@ if (userIds.length > 0) {
   <div class="flex items-start justify-between mt-2 mb-6">
     <div>
       <h1 class="font-mono text-3xl font-bold text-gray-900">{code.code}</h1>
-      <p class="text-sm text-gray-500 mt-1">Free access · {code.current_redemptions}/{code.max_redemptions ?? '∞'} used</p>
+      <p class="text-sm text-gray-500 mt-1">Free access · {code.current_redemptions}/{code.max_redemptions ?? '∞'} used · {code.max_per_user ? `${code.max_per_user} per user` : 'unlimited per user'}</p>
       {code.description && <p class="text-sm text-gray-600 mt-2">{code.description}</p>}
     </div>
     <div class="flex gap-2">

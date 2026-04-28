@@ -25,6 +25,12 @@ if (!user || user.role !== 'admin') return Astro.redirect('/auth/login');
       </div>
 
       <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Max per user</label>
+        <input name="max_per_user" type="number" min="1" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Leave blank for unlimited per user" />
+        <p class="mt-1 text-xs text-gray-500">Limits how many times a single agency can redeem this code (counts deactivated redemptions too).</p>
+      </div>
+
+      <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Applies to plans</label>
         <div class="space-y-2">
           {PLANS.map((p) => (
@@ -68,6 +74,7 @@ if (!user || user.role !== 'admin') return Astro.redirect('/auth/login');
     const body = {
       code: String(fd.get('code') || ''),
       max_redemptions: fd.get('max_redemptions') ? Number(fd.get('max_redemptions')) : null,
+      max_per_user: fd.get('max_per_user') ? Number(fd.get('max_per_user')) : null,
       applies_to_plans: planChecks,
       description: String(fd.get('description') || '') || null,
       is_active: fd.get('is_active') === 'on',

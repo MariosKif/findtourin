@@ -51,6 +51,14 @@ export const PATCH: APIRoute = async (context) => {
       updates.max_per_user = n;
     }
   }
+  if (body.grants_duration_days !== undefined) {
+    if (body.grants_duration_days === null || body.grants_duration_days === '') updates.grants_duration_days = null;
+    else {
+      const n = Number(body.grants_duration_days);
+      if (!Number.isInteger(n) || n < 1) return json({ error: 'grants_duration_days must be null or positive integer' }, 400);
+      updates.grants_duration_days = n;
+    }
+  }
   if (body.applies_to_plans !== undefined) {
     if (!Array.isArray(body.applies_to_plans)) return json({ error: 'applies_to_plans must be array' }, 400);
     if (body.applies_to_plans.some((p: string) => !VALID_PLAN_IDS.has(p)))

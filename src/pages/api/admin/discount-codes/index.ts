@@ -35,6 +35,10 @@ export const POST: APIRoute = async (context) => {
     body.max_per_user === null || body.max_per_user === undefined || body.max_per_user === ''
       ? null
       : Number(body.max_per_user);
+  const grants_duration_days =
+    body.grants_duration_days === null || body.grants_duration_days === undefined || body.grants_duration_days === ''
+      ? null
+      : Number(body.grants_duration_days);
   const applies_to_plans: string[] = Array.isArray(body.applies_to_plans) ? body.applies_to_plans : [];
   const description = body.description ? String(body.description) : null;
   const is_active = body.is_active !== false;
@@ -45,12 +49,14 @@ export const POST: APIRoute = async (context) => {
     return json({ error: 'max_redemptions must be null or positive integer' }, 400);
   if (max_per_user !== null && (!Number.isInteger(max_per_user) || max_per_user < 1))
     return json({ error: 'max_per_user must be null or positive integer' }, 400);
+  if (grants_duration_days !== null && (!Number.isInteger(grants_duration_days) || grants_duration_days < 1))
+    return json({ error: 'grants_duration_days must be null or positive integer' }, 400);
   if (applies_to_plans.some((p) => !VALID_PLAN_IDS.has(p)))
     return json({ error: 'applies_to_plans contains unknown plan id' }, 400);
 
   const { data, error } = await supabase
     .from('discount_codes')
-    .insert({ code, description, max_redemptions, max_per_user, applies_to_plans, is_active, created_by: user.id })
+    .insert({ code, description, max_redemptions, max_per_user, grants_duration_days, applies_to_plans, is_active, created_by: user.id })
     .select().single();
   if (error) {
     if ((error as { code?: string }).code === '23505') return json({ error: 'Code already exists' }, 409);

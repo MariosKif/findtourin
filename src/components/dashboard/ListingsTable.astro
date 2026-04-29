@@ -81,12 +81,6 @@ const statusLabel: Record<string, string> = {
             <td class="whitespace-nowrap px-6 py-4 text-right">
               <div class="flex items-center justify-end gap-2">
                 <Button href={`/dashboard/tours/${tour.id}/edit`} variant="ghost" size="sm">Edit</Button>
-                {tour.status === 'pending_payment' && (
-                  <form method="POST" action="/api/stripe/checkout">
-                    <input type="hidden" name="tourId" value={tour.id} />
-                    <Button type="submit" variant="primary" size="sm">Pay</Button>
-                  </form>
-                )}
                 <button
                   type="button"
                   class="delete-tour-btn inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"

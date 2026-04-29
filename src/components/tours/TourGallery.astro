@@ -25,8 +25,13 @@ const showSeeAll = images.length > 1;
 
 {hasImages ? (
   <div class="tour-gallery">
-    {/* Hero grid: 1 large left + 2x2 small right */}
-    <div class="grid h-[260px] gap-2 overflow-hidden rounded-2xl sm:h-[360px] md:h-[460px] md:grid-cols-2">
+    {/* Hero grid: 1 large left + 2x2 small right (right grid only renders
+        when there's more than one image — otherwise the big image goes
+        full-width instead of leaving four grey placeholder cells). */}
+    <div class:list={[
+      'grid h-[260px] gap-2 overflow-hidden rounded-2xl sm:h-[360px] md:h-[460px]',
+      images.length > 1 ? 'md:grid-cols-2' : '',
+    ]}>
       {/* Large left image */}
       <button
         type="button"
@@ -42,7 +47,8 @@ const showSeeAll = images.length > 1;
         />
       </button>
 
-      {/* Right 2x2 grid — only renders on md+ so the layout doesn't squash on mobile */}
+      {/* Right 2x2 grid — only renders on md+ AND only when there are extra images to show */}
+      {images.length > 1 && (
       <div class="hidden h-full grid-cols-2 grid-rows-2 gap-2 md:grid">
         {Array.from({ length: 4 }).map((_, i) => {
           const idx = i + 1;
@@ -84,6 +90,7 @@ const showSeeAll = images.length > 1;
           );
         })}
       </div>
+      )}
     </div>
 
     {/* Lightbox modal — uses native <dialog> for ESC + a11y */}

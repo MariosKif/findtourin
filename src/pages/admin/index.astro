@@ -4,6 +4,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import Badge from '../../components/ui/Badge.astro';
 import { supabase } from '../../lib/supabase';
 import { formatDate, formatPrice } from '../../lib/utils';
+import { getCollection } from 'astro:content';
 
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
@@ -39,6 +40,10 @@ if (paymentUserIds.length > 0) {
     .in('id', paymentUserIds);
   (paymentUsers || []).forEach(u => paymentUserMap.set(u.id, u));
 }
+
+// Blog posts
+const blogPosts = (await getCollection('blog'))
+  .sort((a: any, b: any) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 
 // Status helpers
 const statusVariant: Record<string, 'success' | 'warning' | 'neutral' | 'danger' | 'info'> = {
@@ -355,15 +360,38 @@ const roleVariant: Record<string, 'info' | 'success' | 'neutral'> = {
 
   <!-- Tab Content: Blog -->
   <div id="tab-blog" class="tab-panel hidden">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-      <div class="flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 mx-auto mb-4">
-        <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5" />
-        </svg>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">Title</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">Category</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+              <th class="text-right px-4 py-3 font-medium text-gray-600">Date</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {blogPosts.map((p: any) => (
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3"><a href={`/blog/${p.id}`} class="text-primary-600 hover:underline">{p.data.title}</a></td>
+                <td class="px-4 py-3 text-gray-600">{p.data.category}</td>
+                <td class="px-4 py-3">
+                  <span class:list={['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', p.data.draft ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700']}>
+                    {p.data.draft ? 'Draft' : 'Published'}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right text-gray-500 text-xs">{new Date(p.data.date).toLocaleDateString()}</td>
+              </tr>
+            ))}
+            {blogPosts.length === 0 && (
+              <tr><td colspan="4" class="px-4 py-12 text-center text-gray-400">No blog posts yet.</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
-      <h3 class="text-lg font-semibold text-gray-900 mb-1">Blog Management</h3>
-      <p class="text-sm text-gray-500">Blog management coming soon</p>
     </div>
+    <p class="mt-4 text-xs text-gray-500">Posts are stored as MDX files in <code class="px-1 py-0.5 rounded bg-gray-100">src/content/blog/</code>. Edit or add via Git.</p>
   </div>
 
   <!-- Toast Container -->

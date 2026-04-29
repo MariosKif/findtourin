@@ -13,7 +13,7 @@ export const GET: APIRoute = async (context) => {
   if (!user || user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
   const { data, error } = await supabase.from('config').select('*').eq('key', 'pricing').maybeSingle();
   if (error) return json({ error: error.message }, 500);
-  return json(data || { key: 'pricing', value: { listing_fee_cents: 4900, support_email: 'support@findtoursin.com', maintenance_mode: false } });
+  return json(data || { key: 'pricing', value: { support_email: 'support@findtoursin.com', maintenance_mode: false } });
 };
 
 export const PATCH: APIRoute = async (context) => {

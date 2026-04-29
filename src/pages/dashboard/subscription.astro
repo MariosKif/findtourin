@@ -2,6 +2,7 @@
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import { supabase } from '../../lib/supabase';
+import { getActivePlanForUser } from '../../lib/subscriptions';
 
 const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login');
@@ -17,6 +18,8 @@ const { data: payments } = await supabase
 
 const hasActiveSubscription = payments && payments.length > 0;
 const latestPayment = payments?.[0];
+
+const activePlan = user.role === 'agency' ? await getActivePlanForUser(user.id) : null;
 ---
 
 <DashboardLayout title="Subscription">
@@ -42,8 +45,13 @@ const latestPayment = payments?.[0];
 
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h3 class="text-2xl font-bold text-gray-900">FindToursIn Agency</h3>
-          <p class="text-gray-500 mt-1">€49 / listing</p>
+          <h3 class="text-2xl font-bold text-gray-900">{activePlan?.plan?.name || 'No active plan'}</h3>
+          {activePlan && (
+            <p class="text-sm text-gray-500 mt-1">
+              {activePlan.source === 'discount_code' ? 'Granted via code' : activePlan.source === 'stripe' ? 'Active Stripe subscription' : 'Default tier (no active subscription)'}
+            </p>
+          )}
+          <p class="text-gray-500 mt-1">€{activePlan?.plan ? (activePlan.plan.monthlyPriceCents / 100).toFixed(2) : '0.00'} / month</p>
           <div class="flex items-center gap-2 mt-3">
             {hasActiveSubscription ? (
               <>
@@ -99,7 +107,7 @@ const latestPayment = payments?.[0];
           <svg class="w-4 h-4 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span class="text-sm text-gray-700">Up to 5 photos per listing</span>
+          <span class="text-sm text-gray-700">Up to {activePlan?.plan?.maxImagesPerTour ?? '—'} photos per listing</span>
         </li>
         <li class="flex items-center gap-3">
           <svg class="w-4 h-4 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

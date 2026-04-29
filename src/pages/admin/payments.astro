@@ -2,19 +2,107 @@
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import { supabase } from '../../lib/supabase';
+import { formatPrice } from '../../lib/utils';
 
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
 
-const { data: payments } = await supabase
+const { data: paymentsData } = await supabase
   .from('payments')
   .select('*')
-  .order('created_at', { ascending: false });
+  .order('created_at', { ascending: false })
+  .limit(200);
+
+const payments = paymentsData || [];
+
+const agencyIds = [...new Set(payments.map(p => p.agency_id).filter(Boolean))];
+const tourIds = [...new Set(payments.map(p => p.tour_id).filter(Boolean))];
+
+const agencyMap = new Map<string, { name: string; email: string }>();
+const tourMap = new Map<string, { name: string }>();
+
+if (agencyIds.length > 0) {
+  const { data: users } = await supabase.from('users').select('id, name, email, company_name').in('id', agencyIds);
+  (users || []).forEach((u: any) => agencyMap.set(u.id, { name: u.company_name || u.name || '—', email: u.email }));
+}
+if (tourIds.length > 0) {
+  const { data: tours } = await supabase.from('tours').select('id, name').in('id', tourIds);
+  (tours || []).forEach((t: any) => tourMap.set(t.id, { name: t.name }));
+}
+
+const totalRevenueCents = payments.filter((p: any) => p.status === 'completed').reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+const completedCount = payments.filter((p: any) => p.status === 'completed').length;
+const pendingCount = payments.filter((p: any) => p.status === 'pending').length;
+const failedCount = payments.filter((p: any) => p.status === 'failed').length;
+
+const statusVariant: Record<string, string> = {
+  completed: 'bg-green-100 text-green-700',
+  pending: 'bg-amber-100 text-amber-700',
+  failed: 'bg-red-100 text-red-700',
+  refunded: 'bg-gray-100 text-gray-600',
+};
 ---
 
 <DashboardLayout title="Payments">
   <h1 class="text-xl font-semibold text-gray-900 mb-6">Payments</h1>
-  <div class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
-    {(payments || []).length === 0 ? 'No payments yet' : `${(payments || []).length} payments recorded`}
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <p class="text-sm text-gray-500">Total revenue</p>
+      <p class="text-2xl font-bold text-gray-900 mt-1">€{(totalRevenueCents / 100).toFixed(2)}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <p class="text-sm text-gray-500">Completed</p>
+      <p class="text-2xl font-bold text-green-700 mt-1">{completedCount}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <p class="text-sm text-gray-500">Pending</p>
+      <p class="text-2xl font-bold text-amber-700 mt-1">{pendingCount}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <p class="text-sm text-gray-500">Failed</p>
+      <p class="text-2xl font-bold text-red-700 mt-1">{failedCount}</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Agency</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Tour</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Amount</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+            <th class="text-right px-4 py-3 font-medium text-gray-600">Date</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {payments.map((p: any) => {
+            const a = agencyMap.get(p.agency_id);
+            const t = tourMap.get(p.tour_id);
+            return (
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3">
+                  <p class="text-gray-900">{a?.name || '—'}</p>
+                  <p class="text-gray-400 text-xs">{a?.email}</p>
+                </td>
+                <td class="px-4 py-3 text-gray-700">{t?.name || '—'}</td>
+                <td class="px-4 py-3 text-gray-900 font-medium">{formatPrice((p.amount || 0) / 100, p.currency || 'eur')}</td>
+                <td class="px-4 py-3">
+                  <span class:list={['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', statusVariant[p.status] || 'bg-gray-100 text-gray-600']}>
+                    {p.status}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right text-gray-500 text-xs">{new Date(p.created_at).toLocaleDateString()}</td>
+              </tr>
+            );
+          })}
+          {payments.length === 0 && (
+            <tr><td colspan="5" class="px-4 py-12 text-center text-gray-400">No payments yet.</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   </div>
 </DashboardLayout>

@@ -3,6 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import { findByCode } from '../../../lib/discount-codes';
 import { getPlan } from '../../../lib/pricing';
 import { sendEmail } from '../../../lib/email/send';
+import { waitUntil } from '@vercel/functions';
 
 export const prerender = false;
 
@@ -106,22 +107,23 @@ export const POST: APIRoute = async (context) => {
       }
     }
 
-    // Welcome email — fire-and-forget. Resend errors are logged but never
-    // block the registration response.
-    if ((role || 'user') === 'agency') {
-      void sendEmail({
-        to: email,
-        template: {
-          name: 'welcome-agency',
-          vars: { name, companyName: companyName || null, activatedPlan },
-        },
-      });
-    } else {
-      void sendEmail({
-        to: email,
-        template: { name: 'welcome-user', vars: { name } },
-      });
-    }
+    // Welcome email — handed to Vercel's waitUntil so the runtime keeps the
+    // function alive long enough to finish the Resend call after we've
+    // already returned the HTTP response. Errors are logged inside
+    // sendEmail and never bubble up, so registration is never blocked.
+    const welcome = (role || 'user') === 'agency'
+      ? sendEmail({
+          to: email,
+          template: {
+            name: 'welcome-agency',
+            vars: { name, companyName: companyName || null, activatedPlan },
+          },
+        })
+      : sendEmail({
+          to: email,
+          template: { name: 'welcome-user', vars: { name } },
+        });
+    waitUntil(welcome);
 
     // Sign in to get session
     const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });

@@ -10,7 +10,7 @@ export function buildWelcomeUser(vars: WelcomeUserVars) {
 
   const html = `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>${subject}</title></head>
+<head><meta charset="utf-8"><title>${escape(subject)}</title></head>
 <body style="margin:0;padding:24px;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111827;">
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;">
     <tr><td style="padding:32px 32px 16px 32px;">

@@ -1,5 +1,5 @@
 // src/lib/email/send.ts
-import { resend } from './resend';
+import { getResendClient } from './resend';
 import { buildWelcomeUser, type WelcomeUserVars } from './templates/welcome-user';
 import { buildWelcomeAgency, type WelcomeAgencyVars } from './templates/welcome-agency';
 
@@ -25,8 +25,15 @@ export async function sendEmail({ to, template }: SendEmailInput): Promise<void>
       break;
   }
 
+  const client = getResendClient();
+  if (!client) {
+    // Logged once by getResendClient() per cold start; we silently no-op here
+    // so registration / admin-test endpoints don't 500 when the env is missing.
+    return;
+  }
+
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await client.emails.send({
       from,
       to,
       subject: payload.subject,

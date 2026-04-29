@@ -12,6 +12,7 @@ interface Props {
     agencyVerified?: boolean;
     rating?: number;
     review_count?: number;
+    view_count?: number | null;
   };
 }
 
@@ -25,7 +26,7 @@ const currencySymbols: Record<string, string> = {
 };
 const symbol = currencySymbols[tour.currency] || tour.currency;
 
-const viewersToday = Math.floor(Math.random() * 21) + 5;
+const totalViews = Number(tour.view_count || 0);
 ---
 
 <div class="sticky top-6 rounded-2xl bg-white p-6 shadow-lg">
@@ -120,14 +121,16 @@ const viewersToday = Math.floor(Math.random() * 21) + 5;
       <span>Response time: Usually within 2 hours</span>
     </div>
 
-    {/* Viewers Today */}
-    <div class="flex items-center gap-2 text-sm text-gray-600">
-      <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-      </svg>
-      <span>{viewersToday} people viewed this today</span>
-    </div>
+    {/* Total views — shown only once a tour has any traffic */}
+    {totalViews > 0 && (
+      <div class="flex items-center gap-2 text-sm text-gray-600">
+        <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+        <span>{totalViews.toLocaleString()} total views</span>
+      </div>
+    )}
 
     {/* Tour Rating */}
     {tour.rating && (

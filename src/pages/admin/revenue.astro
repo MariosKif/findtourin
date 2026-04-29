@@ -1,14 +1,118 @@
 ---
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { supabase } from '../../lib/supabase';
 
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
+
+const now = new Date();
+const day30 = new Date(now.getTime() - 30 * 86400 * 1000).toISOString();
+const day90 = new Date(now.getTime() - 90 * 86400 * 1000).toISOString();
+
+const { data: completed } = await supabase
+  .from('payments')
+  .select('amount, currency, created_at')
+  .eq('status', 'completed')
+  .order('created_at', { ascending: false });
+
+const all = completed || [];
+const sum = (rows: any[]) => rows.reduce((s: number, r: any) => s + (r.amount || 0), 0);
+const totalAll = sum(all);
+const total30 = sum(all.filter((r: any) => r.created_at >= day30));
+const total90 = sum(all.filter((r: any) => r.created_at >= day90));
+
+// Subscriptions breakdown
+const { data: subs } = await supabase
+  .from('subscriptions')
+  .select('plan_id, source, is_active');
+const activeSubs = (subs || []).filter((s: any) => s.is_active);
+const planCount: Record<string, number> = {};
+activeSubs.forEach((s: any) => { planCount[s.plan_id] = (planCount[s.plan_id] || 0) + 1; });
+const sourceCount: Record<string, number> = {};
+activeSubs.forEach((s: any) => { sourceCount[s.source] = (sourceCount[s.source] || 0) + 1; });
+
+// Daily revenue for last 30 days (UTC days)
+const buckets: Record<string, number> = {};
+for (let i = 29; i >= 0; i--) {
+  const d = new Date(now.getTime() - i * 86400 * 1000);
+  buckets[d.toISOString().slice(0, 10)] = 0;
+}
+all.filter((r: any) => r.created_at >= day30).forEach((r: any) => {
+  const k = r.created_at.slice(0, 10);
+  if (k in buckets) buckets[k] += r.amount || 0;
+});
+const maxDaily = Math.max(1, ...Object.values(buckets));
+const dayKeys = Object.keys(buckets);
 ---
 
 <DashboardLayout title="Revenue">
   <h1 class="text-xl font-semibold text-gray-900 mb-6">Revenue</h1>
-  <div class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
-    Revenue analytics coming soon
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <p class="text-sm text-gray-500">Last 30 days</p>
+      <p class="text-3xl font-bold text-gray-900 mt-2">€{(total30 / 100).toFixed(2)}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <p class="text-sm text-gray-500">Last 90 days</p>
+      <p class="text-3xl font-bold text-gray-900 mt-2">€{(total90 / 100).toFixed(2)}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <p class="text-sm text-gray-500">All time</p>
+      <p class="text-3xl font-bold text-gray-900 mt-2">€{(totalAll / 100).toFixed(2)}</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Daily revenue (last 30 days)</h2>
+    <div class="flex items-end gap-1 h-32">
+      {Object.entries(buckets).map(([day, cents]) => (
+        <div class="flex-1 flex flex-col items-center justify-end">
+          <div
+            class:list={['w-full rounded-t', cents > 0 ? 'bg-primary-500' : 'bg-gray-100']}
+            style={`height: ${Math.max(2, (cents / maxDaily) * 100)}%`}
+            title={`${day}: €${(cents / 100).toFixed(2)}`}
+          ></div>
+        </div>
+      ))}
+    </div>
+    <div class="flex justify-between mt-2 text-xs text-gray-400">
+      <span>{dayKeys[0]}</span>
+      <span>{dayKeys[dayKeys.length - 1]}</span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Active subscriptions by plan</h2>
+      {Object.keys(planCount).length === 0 ? (
+        <p class="text-sm text-gray-400">No active subscriptions.</p>
+      ) : (
+        <ul class="space-y-2 text-sm">
+          {Object.entries(planCount).sort((a, b) => b[1] - a[1]).map(([plan, n]) => (
+            <li class="flex items-center justify-between">
+              <span class="capitalize text-gray-700">{plan}</span>
+              <span class="font-semibold text-gray-900">{n}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Active subscriptions by source</h2>
+      {Object.keys(sourceCount).length === 0 ? (
+        <p class="text-sm text-gray-400">No active subscriptions.</p>
+      ) : (
+        <ul class="space-y-2 text-sm">
+          {Object.entries(sourceCount).sort((a, b) => b[1] - a[1]).map(([src, n]) => (
+            <li class="flex items-center justify-between">
+              <span class="text-gray-700">{src}</span>
+              <span class="font-semibold text-gray-900">{n}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   </div>
 </DashboardLayout>

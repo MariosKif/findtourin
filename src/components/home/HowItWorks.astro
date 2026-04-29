@@ -38,9 +38,13 @@ const steps = [
     <div class="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-16">
       {steps.map((step, index) => (
         <div class="relative text-center">
-          {/* Connecting line between circles (desktop) */}
+          {/* Connecting line between circles (desktop). Starts at the current
+              circle's right edge (50% + half-circle = 32px = 2rem) and reaches
+              the next circle's left edge. Width = column_width + gap - 64px:
+                md gap-10 (40px) → 100% - 24px
+                lg gap-16 (64px) → 100% (the gap exactly cancels both radii) */}
           {index < steps.length - 1 && (
-            <div class="hidden md:block absolute top-8 left-[60%] w-[80%] border-t-2 border-dashed border-primary-200"></div>
+            <div class="hidden md:block absolute top-8 left-[calc(50%+2rem)] w-[calc(100%-1.5rem)] lg:w-full border-t-2 border-dashed border-primary-200"></div>
           )}
 
           {/* Step Circle */}

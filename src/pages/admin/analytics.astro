@@ -1,14 +1,142 @@
 ---
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { supabase } from '../../lib/supabase';
 
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
+
+const now = new Date();
+const day30 = new Date(now.getTime() - 30 * 86400 * 1000).toISOString();
+
+const [usersResp, toursResp, paymentsResp, codesResp, subsResp, favsResp] = await Promise.all([
+  supabase.from('users').select('id, role, created_at'),
+  supabase.from('tours').select('id, status, view_count, created_at, agency_id, country, category, name, slug'),
+  supabase.from('payments').select('id, status, created_at'),
+  supabase.from('discount_codes').select('id, current_redemptions'),
+  supabase.from('subscriptions').select('id, is_active'),
+  supabase.from('favourites').select('id, tour_id'),
+]);
+
+const users = usersResp.data || [];
+const tours = toursResp.data || [];
+const payments = paymentsResp.data || [];
+const codes = codesResp.data || [];
+const subs = subsResp.data || [];
+const favs = favsResp.data || [];
+
+const agencyCount = users.filter((u: any) => u.role === 'agency').length;
+const userCount = users.filter((u: any) => u.role === 'user').length;
+const adminCount = users.filter((u: any) => u.role === 'admin').length;
+const last30Users = users.filter((u: any) => u.created_at >= day30).length;
+
+const activeTours = tours.filter((t: any) => t.status === 'active').length;
+const pendingTours = tours.filter((t: any) => t.status === 'pending_payment').length;
+const last30Tours = tours.filter((t: any) => t.created_at >= day30).length;
+
+const totalViews = tours.reduce((s: number, t: any) => s + (t.view_count || 0), 0);
+const topTours = [...tours].sort((a: any, b: any) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 10);
+
+const favCounts: Record<string, number> = {};
+favs.forEach((f: any) => { if (f.tour_id) favCounts[f.tour_id] = (favCounts[f.tour_id] || 0) + 1; });
+const topFavTours = [...tours]
+  .map((t: any) => ({ ...t, favs: favCounts[t.id] || 0 }))
+  .sort((a: any, b: any) => b.favs - a.favs)
+  .slice(0, 5);
+
+const codeRedemptions = codes.reduce((s: number, c: any) => s + (c.current_redemptions || 0), 0);
+const activeSubs = subs.filter((s: any) => s.is_active).length;
+
+const countryCount: Record<string, number> = {};
+tours.forEach((t: any) => { if (t.country) countryCount[t.country] = (countryCount[t.country] || 0) + 1; });
+const topCountries = Object.entries(countryCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+const categoryCount: Record<string, number> = {};
+tours.forEach((t: any) => { if (t.category) categoryCount[t.category] = (categoryCount[t.category] || 0) + 1; });
+const topCategories = Object.entries(categoryCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
 ---
 
 <DashboardLayout title="Analytics">
   <h1 class="text-xl font-semibold text-gray-900 mb-6">Analytics</h1>
-  <div class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
-    Analytics dashboard coming soon
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <p class="text-sm text-gray-500">Agencies</p>
+      <p class="text-2xl font-bold text-gray-900 mt-1">{agencyCount}</p>
+      <p class="text-xs text-gray-400 mt-1">{userCount} users · {adminCount} admins</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <p class="text-sm text-gray-500">Active tours</p>
+      <p class="text-2xl font-bold text-gray-900 mt-1">{activeTours}</p>
+      <p class="text-xs text-gray-400 mt-1">{pendingTours} pending</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <p class="text-sm text-gray-500">Active subscriptions</p>
+      <p class="text-2xl font-bold text-gray-900 mt-1">{activeSubs}</p>
+      <p class="text-xs text-gray-400 mt-1">{codeRedemptions} code redemptions</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <p class="text-sm text-gray-500">Total views</p>
+      <p class="text-2xl font-bold text-gray-900 mt-1">{totalViews.toLocaleString()}</p>
+      <p class="text-xs text-gray-400 mt-1">{favs.length} favourites</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <p class="text-sm text-gray-500">New in last 30 days</p>
+      <p class="text-2xl font-bold text-gray-900 mt-1">{last30Tours} tours · {last30Users} users</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <p class="text-sm text-gray-500">Payments</p>
+      <p class="text-2xl font-bold text-gray-900 mt-1">{payments.length} total</p>
+      <p class="text-xs text-gray-400 mt-1">{payments.filter((p: any) => p.status === 'completed').length} completed</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Top tours by views</h2>
+      <ul class="space-y-2 text-sm">
+        {topTours.map((t: any) => (
+          <li class="flex items-center justify-between gap-3">
+            <a href={`/tours/${t.slug}`} class="text-gray-700 hover:text-primary-600 truncate">{t.name}</a>
+            <span class="font-semibold text-gray-900 shrink-0">{(t.view_count || 0).toLocaleString()}</span>
+          </li>
+        ))}
+        {topTours.length === 0 && <li class="text-gray-400">No tours yet.</li>}
+      </ul>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Top tours by favourites</h2>
+      <ul class="space-y-2 text-sm">
+        {topFavTours.map((t: any) => (
+          <li class="flex items-center justify-between gap-3">
+            <a href={`/tours/${t.slug}`} class="text-gray-700 hover:text-primary-600 truncate">{t.name}</a>
+            <span class="font-semibold text-gray-900 shrink-0">{t.favs}</span>
+          </li>
+        ))}
+        {topFavTours.length === 0 && <li class="text-gray-400">No favourites yet.</li>}
+      </ul>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Top countries</h2>
+      <ul class="space-y-2 text-sm">
+        {topCountries.map(([c, n]) => (
+          <li class="flex items-center justify-between"><span class="text-gray-700">{c}</span><span class="font-semibold text-gray-900">{n}</span></li>
+        ))}
+      </ul>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Top categories</h2>
+      <ul class="space-y-2 text-sm">
+        {topCategories.map(([c, n]) => (
+          <li class="flex items-center justify-between"><span class="text-gray-700">{c}</span><span class="font-semibold text-gray-900">{n}</span></li>
+        ))}
+      </ul>
+    </div>
   </div>
 </DashboardLayout>

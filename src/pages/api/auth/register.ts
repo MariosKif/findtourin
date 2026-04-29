@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabase } from '../../../lib/supabase';
 import { findByCode } from '../../../lib/discount-codes';
 import { getPlan } from '../../../lib/pricing';
+import { sendEmail } from '../../../lib/email/send';
 
 export const prerender = false;
 
@@ -103,6 +104,23 @@ export const POST: APIRoute = async (context) => {
         console.error('register: discount-code lookup failed', err);
         codeFailedReason = 'rpc_failed';
       }
+    }
+
+    // Welcome email — fire-and-forget. Resend errors are logged but never
+    // block the registration response.
+    if ((role || 'user') === 'agency') {
+      void sendEmail({
+        to: email,
+        template: {
+          name: 'welcome-agency',
+          vars: { name, companyName: companyName || null, activatedPlan },
+        },
+      });
+    } else {
+      void sendEmail({
+        to: email,
+        template: { name: 'welcome-user', vars: { name } },
+      });
     }
 
     // Sign in to get session

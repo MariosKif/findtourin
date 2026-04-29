@@ -10,6 +10,10 @@ import { TOUR_LIST_SELECT, normalizeTour } from '../../lib/tour-helpers';
 import { supabase } from '../../lib/supabase';
 import { DEMO_TOURS } from '../../lib/demo-tours';
 
+// Public listing; depends on URL search params but not on session. Edge-cache
+// the computed HTML for 2 min keyed by full URL.
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=120, stale-while-revalidate=86400');
+
 const url = Astro.url;
 const params: SearchParams = {
   q: url.searchParams.get('q') || undefined,

@@ -6,6 +6,9 @@ import { supabase } from '../../../../lib/supabase';
 import { slugify, getCountryCopy, getCityCopy } from '../../../../lib/destinations';
 import { TOUR_LIST_SELECT, normalizeTour } from '../../../../lib/tour-helpers';
 
+// Public landing — edge-cache 5 min, stale up to a day.
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400');
+
 const { country: countrySlug, city: citySlug } = Astro.params;
 if (!countrySlug || !citySlug) return Astro.redirect('/tours');
 

@@ -6,6 +6,9 @@ import { supabase } from '../../lib/supabase';
 import { slugify } from '../../lib/destinations';
 import { TOUR_LIST_SELECT, normalizeTours } from '../../lib/tour-helpers';
 
+// Public agency profile — edge-cache 5 min, stale up to a day.
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400');
+
 const { slug } = Astro.params;
 if (!slug) return Astro.redirect('/tours');
 

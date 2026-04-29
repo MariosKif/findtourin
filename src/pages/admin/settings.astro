@@ -8,7 +8,7 @@ if (!user || user.role !== 'admin') return Astro.redirect('/');
 
 const { data: config } = await supabase.from('config').select('*').eq('key', 'pricing').maybeSingle();
 const value = ((config as any)?.value || {}) as { support_email?: string; maintenance_mode?: boolean };
-const supportEmail = value.support_email ?? 'support@findtoursin.com';
+const supportEmail = value.support_email ?? 'info@findtoursin.com';
 const maintenanceMode = value.maintenance_mode ?? false;
 ---
 

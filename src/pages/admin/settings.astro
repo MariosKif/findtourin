@@ -1,14 +1,61 @@
 ---
 export const prerender = false;
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { supabase } from '../../lib/supabase';
 
 const user = Astro.locals.user;
 if (!user || user.role !== 'admin') return Astro.redirect('/');
+
+const { data: config } = await supabase.from('config').select('*').eq('key', 'pricing').maybeSingle();
+const value = ((config as any)?.value || {}) as { listing_fee_cents?: number; support_email?: string; maintenance_mode?: boolean };
+const listingFeeCents = value.listing_fee_cents ?? 4900;
+const supportEmail = value.support_email ?? 'support@findtoursin.com';
+const maintenanceMode = value.maintenance_mode ?? false;
 ---
 
 <DashboardLayout title="Admin Settings">
-  <h1 class="text-xl font-semibold text-gray-900 mb-6">Settings</h1>
-  <div class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
-    Admin settings coming soon
-  </div>
+  <h1 class="text-xl font-semibold text-gray-900 mb-6">Admin Settings</h1>
+
+  <form id="settings-form" class="max-w-xl space-y-5 bg-white rounded-xl border border-gray-200 p-6">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Tour listing fee (cents)</label>
+      <input name="listing_fee_cents" type="number" min="0" value={listingFeeCents} class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+      <p class="mt-1 text-xs text-gray-500">Charged once per tour listing via Stripe Checkout. Currently used by `src/lib/stripe.ts`.</p>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Support email</label>
+      <input name="support_email" type="email" value={supportEmail} class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+    </div>
+    <div class="flex items-center gap-2">
+      <input name="maintenance_mode" type="checkbox" id="mm" checked={maintenanceMode} />
+      <label for="mm" class="text-sm">Maintenance mode flag (read-only across the site — to be enforced by middleware later)</label>
+    </div>
+    <div id="form-error" class="hidden text-sm text-red-600"></div>
+    <div id="form-ok" class="hidden text-sm text-green-700">Saved.</div>
+    <div>
+      <button type="submit" class="px-4 py-2 rounded-lg bg-primary-600 text-white font-semibold text-sm hover:bg-primary-700">Save settings</button>
+    </div>
+  </form>
 </DashboardLayout>
+
+<script>
+  const form = document.getElementById('settings-form') as HTMLFormElement;
+  const err = document.getElementById('form-error') as HTMLDivElement;
+  const ok = document.getElementById('form-ok') as HTMLDivElement;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.classList.add('hidden'); ok.classList.add('hidden');
+    const fd = new FormData(form);
+    const value = {
+      listing_fee_cents: Number(fd.get('listing_fee_cents')) || 0,
+      support_email: String(fd.get('support_email') || ''),
+      maintenance_mode: fd.get('maintenance_mode') === 'on',
+    };
+    const res = await fetch('/api/admin/config', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value }),
+    });
+    if (res.ok) { ok.classList.remove('hidden'); return; }
+    const data = await res.json().catch(() => ({}));
+    err.textContent = data.error || 'Failed to save'; err.classList.remove('hidden');
+  });
+</script>

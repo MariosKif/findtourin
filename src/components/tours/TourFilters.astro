@@ -28,7 +28,7 @@ const hasActiveFilters = [q, country, category, minPrice, maxPrice, departureCou
 
 {/* Mobile: collapsible */}
 <div class="lg:hidden">
-  <details class="group rounded-2xl bg-gray-50 border border-gray-300">
+  <details class="group rounded-2xl bg-gray-50 border border-gray-900">
     <summary class="flex cursor-pointer items-center justify-between rounded-2xl px-6 py-4 font-bold text-gray-900">
       <span class="flex items-center gap-2">
         <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,7 +46,7 @@ const hasActiveFilters = [q, country, category, minPrice, maxPrice, departureCou
         <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-        <input type="text" name="q" value={q || ''} placeholder="Search tours..." class="w-full rounded-xl border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" />
+        <input type="text" name="q" value={q || ''} placeholder="Search tours..." class="w-full rounded-xl border border-gray-900 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" />
       </div>
 
       {/* Departing From */}
@@ -56,7 +56,7 @@ const hasActiveFilters = [q, country, category, minPrice, maxPrice, departureCou
         placeholder="Departing from"
         value={departingFrom || ''}
         apiUrl="/api/filter-values?field=departure_country"
-        inputClass="rounded-xl border-gray-300 text-sm placeholder-gray-500"
+        inputClass="rounded-xl !border-gray-900 text-sm placeholder-gray-900"
       />
 
       {/* Destination Country */}
@@ -66,7 +66,7 @@ const hasActiveFilters = [q, country, category, minPrice, maxPrice, departureCou
         placeholder="Destination country"
         value={country || ''}
         apiUrl="/api/filter-values?field=country"
-        inputClass="rounded-xl border-gray-300 text-sm placeholder-gray-500"
+        inputClass="rounded-xl !border-gray-900 text-sm placeholder-gray-900"
       />
 
       {/* Category */}
@@ -76,14 +76,14 @@ const hasActiveFilters = [q, country, category, minPrice, maxPrice, departureCou
         placeholder="All Categories"
         value={category || ''}
         apiUrl="/api/filter-values?field=category"
-        inputClass="rounded-xl border-gray-300 text-sm placeholder-gray-500"
+        inputClass="rounded-xl !border-gray-900 text-sm placeholder-gray-900"
       />
 
       {/* Price Range */}
       <div class="flex items-center gap-2">
-        <input type="number" name="minPrice" value={minPrice ?? ''} placeholder="Min price" min="0" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" />
+        <input type="number" name="minPrice" value={minPrice ?? ''} placeholder="Min price" min="0" class="w-full rounded-xl border border-gray-900 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" />
         <span class="text-gray-500">&ndash;</span>
-        <input type="number" name="maxPrice" value={maxPrice ?? ''} placeholder="Max price" min="0" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" />
+        <input type="number" name="maxPrice" value={maxPrice ?? ''} placeholder="Max price" min="0" class="w-full rounded-xl border border-gray-900 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" />
       </div>
 
       {/* Travel Dates */}
@@ -97,7 +97,7 @@ const hasActiveFilters = [q, country, category, minPrice, maxPrice, departureCou
 </div>
 
 {/* Desktop: horizontal filter bar */}
-<form method="GET" action="/tours" class="hidden lg:block rounded-2xl bg-gray-50 border border-gray-300 px-6 py-5">
+<form method="GET" action="/tours" class="hidden lg:block rounded-2xl bg-gray-50 border border-gray-900 px-6 py-5">
   <div class="grid grid-cols-4 gap-3">
     {/* Row 1 */}
     {/* Search */}
@@ -110,7 +110,7 @@ const hasActiveFilters = [q, country, category, minPrice, maxPrice, departureCou
         name="q"
         value={q || ''}
         placeholder="Search tours..."
-        class="w-full rounded-xl border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-500 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        class="w-full rounded-xl border border-gray-900 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
       />
     </div>
 
@@ -125,7 +125,7 @@ const hasActiveFilters = [q, country, category, minPrice, maxPrice, departureCou
         placeholder="Departing from"
         value={departingFrom || ''}
         apiUrl="/api/filter-values?field=departure_country"
-        inputClass="rounded-xl border-gray-300 text-sm pl-10 placeholder-gray-500"
+        inputClass="rounded-xl !border-gray-900 text-sm pl-10 placeholder-gray-900"
       />
     </div>
 
@@ -141,7 +141,7 @@ const hasActiveFilters = [q, country, category, minPrice, maxPrice, departureCou
         placeholder="Destination country"
         value={country || ''}
         apiUrl="/api/filter-values?field=country"
-        inputClass="rounded-xl border-gray-300 text-sm pl-10 placeholder-gray-500"
+        inputClass="rounded-xl !border-gray-900 text-sm pl-10 placeholder-gray-900"
       />
     </div>
 
@@ -152,7 +152,7 @@ const hasActiveFilters = [q, country, category, minPrice, maxPrice, departureCou
       placeholder="All Categories"
       value={category || ''}
       apiUrl="/api/filter-values?field=category"
-      inputClass="rounded-xl border-gray-300 text-sm placeholder-gray-500"
+      inputClass="rounded-xl !border-gray-900 text-sm placeholder-gray-900"
     />
   </div>
 
@@ -165,7 +165,7 @@ const hasActiveFilters = [q, country, category, minPrice, maxPrice, departureCou
       value={minPrice ?? ''}
       placeholder="Min price"
       min="0"
-      class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-500 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+      class="w-full rounded-xl border border-gray-900 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
     />
 
     {/* Max Price */}
@@ -175,7 +175,7 @@ const hasActiveFilters = [q, country, category, minPrice, maxPrice, departureCou
       value={maxPrice ?? ''}
       placeholder="Max price"
       min="0"
-      class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-500 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+      class="w-full rounded-xl border border-gray-900 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
     />
 
     {/* Travel Dates */}

@@ -15,7 +15,7 @@ if (!user || user.role !== 'admin') return Astro.redirect('/auth/login');
     <form id="new-code-form" class="space-y-5 bg-white rounded-xl border border-gray-200 p-6">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Code</label>
-        <input name="code" required pattern="[A-Za-z0-9-]{3,32}" class="w-full border border-gray-300 rounded-lg px-3 py-2 uppercase" placeholder="WELCOME-FREE" />
+        <input name="code" required pattern="[-A-Za-z0-9]{3,32}" class="w-full border border-gray-300 rounded-lg px-3 py-2 uppercase" placeholder="WELCOME-FREE" />
         <p class="mt-1 text-xs text-gray-500">3–32 chars (letters, digits, dashes). Will be stored uppercased.</p>
       </div>
 

@@ -113,14 +113,6 @@ const totalViews = Number(tour.view_count || 0);
 
   {/* Trust Signals */}
   <div class="mt-6 border-t border-gray-100 pt-6 space-y-3">
-    {/* Response Time */}
-    <div class="flex items-center gap-2 text-sm text-gray-600">
-      <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span>Response time: Usually within 2 hours</span>
-    </div>
-
     {/* Total views — shown only once a tour has any traffic */}
     {totalViews > 0 && (
       <div class="flex items-center gap-2 text-sm text-gray-600">
@@ -133,7 +125,7 @@ const totalViews = Number(tour.view_count || 0);
     )}
 
     {/* Tour Rating */}
-    {tour.rating && (
+    {tour.rating && tour.rating > 0 && (
       <div class="flex items-center gap-2 text-sm text-gray-600">
         <div class="flex items-center gap-0.5">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -150,7 +142,7 @@ const totalViews = Number(tour.view_count || 0);
           ))}
         </div>
         <span class="font-semibold text-gray-900">{tour.rating}</span>
-        {tour.review_count && (
+        {tour.review_count && tour.review_count > 0 && (
           <span class="text-gray-400">({tour.review_count} reviews)</span>
         )}
       </div>

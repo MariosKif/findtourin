@@ -8,6 +8,11 @@ const user = Astro.locals.user;
 if (user) {
   return Astro.redirect('/dashboard');
 }
+
+// Pricing CTA links here with ?role=agency to land agencies on the
+// agency-flavoured form (extra fields visible, role pre-selected).
+const roleParam = Astro.url.searchParams.get('role');
+const defaultRole = roleParam === 'agency' ? 'agency' : 'user';
 ---
 
 <PublicLayout title="Create Account" noIndex={true}>
@@ -25,7 +30,7 @@ if (user) {
           </div>
         </div>
 
-        <RegisterForm />
+        <RegisterForm defaultRole={defaultRole} />
 
         <p class="mt-6 text-center text-sm text-gray-600">
           Already have an account?

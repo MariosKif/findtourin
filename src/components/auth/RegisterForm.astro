@@ -3,6 +3,12 @@ import Input from '../ui/Input.astro';
 import Select from '../ui/Select.astro';
 import Button from '../ui/Button.astro';
 
+interface Props {
+  defaultRole?: 'user' | 'agency';
+}
+
+const { defaultRole = 'user' } = Astro.props;
+
 const roleOptions = [
   { value: 'user', label: 'User' },
   { value: 'agency', label: 'Agency' },
@@ -50,11 +56,11 @@ const roleOptions = [
     label="Are you an Agency or User?"
     name="role"
     options={roleOptions}
-    value="user"
+    value={defaultRole}
     required
   />
 
-  <div id="agency-fields" class="hidden space-y-5">
+  <div id="agency-fields" class:list={[defaultRole === 'agency' ? 'space-y-5' : 'hidden space-y-5']}>
     <div class="rounded-xl bg-green-50 border border-green-200 p-4 space-y-3">
       <div class="flex items-center gap-2">
         <span class="text-2xl font-bold text-green-700">0%</span>

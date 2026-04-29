@@ -136,21 +136,17 @@ const metaDescription = 'Simple, transparent pricing for tour agencies. 0% commi
               ))}
             </ul>
 
-            <form method="POST" action="/api/stripe/checkout-plan" class="mt-auto">
-              <input type="hidden" name="planId" value={plan.id} />
-              <input type="hidden" name="billingPeriod" value="monthly" class="billing-period-input" />
-              <button
-                type="submit"
-                class:list={[
-                  'w-full py-3 px-6 rounded-xl font-semibold text-sm text-center transition-all duration-200 cursor-pointer',
-                  isPopular
-                    ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-md shadow-primary-200 hover:shadow-lg hover:shadow-primary-300'
-                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-primary-300 hover:text-primary-600 hover:bg-primary-50',
-                ]}
-              >
-                Get Started
-              </button>
-            </form>
+            <a
+              href={`/auth/register?role=agency&plan=${plan.id}`}
+              class:list={[
+                'mt-auto w-full py-3 px-6 rounded-xl font-semibold text-sm text-center transition-all duration-200 cursor-pointer block',
+                isPopular
+                  ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-md shadow-primary-200 hover:shadow-lg hover:shadow-primary-300'
+                  : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-primary-300 hover:text-primary-600 hover:bg-primary-50',
+              ]}
+            >
+              Get Started
+            </a>
           </div>
         );
       })}

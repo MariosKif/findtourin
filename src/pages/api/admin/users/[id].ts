@@ -36,7 +36,9 @@ export const PUT: APIRoute = async (context) => {
   const { id } = context.params;
   if (!id) return json({ error: 'Missing user ID' }, 400);
 
-  const body = await context.request.json();
+  let body: any = {};
+  try { body = await context.request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+
   const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
   if (body.role !== undefined) updateData.role = body.role;
   if (body.isVerified !== undefined) updateData.is_verified = body.isVerified;
@@ -46,9 +48,16 @@ export const PUT: APIRoute = async (context) => {
     .update(updateData)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error || !updated) return json({ error: 'User not found' }, 404);
+  if (error) {
+    console.error('PUT /api/admin/users/[id] update error', { id, updateData, error });
+    return json({ error: error.message, code: error.code }, 500);
+  }
+  if (!updated) {
+    console.error('PUT /api/admin/users/[id] no row updated', { id, updateData });
+    return json({ error: 'User not found', id }, 404);
+  }
 
   return json(updated);
 };

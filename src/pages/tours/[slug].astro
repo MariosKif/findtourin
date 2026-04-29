@@ -94,6 +94,9 @@ const tourWithAgency = {
 };
 
 // --- FAQ (per-tour, with schema) ---
+// Display fallback for tours without a real agency — keeps copy and JSON-LD
+// from rendering the literal string "null" via template-literal coercion.
+const agencyDisplay = tourWithAgency.agencyName ?? 'the tour operator';
 const currency = tour.currency || 'EUR';
 const currencySymbol = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency;
 const durationText = tour.duration_days
@@ -102,7 +105,7 @@ const durationText = tour.duration_days
 const faqs = [
   {
     q: `How much does ${tour.name} cost?`,
-    a: `${tour.name} starts at ${currencySymbol}${Number(tour.price).toLocaleString()} per person. Contact ${tourWithAgency.agencyName} directly for group pricing, availability, and any discounts.`,
+    a: `${tour.name} starts at ${currencySymbol}${Number(tour.price).toLocaleString()} per person. Contact ${agencyDisplay} directly for group pricing, availability, and any discounts.`,
   },
   {
     q: `How long is this tour?`,
@@ -110,11 +113,11 @@ const faqs = [
   },
   {
     q: `How do I book ${tour.name}?`,
-    a: `FindToursIn is a directory — contact ${tourWithAgency.agencyName} directly using the email, phone, or website shown on this page. There are no booking fees or commissions: you deal straight with the operator.`,
+    a: `FindToursIn is a directory — contact ${agencyDisplay} directly using the email, phone, or website shown on this page. There are no booking fees or commissions: you deal straight with the operator.`,
   },
   {
     q: `What's included?`,
-    a: `Inclusions vary by itinerary. Reach out to ${tourWithAgency.agencyName} for the full list of what's covered, optional add-ons, and any gear or preparation recommendations.`,
+    a: `Inclusions vary by itinerary. Reach out to ${agencyDisplay} for the full list of what's covered, optional add-ons, and any gear or preparation recommendations.`,
   },
 ];
 
@@ -219,10 +222,9 @@ const citySlug = tour.city ? slugify(tour.city) : null;
       "priceCurrency": tour.currency,
       "availability": "https://schema.org/InStock",
     },
-    "provider": {
-      "@type": "TravelAgency",
-      "name": tourWithAgency.agencyName,
-    },
+    "provider": tourWithAgency.agencyName
+      ? { "@type": "TravelAgency", "name": tourWithAgency.agencyName }
+      : undefined,
     "itinerary": {
       "@type": "ItemList",
       "description": `${tour.duration_days || ''} day tour in ${tour.city}, ${tour.country}`,

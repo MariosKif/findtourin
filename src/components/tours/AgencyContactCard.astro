@@ -111,7 +111,9 @@ const totalViews = Number(tour.view_count || 0);
     </a>
   )}
 
-  {/* Trust Signals */}
+  {/* Trust Signals — only render the bordered block when there is at least
+      one signal to show, otherwise we'd emit an empty-bordered gap. */}
+  {(totalViews > 0 || (tour.rating && tour.rating > 0)) && (
   <div class="mt-6 border-t border-gray-100 pt-6 space-y-3">
     {/* Total views — shown only once a tour has any traffic */}
     {totalViews > 0 && (
@@ -148,4 +150,5 @@ const totalViews = Number(tour.view_count || 0);
       </div>
     )}
   </div>
+  )}
 </div>

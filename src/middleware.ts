@@ -6,6 +6,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return next();
   }
 
+  // Blog is prerendered and stateless — skip cookie/auth work to avoid
+  // `Astro.request.headers` warnings on prerendered routes.
+  if (context.url.pathname.startsWith('/blog')) {
+    return next();
+  }
+
   try {
     const accessToken = context.cookies.get('sb-access-token')?.value;
     if (accessToken) {

@@ -1,4 +1,6 @@
 ---
+import { slugify } from '../../lib/destinations';
+
 interface Props {
   tour: {
     price: string;
@@ -14,6 +16,7 @@ interface Props {
 }
 
 const { tour } = Astro.props;
+const agencyProfileUrl = tour.agencyName ? `/agencies/${slugify(tour.agencyName)}` : null;
 
 const currencySymbols: Record<string, string> = {
   EUR: '\u20AC',
@@ -84,15 +87,15 @@ const viewersToday = Math.floor(Math.random() * 21) + 5;
   </div>
 
   {/* Agency Info */}
-  {tour.agencyName && (
-    <div class="mt-6 border-t border-gray-100 pt-6">
+  {tour.agencyName && agencyProfileUrl && (
+    <a href={agencyProfileUrl} class="mt-6 border-t border-gray-100 pt-6 block -mx-6 px-6 hover:bg-gray-50 transition-colors">
       <div class="flex items-center gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-600">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
         </div>
-        <div>
+        <div class="flex-1">
           <div class="flex items-center gap-1.5">
             <span class="font-semibold text-gray-900">{tour.agencyName}</span>
             {tour.agencyVerified && (
@@ -101,12 +104,10 @@ const viewersToday = Math.floor(Math.random() * 21) + 5;
               </svg>
             )}
           </div>
-          {tour.agencyVerified && (
-            <span class="text-xs text-primary-500">Verified Agency</span>
-          )}
+          <span class="text-xs text-primary-600">View agency profile &rarr;</span>
         </div>
       </div>
-    </div>
+    </a>
   )}
 
   {/* Trust Signals */}

@@ -1,9 +1,0 @@
-[    2536ms] [WARNING] jQuery.Deferred exception: ScrollTrigger is not defined ReferenceError: ScrollTrigger is not defined
-    at HTMLDocument.<anonymous> (https://cloudinary.com/:2887:33)
-    at e (https://cloudinary.com/wp-content/themes/cld-2021/assets/js/jquery-3.4.1.min.js?ver=3.4.1:2:29453)
-    at t (https://cloudinary.com/wp-content/themes/cld-2021/assets/js/jquery-3.4.1.min.js?ver=3.4.1:2:29755) undefined @ https://cloudinary.com/wp-content/themes/cld-2021/assets/js/jquery-3.4.1.min.js?ver=3.4.1:1
-[    2552ms] ReferenceError: ScrollTrigger is not defined
-    at HTMLDocument.<anonymous> (https://cloudinary.com/:2887:33)
-    at e (https://cloudinary.com/wp-content/themes/cld-2021/assets/js/jquery-3.4.1.min.js?ver=3.4.1:2:29453)
-    at t (https://cloudinary.com/wp-content/themes/cld-2021/assets/js/jquery-3.4.1.min.js?ver=3.4.1:2:29755)
-[    2935ms] [WARNING] MktoForms2 is not defined. Make sure the Marketo Forms 2.0 script is loaded. @ :0

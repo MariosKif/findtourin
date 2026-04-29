@@ -1,39 +1,21 @@
 ---
-export const prerender = true;
+export const prerender = false;
 import { getCollection } from 'astro:content';
 import PublicLayout from '../../../layouts/PublicLayout.astro';
 import BlogCard from '../../../components/blog/BlogCard.astro';
 
-export async function getStaticPaths() {
-  const allPosts = await getCollection('blog', ({ data }) => !data.draft);
+const { tag } = Astro.params;
+if (!tag) return Astro.redirect('/blog');
 
-  // Collect all unique tags and categories
-  const tagMap = new Map<string, typeof allPosts>();
+const allPosts = await getCollection('blog', ({ data }) => !data.draft);
+const slugify = (s: string) => s.toLowerCase().replace(/\s+/g, '-');
 
-  allPosts.forEach(post => {
-    // Add category as a tag route
-    const catSlug = post.data.category.toLowerCase().replace(/\s+/g, '-');
-    if (!tagMap.has(catSlug)) tagMap.set(catSlug, []);
-    tagMap.get(catSlug)!.push(post);
+const posts = allPosts
+  .filter((p) => slugify(p.data.category) === tag || p.data.tags.some((t) => slugify(t) === tag))
+  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 
-    // Add each tag
-    post.data.tags.forEach(tag => {
-      const slug = tag.toLowerCase().replace(/\s+/g, '-');
-      if (!tagMap.has(slug)) tagMap.set(slug, []);
-      tagMap.get(slug)!.push(post);
-    });
-  });
+if (posts.length === 0) return Astro.redirect('/blog');
 
-  return Array.from(tagMap.entries()).map(([tag, posts]) => ({
-    params: { tag },
-    props: {
-      tag,
-      posts: posts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime()),
-    },
-  }));
-}
-
-const { tag, posts } = Astro.props;
 const displayTag = tag.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
 ---
 

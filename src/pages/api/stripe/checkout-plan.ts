@@ -30,26 +30,28 @@ async function parseInputs(request: Request) {
   };
 }
 
+const redirectResponse = (location: string, status = 303) =>
+  new Response(null, { status, headers: { Location: location } });
+
 export const POST: APIRoute = async (context) => {
-  const user = await getAuthenticatedUser(context);
-  const { planId, billingPeriod, isForm } = await parseInputs(context.request);
-
-  if (!user) {
-    // Bounce them to register, baking the plan into the URL.
-    return context.redirect(`/auth/register?plan=${encodeURIComponent(planId)}`, 303);
-  }
-  if (user.role !== 'agency' && user.role !== 'admin') {
-    return json({ error: 'Forbidden' }, 403);
-  }
-
-  const plan = getPlan(planId);
-  if (!plan) return json({ error: 'Unknown plan' }, 400);
-
-  const unitAmount = billingPeriod === 'annual' ? plan.annualPriceCents : plan.monthlyPriceCents;
-  const interval = billingPeriod === 'annual' ? 'year' : 'month';
-  const origin = new URL(context.request.url).origin;
-
   try {
+    const user = await getAuthenticatedUser(context);
+    const { planId, billingPeriod, isForm } = await parseInputs(context.request);
+
+    if (!user) {
+      return redirectResponse(`/auth/register?plan=${encodeURIComponent(planId)}`);
+    }
+    if (user.role !== 'agency' && user.role !== 'admin') {
+      return json({ error: 'Forbidden' }, 403);
+    }
+
+    const plan = getPlan(planId);
+    if (!plan) return json({ error: 'Unknown plan' }, 400);
+
+    const unitAmount = billingPeriod === 'annual' ? plan.annualPriceCents : plan.monthlyPriceCents;
+    const interval = billingPeriod === 'annual' ? 'year' : 'month';
+    const origin = new URL(context.request.url).origin;
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer_email: user.email,
@@ -73,10 +75,10 @@ export const POST: APIRoute = async (context) => {
       cancel_url: `${origin}/pricing?cancelled=1`,
     });
 
-    if (isForm) return context.redirect(session.url!, 303);
+    if (isForm) return redirectResponse(session.url!);
     return json({ url: session.url });
   } catch (err: any) {
-    console.error('checkout-plan: stripe error', err);
+    console.error('checkout-plan: failed', err);
     return json({ error: err?.message || 'Failed to create checkout session' }, 500);
   }
 };

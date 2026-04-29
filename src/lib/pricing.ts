@@ -93,8 +93,3 @@ export function getAnnualSavingsCents(plan: PricingPlan): number {
 export function formatCents(cents: number): string {
   return (cents / 100).toFixed(2);
 }
-
-export function getCostPerListing(plan: PricingPlan, period: BillingPeriod): number {
-  const monthly = getMonthlyEquivalentCents(plan, period);
-  return Math.round(monthly / plan.maxListings);
-}

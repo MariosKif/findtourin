@@ -1,6 +1,6 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
-import { PLANS, formatCents, getAnnualSavingsCents, getMonthlyEquivalentCents, getCostPerListing } from '../lib/pricing';
+import { PLANS, formatCents, getAnnualSavingsCents, getMonthlyEquivalentCents } from '../lib/pricing';
 
 const faqs = [
   {
@@ -75,9 +75,7 @@ const metaDescription = 'Simple, transparent pricing for tour agencies. 0% commi
         const monthlyEquiv = getMonthlyEquivalentCents(plan, 'monthly');
         const annualEquiv = getMonthlyEquivalentCents(plan, 'annual');
         const annualSavings = getAnnualSavingsCents(plan);
-        const costPerListingMonthly = getCostPerListing(plan, 'monthly');
-        const costPerListingAnnual = getCostPerListing(plan, 'annual');
-        const isPopular = !!plan.popular;
+const isPopular = !!plan.popular;
 
         return (
           <div
@@ -117,14 +115,6 @@ const metaDescription = 'Simple, transparent pricing for tour agencies. 0% commi
               <p class="text-sm text-gray-500 mt-1">per month, billed annually <span class="text-gray-400">+ VAT</span></p>
             </div>
 
-            <div class="mt-2 mb-2">
-              <span class="cost-per-listing-monthly text-sm font-medium text-primary-600">
-                &euro;{formatCents(costPerListingMonthly)} per listing
-              </span>
-              <span class="cost-per-listing-annual hidden text-sm font-medium text-primary-600">
-                &euro;{formatCents(costPerListingAnnual)} per listing
-              </span>
-            </div>
 
             <div class="annual-savings hidden mb-4">
               <span class="inline-flex items-center gap-1 text-sm font-semibold text-green-600">
@@ -269,8 +259,6 @@ const metaDescription = 'Simple, transparent pricing for tour agencies. 0% commi
   function updatePricing() {
     document.querySelectorAll('.price-monthly').forEach(el => el.classList.toggle('hidden', isAnnual));
     document.querySelectorAll('.price-annual').forEach(el => el.classList.toggle('hidden', !isAnnual));
-    document.querySelectorAll('.cost-per-listing-monthly').forEach(el => el.classList.toggle('hidden', isAnnual));
-    document.querySelectorAll('.cost-per-listing-annual').forEach(el => el.classList.toggle('hidden', !isAnnual));
     document.querySelectorAll('.annual-savings').forEach(el => el.classList.toggle('hidden', !isAnnual));
     document.querySelectorAll('.annual-savings-spacer').forEach(el => el.classList.toggle('hidden', isAnnual));
 

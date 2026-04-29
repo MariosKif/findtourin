@@ -103,32 +103,50 @@ import Button from '../components/ui/Button.astro';
   </div>
 
   <script>
+    // Wired to Web3Forms — they email submissions to the address registered
+    // against the access key. No backend code needed; the only secret here is
+    // the access key, which is meant to be public per Web3Forms' design.
+    const WEB3FORMS_KEY = 'cf975334-f4ae-4a38-b3f5-81fcf7839b03';
+
     const form = document.getElementById('contact-form') as HTMLFormElement;
+    const submitBtn = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const msgEl = document.getElementById('form-message');
+
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const msgEl = document.getElementById('form-message')!;
-      const data = Object.fromEntries(new FormData(form));
+      if (!submitBtn || !msgEl) return;
+
+      const formData = new FormData(form);
+      formData.append('access_key', WEB3FORMS_KEY);
+
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = 'Sending...';
+      submitBtn.disabled = true;
+      msgEl.classList.add('hidden');
 
       try {
-        const res = await fetch('/api/contact', {
+        const res = await fetch('https://api.web3forms.com/submit', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
+          body: formData,
         });
+        const data = await res.json().catch(() => ({}));
 
         msgEl.classList.remove('hidden', 'text-red-600', 'text-green-600');
-        if (res.ok) {
+        if (res.ok && data.success !== false) {
           msgEl.classList.add('text-green-600');
-          msgEl.textContent = 'Message sent! We\'ll get back to you soon.';
+          msgEl.textContent = 'Message sent. We will get back to you shortly.';
           form.reset();
         } else {
           msgEl.classList.add('text-red-600');
-          msgEl.textContent = 'Failed to send message. Please try again.';
+          msgEl.textContent = data.message || 'Failed to send message. Please try again.';
         }
       } catch {
-        msgEl.classList.remove('hidden');
+        msgEl.classList.remove('hidden', 'text-green-600');
         msgEl.classList.add('text-red-600');
-        msgEl.textContent = 'An error occurred. Please try again.';
+        msgEl.textContent = 'Network error. Please try again.';
+      } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
       }
     });
   </script>

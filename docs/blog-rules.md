@@ -71,6 +71,7 @@ description: "A compelling meta description (145-152 characters). Include focus 
 date: "YYYY-MM-DD"
 updatedDate: "YYYY-MM-DD"  # optional, set when content is updated
 author: "FindToursIn"
+image: "/images/blog/<slug>.jpg"
 category: "Destinations"
 tags:
   - primary keyword
@@ -91,6 +92,7 @@ featured: false
 | `date` | string | Yes | Format: `YYYY-MM-DD` |
 | `updatedDate` | string | No | Set when content is updated. |
 | `author` | string | Yes | Always `"FindToursIn"` |
+| `image` | string | **Yes** | Relative path to a hero image associated with the title. Save the file under `public/images/blog/<slug>.jpg`, ≤1600px wide, ≤600 KB. Set this field to `"/images/blog/<slug>.jpg"`. Schema enforces this. |
 | `category` | string | Yes | One of: Destinations, Travel Tips, Guides, Agency Tips, Sustainable Travel |
 | `tags` | array | Yes | 5-12 relevant tags. Include destination names, activity types, and long-tail variations. |
 | `featured` | boolean | Yes | Set `true` for only ONE post (the featured post on blog listing). All others `false`. |
@@ -288,6 +290,7 @@ Every post must be optimized for AI Overviews and featured snippets:
 - [ ] No 50%+ content overlap
 
 ### Technical SEO
+- [ ] Hero image saved at `public/images/blog/<slug>.jpg` (≤1600px wide, ≤600 KB) and referenced from frontmatter `image:` — every post MUST have an image associated to the title
 - [ ] Focus keyword in URL/slug (max 70 chars)
 - [ ] Focus keyword in title (55-58 chars, near beginning)
 - [ ] Focus keyword in meta description (145-152 chars)

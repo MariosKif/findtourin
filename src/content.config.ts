@@ -9,7 +9,7 @@ const blog = defineCollection({
     date: z.string(),
     updatedDate: z.string().optional(),
     author: z.string().default('FindToursIn'),
-    image: z.string().optional(),
+    image: z.string(),
     category: z.string().default('Travel Tips'),
     tags: z.array(z.string()).default([]),
     featured: z.boolean().default(false),

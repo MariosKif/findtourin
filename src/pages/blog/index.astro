@@ -8,9 +8,12 @@ import { getReadingTime } from '../../lib/utils';
 const allPosts = await getCollection('blog', ({ data }) => !data.draft);
 const sortedPosts = allPosts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 
-// Get featured post
-const featuredPost = sortedPosts.find(p => p.data.featured) || sortedPosts[0];
-const otherPosts = sortedPosts.filter(p => p.id !== featuredPost?.id);
+// The most recent post sits at the top as the hero card; everything else
+// flows below in the grid. We deliberately don't honour `featured: true`
+// here anymore — recency wins, so a freshly published post is never buried
+// under an older "featured" one.
+const featuredPost = sortedPosts[0];
+const otherPosts = sortedPosts.slice(1);
 
 // Get unique categories
 const categories = [...new Set(sortedPosts.map(p => p.data.category))].sort();

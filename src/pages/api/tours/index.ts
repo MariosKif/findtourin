@@ -108,7 +108,10 @@ export const POST: APIRoute = async (context) => {
 
     if (error) throw error;
 
-    return json(tour, 201);
+    // After creation, send the agency to the edit page so they can attach
+    // images using <ImageUpload> (which needs a tourId). The edit page
+    // already enforces the plan-aware image cap.
+    return json({ tour, redirect: `/dashboard/tours/${tour.id}/edit?new=1` }, 201);
   } catch (error) {
     console.error('Error creating tour:', error);
     return json({ error: 'Failed to create tour' }, 500);

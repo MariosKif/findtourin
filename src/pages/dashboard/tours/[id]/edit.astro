@@ -25,6 +25,8 @@ if (tour.agency_id !== user.id && user.role !== 'admin') return Astro.redirect('
 const { plan } = await getActivePlanForUser(tour.agency_id);
 const maxImages = plan.maxImagesPerTour;
 
+const isJustCreated = Astro.url.searchParams.get('new') === '1';
+
 // Images are stored in the tour document
 const images = (tour.images || []).map((img: any, index: number) => ({
   ...img,
@@ -36,6 +38,18 @@ const images = (tour.images || []).map((img: any, index: number) => ({
 
 <DashboardLayout title={`Edit: ${tour.name}`}>
   <div class="max-w-4xl space-y-8">
+    {isJustCreated && (
+      <div class="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800 flex items-start gap-3">
+        <svg class="w-5 h-5 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+          <p class="font-semibold">Tour created. Now add up to {maxImages} images below.</p>
+          <p class="text-xs text-green-700 mt-1">Your listing will go live after you complete the listing-fee payment.</p>
+        </div>
+      </div>
+    )}
+
     <TourForm tour={tour} />
 
     <div class="bg-white rounded-xl border border-gray-200 p-6">

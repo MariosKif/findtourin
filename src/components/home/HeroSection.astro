@@ -1,22 +1,46 @@
 ---
-const locations = [
-  "Greece", "Bulgaria", "Turkey", "Germany", "Sweden",
-  "Scotland", "Italy", "Spain", "France", "Japan",
-  "Morocco", "Peru", "Iceland", "Thailand", "Australia"
-];
+interface Stats {
+  tours: number;
+  agencies: number;
+  countries: number;
+}
+
+interface Props {
+  stats?: Stats;
+  locations?: string[];
+}
+
+const {
+  stats,
+  locations = [
+    "Greece", "Bulgaria", "Turkey", "Germany", "Sweden",
+    "Scotland", "Italy", "Spain", "France", "Japan",
+    "Morocco", "Peru", "Iceland", "Thailand", "Australia",
+  ],
+} = Astro.props;
+
+const formatStat = (n: number) => {
+  if (n >= 100) return `${Math.floor(n / 10) * 10}+`;
+  if (n >= 10) return `${n}+`;
+  return `${n}`;
+};
 ---
 
-<section class="relative min-h-screen flex items-center justify-center overflow-hidden -mt-[72px] pt-[72px] bg-gray-900">
-  <!-- Hero background image -->
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden -mt-[72px] pt-[72px] bg-gradient-to-br from-primary-700 via-primary-800 to-gray-900">
+  <!-- Hero background image. Fades in once it loads so the pre-image state is
+       just the branded gradient above (instead of a near-black 'shadow' that
+       fresh visitors see while the JPG downloads on a cold cache). -->
   <img
     src="/images/hero-bg.jpg"
     alt=""
-    class="absolute inset-0 w-full h-full object-cover"
+    class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500"
     fetchpriority="high"
     decoding="async"
+    onload="this.classList.remove('opacity-0')"
   />
-  <!-- Dark overlay -->
-  <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60"></div>
+  <!-- Text-contrast overlay (kept light; the branded gradient already provides
+       enough contrast for the white headline before the image fades in). -->
+  <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40"></div>
 
   <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-20">
     <!-- Heading -->
@@ -75,25 +99,26 @@ const locations = [
   </div>
 </section>
 
-<!-- Stats Band -->
-<section id="hero-stats" class="bg-gray-50 py-8">
-  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-center items-center divide-x divide-gray-300">
-      <div class="text-center px-8 sm:px-12">
-        <div class="font-heading text-3xl sm:text-4xl font-normal text-gray-900">500+</div>
-        <div class="text-gray-500 text-sm mt-1">Tours</div>
-      </div>
-      <div class="text-center px-8 sm:px-12">
-        <div class="font-heading text-3xl sm:text-4xl font-normal text-gray-900">200+</div>
-        <div class="text-gray-500 text-sm mt-1">Agencies</div>
-      </div>
-      <div class="text-center px-8 sm:px-12">
-        <div class="font-heading text-3xl sm:text-4xl font-normal text-gray-900">50+</div>
-        <div class="text-gray-500 text-sm mt-1">Countries</div>
+{stats && stats.tours > 0 && (
+  <section id="hero-stats" class="bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-center items-center divide-x divide-gray-300">
+        <div class="text-center px-8 sm:px-12">
+          <div class="font-heading text-3xl sm:text-4xl font-normal text-gray-900">{formatStat(stats.tours)}</div>
+          <div class="text-gray-500 text-sm mt-1">{stats.tours === 1 ? 'Tour' : 'Tours'}</div>
+        </div>
+        <div class="text-center px-8 sm:px-12">
+          <div class="font-heading text-3xl sm:text-4xl font-normal text-gray-900">{formatStat(stats.agencies)}</div>
+          <div class="text-gray-500 text-sm mt-1">{stats.agencies === 1 ? 'Agency' : 'Agencies'}</div>
+        </div>
+        <div class="text-center px-8 sm:px-12">
+          <div class="font-heading text-3xl sm:text-4xl font-normal text-gray-900">{formatStat(stats.countries)}</div>
+          <div class="text-gray-500 text-sm mt-1">{stats.countries === 1 ? 'Country' : 'Countries'}</div>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+)}
 
 <script>
   import gsap from "gsap";

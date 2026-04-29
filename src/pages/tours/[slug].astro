@@ -155,7 +155,7 @@ const citySlug = tour.city ? slugify(tour.city) : null;
     <div class="flex flex-col lg:flex-row gap-8">
       <!-- Main Content -->
       <div class="flex-1">
-        <TourGallery images={images.map(img => ({ url: img.url, altText: img.alt_text || img.altText || '' }))} />
+        <TourGallery images={images.map(img => ({ url: img.url, altText: img.alt_text || img.altText || '' }))} locale={Astro.currentLocale} />
         <div class="mt-8">
           <TourInfo tour={tour} reviews={reviews} />
         </div>

@@ -71,5 +71,30 @@ const fullTitle = title === 'FindToursIn' ? title : `${title} | FindToursIn`;
   </head>
   <body class="min-h-screen bg-white text-gray-900 antialiased">
     <slot />
+
+    <!-- Global <img> error fallback. If a remote image (Unsplash, Supabase
+         storage, agency upload, etc.) fails to load we paint a neutral
+         placeholder over the image's box so the layout never collapses or
+         shows a browser-default broken-image glyph. Opt-out per image with
+         `data-no-fallback`. Inline so it runs before any image errors fire. -->
+    <script is:inline>
+      (function () {
+        const PLACEHOLDER =
+          "data:image/svg+xml;utf8," +
+          encodeURIComponent(
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='1.5'><rect x='3' y='3' width='18' height='18' rx='2' ry='2' fill='%23f3f4f6'/><circle cx='8.5' cy='8.5' r='1.5'/><path d='M21 15l-5-5L5 21'/></svg>"
+          );
+        function handle(target) {
+          if (!(target instanceof HTMLImageElement)) return;
+          if (target.dataset.fallbackApplied === '1') return;
+          if (target.dataset.noFallback === '1') return;
+          target.dataset.fallbackApplied = '1';
+          target.src = PLACEHOLDER;
+          target.classList.add('object-contain', 'bg-gray-100', 'p-4');
+          target.alt = target.alt || 'Image unavailable';
+        }
+        window.addEventListener('error', function (ev) { handle(ev.target); }, true);
+      })();
+    </script>
   </body>
 </html>

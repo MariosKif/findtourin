@@ -1,51 +1,128 @@
 ---
+import { t } from '../../lib/i18n';
+
 interface Props {
   images: {
     url: string;
     altText?: string | null;
   }[];
+  locale?: string;
 }
 
-const { images } = Astro.props;
+const { images, locale } = Astro.props;
 const hasImages = images.length > 0;
+
+// Hero shows up to 5 images: 1 large + 4 thumbnails. Anything beyond that
+// is hidden in the hero but still rendered inside the modal.
+const heroImages = images.slice(0, 5);
+
+const seeAllLabel = t('gallery.seeAll', locale);
+
+// Show the "See all" pill only when we have at least one extra image
+// beyond the hero — with 1 image there's nothing additional to reveal.
+const showSeeAll = images.length > 1;
 ---
 
 {hasImages ? (
   <div class="tour-gallery">
-    {/* Main Image */}
-    <div class="mb-3 overflow-hidden rounded-2xl bg-gray-100">
-      <img
-        id="gallery-main"
-        src={images[0].url}
-        alt={images[0].altText || 'Tour image'}
-        class="h-[400px] w-full object-cover transition-opacity duration-300 md:h-[500px]"
-      />
+    {/* Hero grid: 1 large left + 2x2 small right */}
+    <div class="grid h-[260px] gap-2 overflow-hidden rounded-2xl sm:h-[360px] md:h-[460px] md:grid-cols-2">
+      {/* Large left image */}
+      <button
+        type="button"
+        class="gallery-trigger relative block h-full w-full overflow-hidden bg-gray-100"
+        data-index="0"
+        aria-label={`View photo 1 of ${images.length}`}
+      >
+        <img
+          src={heroImages[0].url}
+          alt={heroImages[0].altText || 'Tour image 1'}
+          class="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.02]"
+          loading="eager"
+        />
+      </button>
+
+      {/* Right 2x2 grid — only renders on md+ so the layout doesn't squash on mobile */}
+      <div class="hidden h-full grid-cols-2 grid-rows-2 gap-2 md:grid">
+        {Array.from({ length: 4 }).map((_, i) => {
+          const idx = i + 1;
+          const img = heroImages[idx];
+          return (
+            <div class="relative h-full w-full overflow-hidden bg-gray-100">
+              {img ? (
+                <button
+                  type="button"
+                  class="gallery-trigger block h-full w-full"
+                  data-index={idx}
+                  aria-label={`View photo ${idx + 1} of ${images.length}`}
+                >
+                  <img
+                    src={img.url}
+                    alt={img.altText || `Tour image ${idx + 1}`}
+                    class="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.02]"
+                    loading="lazy"
+                  />
+                </button>
+              ) : (
+                <div class="h-full w-full bg-gray-200" aria-hidden="true"></div>
+              )}
+
+              {/* "See all" pill — overlaid on the last hero cell */}
+              {showSeeAll && idx === 4 && (
+                <button
+                  type="button"
+                  id="gallery-see-all"
+                  class="absolute bottom-3 right-3 z-10 inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-sm font-semibold text-gray-900 shadow-md backdrop-blur transition hover:bg-white"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                  <span>{seeAllLabel}</span>
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
 
-    {/* Thumbnail Strip */}
-    {images.length > 1 && (
-      <div class="flex gap-2 overflow-x-auto pb-2" id="gallery-thumbs">
-        {images.map((img, i) => (
+    {/* Lightbox modal — uses native <dialog> for ESC + a11y */}
+    <dialog
+      id="gallery-modal"
+      class="m-0 h-full max-h-[100vh] w-full max-w-[100vw] bg-black/95 p-0 backdrop:bg-black/95"
+      aria-label={seeAllLabel}
+    >
+      <div class="relative flex h-full w-full flex-col">
+        <header class="sticky top-0 z-10 flex items-center justify-between bg-black/60 px-4 py-3 text-white backdrop-blur">
+          <span id="gallery-modal-counter" class="text-sm font-medium" aria-live="polite">1 / {images.length}</span>
           <button
             type="button"
-            class:list={[
-              'gallery-thumb shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-200 hover:opacity-100',
-              i === 0 ? 'border-primary-500 opacity-100' : 'border-transparent opacity-60',
-            ]}
-            data-url={img.url}
-            data-alt={img.altText || 'Tour image'}
-            data-index={i}
+            id="gallery-modal-close"
+            class="rounded-full p-2 hover:bg-white/10"
+            aria-label="Close gallery"
           >
-            <img
-              src={img.url}
-              alt={img.altText || `Thumbnail ${i + 1}`}
-              class="h-20 w-28 object-cover"
-              loading="lazy"
-            />
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
-        ))}
+        </header>
+
+        <div id="gallery-modal-scroll" class="flex-1 overflow-y-auto">
+          <div class="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-6">
+            {images.map((img, i) => (
+              <figure class="overflow-hidden rounded-xl bg-black" data-modal-img data-index={i}>
+                <img
+                  src={img.url}
+                  alt={img.altText || `Tour photo ${i + 1}`}
+                  class="h-auto w-full object-contain"
+                  loading={i < 2 ? 'eager' : 'lazy'}
+                />
+              </figure>
+            ))}
+          </div>
+        </div>
       </div>
-    )}
+    </dialog>
   </div>
 ) : (
   <div class="flex h-[400px] items-center justify-center rounded-2xl bg-gradient-to-br from-primary-400 to-secondary-500 md:h-[500px]">
@@ -56,34 +133,70 @@ const hasImages = images.length > 0;
 )}
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const mainImg = document.getElementById('gallery-main') as HTMLImageElement | null;
-    const thumbContainer = document.getElementById('gallery-thumbs');
-    if (!mainImg || !thumbContainer) return;
+  (() => {
+    const modal = document.getElementById('gallery-modal') as HTMLDialogElement | null;
+    const closeBtn = document.getElementById('gallery-modal-close');
+    const seeAll = document.getElementById('gallery-see-all');
+    const counter = document.getElementById('gallery-modal-counter');
+    const scrollContainer = document.getElementById('gallery-modal-scroll');
+    const triggers = document.querySelectorAll<HTMLButtonElement>('.gallery-trigger');
+    if (!modal) return;
 
-    const thumbs = thumbContainer.querySelectorAll<HTMLButtonElement>('.gallery-thumb');
+    const figures = document.querySelectorAll<HTMLElement>('[data-modal-img]');
+    const total = figures.length;
 
-    thumbs.forEach((thumb) => {
-      thumb.addEventListener('click', () => {
-        const url = thumb.dataset.url;
-        const alt = thumb.dataset.alt || 'Tour image';
+    function updateCounter(current: number) {
+      if (counter) counter.textContent = `${current} / ${total}`;
+    }
 
-        if (!url) return;
+    function openAt(index: number) {
+      modal!.showModal();
+      document.body.style.overflow = 'hidden';
+      const target = scrollContainer?.querySelector<HTMLElement>(`[data-modal-img][data-index="${index}"]`);
+      target?.scrollIntoView({ behavior: 'instant', block: 'start' });
+      updateCounter(index + 1);
+    }
 
-        mainImg.style.opacity = '0';
-        setTimeout(() => {
-          mainImg.src = url;
-          mainImg.alt = alt;
-          mainImg.style.opacity = '1';
-        }, 150);
+    function close() {
+      modal!.close();
+      document.body.style.overflow = '';
+    }
 
-        thumbs.forEach((t) => {
-          t.classList.remove('border-primary-500', 'opacity-100');
-          t.classList.add('border-transparent', 'opacity-60');
-        });
-        thumb.classList.remove('border-transparent', 'opacity-60');
-        thumb.classList.add('border-primary-500', 'opacity-100');
+    seeAll?.addEventListener('click', () => openAt(0));
+    triggers.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const idx = Number(btn.dataset.index || 0);
+        openAt(idx);
       });
     });
-  });
+    closeBtn?.addEventListener('click', close);
+
+    // Native <dialog> emits 'close' on ESC; mirror our scroll-unlock there.
+    modal.addEventListener('close', () => {
+      document.body.style.overflow = '';
+    });
+
+    // Click-outside-to-close: clicks on the dialog element itself (not its
+    // children) land on the backdrop area in browsers that hit-test that way.
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) close();
+    });
+
+    // Update the counter as the user scrolls through the modal's image list.
+    if (scrollContainer && figures.length) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              const idx = Number((entry.target as HTMLElement).dataset.index || 0);
+              updateCounter(idx + 1);
+            }
+          }
+        },
+        { root: scrollContainer, threshold: 0.5 }
+      );
+      figures.forEach((f) => observer.observe(f));
+    }
+  })();
 </script>

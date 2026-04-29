@@ -1,7 +1,7 @@
 export const DEMO_AGENCY = {
-  name: 'World Tours Demo',
-  companyName: 'World Tours Demo Agency',
-  isVerified: true,
+  name: 'Independent Agency',
+  companyName: 'Independent Agency',
+  isVerified: false,
 };
 
 export const DEMO_TOURS = [

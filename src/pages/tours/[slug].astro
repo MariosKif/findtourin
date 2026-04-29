@@ -6,7 +6,7 @@ import TourInfo from '../../components/tours/TourInfo.astro';
 import AgencyContactCard from '../../components/tours/AgencyContactCard.astro';
 import TourCard from '../../components/tours/TourCard.astro';
 import { supabase } from '../../lib/supabase';
-import { getDemoTourBySlug, DEMO_AGENCY, DEMO_REVIEWS } from '../../lib/demo-tours';
+import { getDemoTourBySlug, DEMO_REVIEWS } from '../../lib/demo-tours';
 import { slugify } from '../../lib/destinations';
 import { TOUR_LIST_SELECT, normalizeTour } from '../../lib/tour-helpers';
 
@@ -87,8 +87,8 @@ const reviews = DEMO_REVIEWS[slug] || [];
 
 const tourWithAgency = {
   ...tour,
-  agencyName: agency?.company_name || agency?.name || DEMO_AGENCY.companyName,
-  agencyVerified: agency?.is_verified || DEMO_AGENCY.isVerified,
+  agencyName: agency?.company_name || agency?.name || null,
+  agencyVerified: Boolean(agency?.is_verified),
   rating: tour.rating,
   review_count: tour.review_count ?? tour.reviewCount,
 };

@@ -1,25 +1,38 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-// IMPORTANT: read from process.env ONLY at runtime — do not use import.meta.env
-// here. import.meta.env values are inlined at build time by Vite/Astro, so if
-// the env var is configured for runtime-only on Vercel (not build), the build
-// inlines an empty/stale value into this module and the supabase client
-// behaves as anon at runtime (RLS errors on every write). Reading process.env
-// resolves the value at request time, which is always correct.
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+// IMPORTANT: lazy-initialise. We previously read process.env at module load,
+// but on the Vercel/@astrojs/vercel runtime the env vars are not always
+// populated by the time shared chunks are first imported. The result was a
+// supabase client created with an empty key, behaving as anon, hitting RLS
+// on every write ('new row violates row-level security policy').
+//
+// The Proxy below defers client creation until the first property access
+// (i.e., the first `.from()`, `.auth`, `.rpc()` call), at which point env
+// vars are guaranteed to be populated. The client is then memoised so we
+// only construct it once per cold function instance.
+let _client: SupabaseClient | null = null;
 
-// Fail loudly if the service-role key is missing. Falling back silently to an
-// empty string makes the client behave as anon, which means RLS-protected
-// writes return 'new row violates row-level security policy' and reads
-// return empty — both confusing in production.
-if (!supabaseServiceKey) {
-  console.error('FATAL: SUPABASE_SERVICE_ROLE_KEY is not set on the running function. Set it in your Vercel project Production env vars (and ensure the variable is exposed to the runtime, not just build).');
+function getClient(): SupabaseClient {
+  if (_client) return _client;
+  const url = process.env.SUPABASE_URL || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  if (!key) {
+    console.error('FATAL: SUPABASE_SERVICE_ROLE_KEY is not set on the running function. Set it in your Vercel Production env vars and ensure it is exposed to the runtime.');
+  }
+  if (!url) {
+    console.error('FATAL: SUPABASE_URL is not set on the running function.');
+  }
+  _client = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+  return _client;
 }
-if (!supabaseUrl) {
-  console.error('FATAL: SUPABASE_URL is not set on the running function.');
-}
 
-export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
+// Proxy that forwards every operation to the lazily-constructed client.
+// Importers can keep using `supabase.from(...)`, `supabase.auth.admin...`,
+// `supabase.rpc(...)` etc. exactly as before — no call-site changes needed.
+export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    const client = getClient();
+    const value = (client as any)[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
 });

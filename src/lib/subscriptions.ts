@@ -7,6 +7,19 @@ import { getPlan, type PricingPlan } from './pricing';
 
 const DEFAULT_PLAN_ID = 'starter';
 
+// Admins are exempt from plan caps. We synthesise a virtual plan with very high
+// limits so every downstream check (listing count, images per tour, dashboard
+// usage card) treats them as unlimited without changing the call signature.
+const ADMIN_UNLIMITED_PLAN: PricingPlan = {
+  id: 'admin',
+  name: 'Admin (unlimited)',
+  monthlyPriceCents: 0,
+  annualPriceCents: 0,
+  maxListings: 99999,
+  maxImagesPerTour: 999,
+  features: [],
+};
+
 export interface ActivePlan {
   plan: PricingPlan;
   subscriptionId: string | null; // null when defaulted (no active row)
@@ -14,12 +27,23 @@ export interface ActivePlan {
 }
 
 /**
- * Resolve the active subscription plan for a user. If no active row exists,
+ * Resolve the active subscription plan for a user. Admins always get the
+ * unlimited synthetic plan. Otherwise, if no active subscription row exists,
  * fall back to the starter plan so existing agencies without a subscription
  * keep working. Admins promote via /admin/subscriptions or discount-code
  * redemption.
  */
 export async function getActivePlanForUser(userId: string): Promise<ActivePlan> {
+  // Admin short-circuit — no caps for admins.
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle();
+  if (profile?.role === 'admin') {
+    return { plan: ADMIN_UNLIMITED_PLAN, subscriptionId: null, source: null };
+  }
+
   const nowIso = new Date().toISOString();
   const { data, error } = await supabase
     .from('subscriptions')

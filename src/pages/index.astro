@@ -207,16 +207,30 @@ const heroStats = stats.tours > 0 ? stats : undefined;
   <script type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": "https://www.findtoursin.com/#organization",
     "name": "FindToursIn",
     "url": "https://www.findtoursin.com",
-    "logo": "https://www.findtoursin.com/images/logo-icon.svg",
-    "description": "Tour discovery platform connecting travellers with trusted tour agencies across Southeast Europe and the Mediterranean.",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.findtoursin.com/images/logo-icon.svg",
+      "width": 512,
+      "height": 512,
+    },
+    "description": "Tour discovery platform connecting travellers with trusted tour agencies across Greece, Italy, Türkiye, Albania and Bulgaria. 0% commission, direct contact with the operator.",
+    "areaServed": ["Greece", "Italy", "Türkiye", "Albania", "Bulgaria"],
     "contactPoint": {
       "@type": "ContactPoint",
       "contactType": "customer service",
-      "url": "https://www.findtoursin.com/contact"
+      "email": "info@findtoursin.com",
+      "url": "https://www.findtoursin.com/contact",
+      "availableLanguage": ["en"],
     },
-    "sameAs": []
+    /* Only the live brand profile is listed. An empty sameAs:[] is worse
+       than no sameAs at all because it tells AI engines explicitly that
+       no entity links exist. */
+    "sameAs": [
+      "https://www.instagram.com/findtoursin",
+    ],
   })} />
 
   <!-- WebSite Schema with SearchAction -->

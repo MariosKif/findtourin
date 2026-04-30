@@ -36,27 +36,44 @@ const relatedPosts = allPosts
   .slice(0, 3)
   .map(p => p.post);
 
-// JSON-LD structured data
+// JSON-LD structured data. Author is rendered as Person (with the
+// FindToursIn editorial team as the published byline) — Google's E-E-A-T
+// docs strongly prefer a named human author with a profile URL over an
+// Organization byline. AI engines (ChatGPT, Perplexity) also prefer
+// Person attribution for citation.
+const absoluteImage = image
+  ? (image.startsWith('http') ? image : `https://www.findtoursin.com${image}`)
+  : undefined;
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
+  "@id": `${canonicalUrl}#article`,
   headline: title,
   description,
-  image: image ? (image.startsWith('http') ? image : `https://www.findtoursin.com${image}`) : undefined,
+  image: absoluteImage
+    ? { "@type": "ImageObject", url: absoluteImage, width: 1600, height: 900 }
+    : undefined,
   datePublished: publishDate,
   dateModified: modifiedDate,
   author: {
-    "@type": "Organization",
-    name: "FindToursIn",
-    url: "https://www.findtoursin.com",
+    "@type": "Person",
+    name: author,
+    url: `https://www.findtoursin.com/about`,
+    worksFor: {
+      "@type": "Organization",
+      "@id": "https://www.findtoursin.com/#organization",
+      name: "FindToursIn",
+    },
   },
   publisher: {
     "@type": "Organization",
+    "@id": "https://www.findtoursin.com/#organization",
     name: "FindToursIn",
     url: "https://www.findtoursin.com",
     logo: {
       "@type": "ImageObject",
-      url: "https://www.findtoursin.com/icon-512.png",
+      url: "https://www.findtoursin.com/images/logo-icon.svg",
       width: 512,
       height: 512,
     },
@@ -65,6 +82,8 @@ const jsonLd = {
     "@type": "WebPage",
     "@id": canonicalUrl,
   },
+  articleSection: category,
+  keywords: tags.join(', '),
   wordCount: body.trim().split(/\s+/).length,
 };
 
@@ -110,6 +129,23 @@ const breadcrumbLd = {
           </h1>
 
           <p class="text-lg text-gray-600 mb-6">{description}</p>
+
+          {/* Hero image. Travel content needs a visual anchor above the
+              fold; without one the article opens as a wall of text and
+              loses click-through on social previews. */}
+          {image && (
+            <figure class="mb-6 overflow-hidden rounded-2xl bg-gray-100">
+              <img
+                src={image}
+                alt={title}
+                width="1600"
+                height="900"
+                class="w-full h-auto aspect-[16/9] object-cover"
+                fetchpriority="high"
+                decoding="async"
+              />
+            </figure>
+          )}
 
           <div class="flex items-center gap-4 text-sm text-gray-500 pb-6 border-b border-gray-200">
             <div class="flex items-center gap-2">

@@ -219,29 +219,61 @@ const metaDesc = truncateDesc(tour.description);
     )}
   </div>
 
-  <!-- JSON-LD Structured Data -->
+  {/* JSON-LD: Product + TouristTrip @graph. Product unlocks the price /
+      availability rich card in Google SERPs (the strongest card on travel
+      queries), while TouristTrip preserves the travel-vertical entity
+      signals for AI engines. They share data via @id linking. */}
   <script type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
-    "@type": "TouristTrip",
-    "name": tour.name,
-    "description": tour.description,
-    "url": `https://www.findtoursin.com/tours/${tour.slug}`,
-    "touristType": tour.category,
-    "image": images.length > 0 ? images.map(img => img.url) : undefined,
-    "offers": {
-      "@type": "Offer",
-      "price": tour.price,
-      "priceCurrency": tour.currency,
-      "availability": "https://schema.org/InStock",
-    },
-    "provider": tourWithAgency.agencyName
-      ? { "@type": "TravelAgency", "name": tourWithAgency.agencyName }
-      : undefined,
-    "itinerary": {
-      "@type": "ItemList",
-      "description": `${tour.duration_days || ''} day tour in ${tour.city}, ${tour.country}`,
-    },
-    "tourBookingPage": `https://www.findtoursin.com/tours/${tour.slug}`,
+    "@graph": [
+      {
+        "@type": "Product",
+        "@id": `https://www.findtoursin.com/tours/${tour.slug}#product`,
+        "name": tour.name,
+        "description": metaDesc || tour.description,
+        "image": images.length > 0
+          ? images.map((img) => img.url)
+          : ["https://www.findtoursin.com/images/hero-bg.jpg"],
+        "brand": { "@type": "Brand", "name": tourWithAgency.agencyName || "FindToursIn" },
+        "category": tour.category,
+        "url": `https://www.findtoursin.com/tours/${tour.slug}`,
+        "offers": {
+          "@type": "Offer",
+          "url": `https://www.findtoursin.com/tours/${tour.slug}`,
+          "price": tour.price,
+          "priceCurrency": tour.currency || "EUR",
+          "availability": "https://schema.org/InStock",
+          "validFrom": new Date().toISOString().slice(0, 10),
+          "priceValidUntil": new Date(Date.now() + 1000 * 60 * 60 * 24 * 180).toISOString().slice(0, 10),
+          ...(tourWithAgency.agencyName ? {
+            "seller": {
+              "@type": "TravelAgency",
+              "name": tourWithAgency.agencyName,
+            },
+          } : {}),
+        },
+      },
+      {
+        "@type": "TouristTrip",
+        "@id": `https://www.findtoursin.com/tours/${tour.slug}#trip`,
+        "name": tour.name,
+        "description": tour.description,
+        "url": `https://www.findtoursin.com/tours/${tour.slug}`,
+        "touristType": tour.category,
+        ...(tour.duration_days
+          ? {
+              "itinerary": {
+                "@type": "ItemList",
+                "numberOfItems": tour.duration_days,
+                "description": `${tour.duration_days}-day ${tour.category.toLowerCase()} tour in ${tour.city}, ${tour.country}`,
+              },
+            }
+          : {}),
+        ...(tourWithAgency.agencyName
+          ? { "provider": { "@type": "TravelAgency", "name": tourWithAgency.agencyName } }
+          : {}),
+      },
+    ],
   })} />
 
   <!-- BreadcrumbList Schema -->

@@ -10,6 +10,12 @@ export async function uploadImage(file: Buffer, fileName: string): Promise<{ url
     .upload(storagePath, file, {
       contentType: getContentType(fileName),
       upsert: false,
+      // 1-year immutable cache. Filenames are content-addressed (timestamp +
+      // original name); when a tour replaces an image the storage_path
+      // changes, so we never need to invalidate. Default Supabase behaviour
+      // is no-cache, which makes browsers revalidate every image on every
+      // navigation — disastrous on a 39-tour listing page.
+      cacheControl: '31536000',
     });
 
   if (error) throw new Error(`Upload failed: ${error.message}`);

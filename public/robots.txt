@@ -6,32 +6,79 @@ Disallow: /api/
 Disallow: /auth/
 Disallow: /account/
 
+# OpenAI: GPTBot crawls for training/browsing, OAI-SearchBot crawls for ChatGPT search.
 User-agent: GPTBot
 Allow: /
-Allow: /tours/
-Allow: /blog/
-Allow: /about
-Allow: /contact
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /api/
 Disallow: /auth/
 Disallow: /account/
 
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /account/
+
+# Anthropic crawlers (training + answer-time fetch).
 User-agent: ClaudeBot
 Allow: /
-Allow: /tours/
-Allow: /blog/
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /api/
 Disallow: /auth/
 Disallow: /account/
 
+User-agent: anthropic-ai
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /account/
+
+# Perplexity: search + answer.
 User-agent: PerplexityBot
 Allow: /
-Allow: /tours/
-Allow: /blog/
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /account/
+
+# Google AI / Gemini training opt-in.
+User-agent: Google-Extended
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /account/
+
+# Bing search and Copilot.
+User-agent: Bingbot
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /account/
+
+# Apple Intelligence training opt-in.
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /account/
+
+# Common Crawl (used by many derivative datasets).
+User-agent: CCBot
+Allow: /
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /api/
@@ -39,4 +86,3 @@ Disallow: /auth/
 Disallow: /account/
 
 Sitemap: https://www.findtoursin.com/sitemap-index.xml
-Sitemap: https://www.findtoursin.com/sitemap-dynamic.xml

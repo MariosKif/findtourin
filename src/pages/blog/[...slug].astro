@@ -11,6 +11,13 @@ const post = posts.find((p) => p.id === slug);
 if (!post) return Astro.redirect('/blog');
 
 const { Content } = await render(post);
+
+// Blog post bodies only change when the file does (rebuilds invalidate
+// edge cache). Match the index's caching profile.
+Astro.response.headers.set(
+  'Cache-Control',
+  'public, max-age=0, s-maxage=600, stale-while-revalidate=86400',
+);
 ---
 
 <BlogLayout

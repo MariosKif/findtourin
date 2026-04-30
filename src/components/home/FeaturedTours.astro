@@ -27,8 +27,8 @@ const displayTours = tours.slice(0, 16);
     <!-- Tours Grid -->
     {displayTours.length > 0 ? (
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
-        {displayTours.map((tour) => (
-          <TourCard tour={tour} />
+        {displayTours.map((tour, index) => (
+          <TourCard tour={tour} index={index} />
         ))}
       </div>
     ) : (

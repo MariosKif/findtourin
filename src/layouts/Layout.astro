@@ -41,7 +41,13 @@ const fullTitle = title === 'FindToursIn' ? title : `${title} | FindToursIn`;
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="alternate" type="application/rss+xml" title="FindToursIn Blog" href="/blog/rss.xml" />
-    <link rel="preload" as="image" href="/images/hero-bg.jpg" />
+    {/* Preload the homepage hero JPG only when this Layout is rendering the
+        homepage. On every other page (tour detail, blog, pricing, about)
+        the hero never displays, so preloading it cost ~1.3 MB of wasted
+        bandwidth on cold loads. */}
+    {Astro.url.pathname === '/' && (
+      <link rel="preload" as="image" href="/images/hero-bg.jpg" fetchpriority="high" />
+    )}
     <link rel="canonical" href={canonicalURL} />
     <meta name="generator" content={Astro.generator} />
 

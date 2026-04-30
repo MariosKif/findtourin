@@ -1,5 +1,10 @@
 ---
 interface Props {
+  /** Position of this card in the rendered list — used to gate eager image
+      loading to roughly the first row above the fold. Cards beyond
+      `eagerThreshold` (default 4) lazy-load all their images. */
+  index?: number;
+  eagerThreshold?: number;
   tour: {
     id: string;
     name: string;
@@ -22,7 +27,8 @@ interface Props {
   };
 }
 
-const { tour } = Astro.props;
+const { tour, index = 0, eagerThreshold = 4 } = Astro.props;
+const isAboveFold = index < eagerThreshold;
 
 const currencySymbols: Record<string, string> = {
   EUR: '\u20AC',
@@ -54,8 +60,12 @@ const cardId = `card-${tour.id}`;
               <img
                 src={imgUrl}
                 alt={i === 0 ? tour.name : `${tour.name} - photo ${i + 1}`}
+                width="600"
+                height="600"
                 class="h-full w-full object-cover"
-                loading={i === 0 ? 'eager' : 'lazy'}
+                loading={i === 0 && isAboveFold ? 'eager' : 'lazy'}
+                decoding="async"
+                fetchpriority={i === 0 && isAboveFold ? 'high' : undefined}
               />
             </div>
           ))

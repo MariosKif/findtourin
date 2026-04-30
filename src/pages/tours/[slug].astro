@@ -123,11 +123,23 @@ const faqs = [
 
 const countrySlug = tour.country ? slugify(tour.country) : null;
 const citySlug = tour.city ? slugify(tour.city) : null;
+
+// Meta description: 155 chars, cut on the last whole-word boundary so we
+// don't ship a description that ends mid-clause ("…connecting the").
+function truncateDesc(s: string | null | undefined, max = 155): string {
+  if (!s) return '';
+  const clean = s.replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  return cut.slice(0, lastSpace > 0 ? lastSpace : max).replace(/[,;:\-—\s]+$/, '') + '…';
+}
+const metaDesc = truncateDesc(tour.description);
 ---
 
 <PublicLayout
   title={tour.name}
-  description={tour.description?.slice(0, 160)}
+  description={metaDesc}
   image={images[0]?.url}
 >
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -200,7 +212,7 @@ const citySlug = tour.city ? slugify(tour.city) : null;
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {relatedTours.map((t) => (
-            <TourCard tour={t} />
+            <TourCard tour={t} eagerThreshold={0} />
           ))}
         </div>
       </section>

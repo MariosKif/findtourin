@@ -5,6 +5,14 @@ import PublicLayout from '../../layouts/PublicLayout.astro';
 import BlogCard from '../../components/blog/BlogCard.astro';
 import { getReadingTime } from '../../lib/utils';
 
+// Edge-cache the blog index. Content only changes when a post is added or
+// edited, so a 10-minute s-maxage with day-long stale-while-revalidate
+// turns this page into a near-static asset for crawlers and warm visitors.
+Astro.response.headers.set(
+  'Cache-Control',
+  'public, max-age=0, s-maxage=600, stale-while-revalidate=86400',
+);
+
 const allPosts = await getCollection('blog', ({ data }) => !data.draft);
 const sortedPosts = allPosts.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 

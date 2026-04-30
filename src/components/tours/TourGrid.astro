@@ -35,8 +35,8 @@ const popularSearches = [
 
 {tours.length > 0 ? (
   <div class="tour-grid">
-    {tours.map((tour) => (
-      <TourCard tour={tour} />
+    {tours.map((tour, index) => (
+      <TourCard tour={tour} index={index} />
     ))}
   </div>
 

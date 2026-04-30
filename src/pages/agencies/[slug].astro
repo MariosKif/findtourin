@@ -158,8 +158,8 @@ const canonical = `https://www.findtoursin.com/agencies/${slug}`;
       </h2>
       {tours.length > 0 ? (
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
-          {tours.map((t: any) => (
-            <TourCard tour={t} />
+          {tours.map((t: any, index: number) => (
+            <TourCard tour={t} index={index} />
           ))}
         </div>
       ) : (

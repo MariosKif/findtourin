@@ -134,8 +134,8 @@ const faqs = [
       <h2 class="font-heading text-2xl font-normal text-gray-900 mb-6">All {categoryName.toLowerCase()} tours in {countryName}</h2>
       {toursGridData.length > 0 ? (
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
-          {toursGridData.map((t: any) => (
-            <TourCard tour={t} />
+          {toursGridData.map((t: any, index: number) => (
+            <TourCard tour={t} index={index} />
           ))}
         </div>
       ) : (

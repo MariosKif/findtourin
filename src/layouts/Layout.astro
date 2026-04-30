@@ -77,11 +77,18 @@ const GA_ID = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || 'G-JEX5ES946C';
         </script>
       </>
     )}
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    {/* Favicons. Google's search-result favicon picker uses the highest
+        sized PNG it can find via <link rel="icon">, so the 192/512 PNGs
+        are listed FIRST and the small 16/32 variants only after — they
+        only serve browser-tab use. SVG follows because some browsers
+        prefer it, but it's not the one Google ranks for SERPs. */}
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
-    <link rel="icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="alternate" type="application/rss+xml" title="FindToursIn Blog" href="/blog/rss.xml" />

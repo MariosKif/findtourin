@@ -8,12 +8,22 @@ interface Props {
   description?: string;
   image?: string;
   noIndex?: boolean;
+  /** Forwarded straight to Layout's GA4 page_view payload. Use this on
+      pages that have a meaningful object to track (e.g. tour detail
+      pages pass slug, price, currency, country). */
+  gaPageData?: Record<string, string | number | boolean | undefined>;
 }
 
-const { title, description, image, noIndex } = Astro.props;
+const { title, description, image, noIndex, gaPageData } = Astro.props;
 ---
 
-<Layout title={title} description={description} image={image} noIndex={noIndex}>
+<Layout
+  title={title}
+  description={description}
+  image={image}
+  noIndex={noIndex}
+  gaPageData={gaPageData}
+>
   <Header />
   <main class="pt-16 min-h-screen">
     <slot />

@@ -6,6 +6,10 @@ interface Props {
   description?: string;
   image?: string;
   noIndex?: boolean;
+  /** Optional rich page-view payload — passed straight to gtag() so
+      individual pages (e.g. tour detail) can attach slug/price/currency
+      to the GA4 page_view event without a custom dimension config. */
+  gaPageData?: Record<string, string | number | boolean | undefined>;
 }
 
 const {
@@ -13,10 +17,16 @@ const {
   description = 'Discover amazing tours worldwide. Browse curated travel experiences from trusted agencies.',
   image = '/images/hero-bg.jpg',
   noIndex = false,
+  gaPageData,
 } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const fullTitle = title === 'FindToursIn' ? title : `${title} | FindToursIn`;
+
+// GA4 measurement ID. Honour PUBLIC_GA_MEASUREMENT_ID at build time so a
+// future swap to a different property is one Vercel env-var change, not a
+// code edit. Falls back to the original hardcoded ID for backward-compat.
+const GA_ID = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || 'G-JEX5ES946C';
 ---
 
 <!doctype html>
@@ -25,14 +35,48 @@ const fullTitle = title === 'FindToursIn' ? title : `${title} | FindToursIn`;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JEX5ES946C" is:inline></script>
-    <script is:inline>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-JEX5ES946C');
-    </script>
+    {/* Google Analytics 4. The loader runs only when GA_ID is set, so a
+        future deploy that explicitly clears PUBLIC_GA_MEASUREMENT_ID can
+        opt out without code changes. */}
+    {GA_ID && (
+      <>
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} is:inline></script>
+        <script is:inline define:vars={{ GA_ID, gaPageData }}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          window.gtag = gtag;
+          gtag('js', new Date());
+          // Pass per-page enrichment (tour slug / price / etc) through the
+          // initial config call so the first page_view carries the data
+          // and we don't fire two events per page.
+          gtag('config', GA_ID, gaPageData ? { ...gaPageData } : {});
+
+          // Outbound + contact-channel click tracking. Captures any click
+          // on an http(s) link to a different host, plus mailto: and tel:
+          // links — the latter two are the lead signals (traveller is
+          // about to email or phone a tour agency). transport_type=beacon
+          // keeps the event firing even as the browser navigates away.
+          document.addEventListener('click', function (e) {
+            var a = e.target && e.target.closest ? e.target.closest('a') : null;
+            if (!a) return;
+            var href = a.getAttribute('href') || '';
+            if (!href) return;
+            var isExternal = /^https?:\/\//.test(href) && !href.includes(location.host);
+            var isMail = href.indexOf('mailto:') === 0;
+            var isTel = href.indexOf('tel:') === 0;
+            if (!isExternal && !isMail && !isTel) return;
+            gtag('event', 'click_outbound', {
+              link_url: href,
+              link_domain: isExternal ? (new URL(href)).hostname : (isMail ? 'mailto' : 'tel'),
+              link_text: (a.textContent || '').trim().slice(0, 80),
+              outbound: isExternal,
+              contact_channel: isMail ? 'email' : (isTel ? 'phone' : 'web'),
+              transport_type: 'beacon',
+            });
+          }, true);
+        </script>
+      </>
+    )}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />

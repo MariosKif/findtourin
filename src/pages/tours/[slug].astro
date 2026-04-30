@@ -141,6 +141,17 @@ const metaDesc = truncateDesc(tour.description);
   title={tour.name}
   description={metaDesc}
   image={images[0]?.url}
+  gaPageData={{
+    page_type: 'tour_detail',
+    tour_slug: tour.slug,
+    tour_name: tour.name,
+    tour_country: tour.country,
+    tour_city: tour.city,
+    tour_category: tour.category,
+    tour_price: Number(tour.price) || 0,
+    tour_currency: tour.currency || 'EUR',
+    agency_id: tour.agency_id || '',
+  }}
 >
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Breadcrumb -->

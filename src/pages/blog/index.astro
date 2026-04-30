@@ -106,4 +106,35 @@ const categories = [...new Set(sortedPosts.map(p => p.data.category))].sort();
       </div>
     )}
   </div>
+
+  {/* Blog + BreadcrumbList JSON-LD so AI engines and SERP rich snippets
+      pick up the post list. itemListElement is the 10 most recent. */}
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "@id": "https://www.findtoursin.com/blog#blog",
+    "name": "FindToursIn Travel Blog",
+    "description": "Destination guides, travel tips, and expert advice to help you plan your next adventure.",
+    "url": "https://www.findtoursin.com/blog",
+    "publisher": { "@id": "https://www.findtoursin.com/#organization" },
+    "blogPost": sortedPosts.slice(0, 10).map((p) => ({
+      "@type": "BlogPosting",
+      "@id": `https://www.findtoursin.com/blog/${p.id}#article`,
+      "headline": p.data.title,
+      "description": p.data.description,
+      "url": `https://www.findtoursin.com/blog/${p.id}`,
+      "datePublished": new Date(p.data.date).toISOString(),
+      ...(p.data.updatedDate ? { "dateModified": new Date(p.data.updatedDate).toISOString() } : {}),
+      "image": p.data.image ? `https://www.findtoursin.com${p.data.image}` : undefined,
+      "author": { "@type": "Person", "name": p.data.author, "url": "https://www.findtoursin.com/about" },
+    })),
+  })} />
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.findtoursin.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://www.findtoursin.com/blog" },
+    ],
+  })} />
 </PublicLayout>

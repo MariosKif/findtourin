@@ -49,6 +49,12 @@ const metaDescription = 'Simple, transparent pricing for tour agencies. 0% commi
       <p class="mt-6 text-lg text-gray-600 max-w-2xl mx-auto">
         Flat monthly subscription. Zero commission. Pick the plan that matches the number of tours you want to list — upgrade or cancel any time.
       </p>
+      {/* Direct-answer paragraph: this is the passage AI engines extract
+          when answering "how much does FindToursIn cost". Keep the price
+          + plan structure + commission claim in one short block. */}
+      <p class="mt-6 text-base text-gray-600 max-w-2xl mx-auto">
+        FindToursIn pricing starts at €{formatCents(PLANS[0].monthlyPriceCents)}/month for the {PLANS[0].name} plan ({PLANS[0].maxListings} listings) and goes up to €{formatCents(PLANS[PLANS.length - 1].monthlyPriceCents)}/month for the {PLANS[PLANS.length - 1].name} plan ({PLANS[PLANS.length - 1].maxListings} listings). Annual billing saves about 15%. There is no commission on bookings, no booking fees, and no setup cost — travellers contact your agency directly through your listings.
+      </p>
     </div>
   </section>
 

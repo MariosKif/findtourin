@@ -1,50 +1,71 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
+
+const aboutFaqs = [
+  {
+    q: 'What is FindToursIn?',
+    a: 'FindToursIn is a tour discovery platform that connects travellers with verified tour agencies across Greece, Italy, Türkiye, Albania and Bulgaria. We do not handle bookings ourselves — once you find a tour you like, you contact the agency directly by email, phone or their website. There are no booking fees and no commission added to the price you pay.',
+  },
+  {
+    q: 'How does FindToursIn make money if it does not charge commission?',
+    a: 'Tour agencies pay a flat monthly subscription to list their tours on the platform — no per-booking cut, no transaction fee, no setup cost. The model is closer to a classified directory than to an online travel agency, which is what allows us to keep the price the agency quotes the price you pay.',
+  },
+  {
+    q: 'Which countries does FindToursIn cover?',
+    a: 'Our current focus is Greece, Italy, Türkiye, Albania and Bulgaria — the Mediterranean and Southeast European corridor. We work with five region-specialised agencies (Aegean Discoveries, Cretan Trails, Anatolian Routes, Italia Boutique and Balkan Trails) and a growing roster of independent operators.',
+  },
+  {
+    q: 'How are tour listings vetted?',
+    a: 'Every agency on FindToursIn is verified by our team before its first listing goes live. We confirm legal registration in the agency’s country, check for valid liability insurance, review the operator’s public reviews, and require working contact details (email, phone, website). Verified agencies carry a verification mark on their public profile.',
+  },
+];
 ---
 
-<PublicLayout title="About Us" description="Learn about FindToursIn — connecting travelers with trusted tour agencies worldwide.">
+<PublicLayout
+  title="About FindToursIn — 0% Commission Tour Directory"
+  description="FindToursIn is a 0% commission tour directory across Greece, Italy, Türkiye, Albania and Bulgaria. Travellers contact verified tour agencies directly — no booking fees."
+>
   <div class="max-w-4xl mx-auto px-4 sm:px-6 py-16">
-    <!-- Hero -->
     <div class="text-center mb-16">
       <h1 class="text-4xl md:text-5xl font-bold text-gray-900">About FindToursIn</h1>
       <p class="mt-6 text-xl text-gray-600 max-w-2xl mx-auto">
-        We connect curious travelers with trusted tour agencies around the globe, making it easy to discover your next adventure.
+        We connect curious travellers with trusted tour agencies across the Mediterranean and Southeast Europe — making it easier to find a real tour and contact the operator directly.
       </p>
     </div>
 
-    <!-- Mission -->
+    <!-- What we are -->
     <section class="mb-16">
-      <h2 class="text-2xl font-bold text-gray-900 mb-4">Our Mission</h2>
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">What FindToursIn is</h2>
       <p class="text-gray-600 leading-relaxed">
-        FindToursIn was built with a simple idea: finding great tours shouldn't be complicated. We provide a curated marketplace where tour agencies can showcase their experiences and travelers can easily browse, compare, and reach out directly to book.
+        FindToursIn is a curated tour directory, not a booking platform. We list verified tour agencies operating in five Mediterranean and Southeast European markets — Greece, Italy, Türkiye, Albania and Bulgaria — and let travellers browse, filter, and contact the operator directly. Once you find a tour, you book straight with the agency by email, phone, or their website. We never sit in the middle of the transaction.
       </p>
       <p class="mt-4 text-gray-600 leading-relaxed">
-        We believe in direct connections. Unlike booking platforms that add layers between you and the agency, we simply help you find the right tour and let you contact the agency directly — by email, phone, or their website.
+        That structure has one consequence we care about: we charge zero commission on bookings. The price the agency quotes is the price you pay, with no platform fee added on top. Most online travel agencies charge tour operators 20–30% per booking; that gap eventually shows up in the price travellers see. By moving to a flat subscription model, we let agencies keep 100% of the booking revenue and travellers see the operator’s real price.
       </p>
     </section>
 
-    <!-- How It Works -->
+    <!-- How it works -->
     <section class="mb-16">
       <h2 class="text-2xl font-bold text-gray-900 mb-8">How It Works</h2>
       <div class="grid md:grid-cols-2 gap-8">
         <div class="bg-primary-50 rounded-2xl p-8">
-          <h3 class="text-lg font-semibold text-primary-900 mb-2">For Travelers</h3>
+          <h3 class="text-lg font-semibold text-primary-900 mb-2">For Travellers</h3>
           <ul class="space-y-3 text-gray-700">
             <li class="flex items-start gap-2">
               <span class="text-primary-500 mt-1">&#10003;</span>
-              Browse hundreds of curated tours
+              Browse curated tours by destination, category, or price
             </li>
             <li class="flex items-start gap-2">
               <span class="text-primary-500 mt-1">&#10003;</span>
-              Filter by destination, category, and price
+              Read full itineraries, what is included, group sizes and meeting points
             </li>
             <li class="flex items-start gap-2">
               <span class="text-primary-500 mt-1">&#10003;</span>
-              Contact agencies directly — no middleman
+              Contact the agency directly — no middleman, no booking fees
             </li>
             <li class="flex items-start gap-2">
               <span class="text-primary-500 mt-1">&#10003;</span>
-              Completely free to use
+              Free to use; no account required to browse or contact agencies
             </li>
           </ul>
         </div>
@@ -53,44 +74,97 @@ import PublicLayout from '../layouts/PublicLayout.astro';
           <ul class="space-y-3 text-gray-700">
             <li class="flex items-start gap-2">
               <span class="text-secondary-500 mt-1">&#10003;</span>
-              <strong>0% Commission — Keep All Your Revenue</strong>
+              <strong>0% commission. Flat monthly subscription only.</strong>
             </li>
             <li class="flex items-start gap-2">
               <span class="text-secondary-500 mt-1">&#10003;</span>
-              List your tours to reach more travelers
+              List your tours to reach travellers in 5 markets
             </li>
             <li class="flex items-start gap-2">
               <span class="text-secondary-500 mt-1">&#10003;</span>
-              Simple dashboard to manage listings
+              Manage listings, photos and contact details from one dashboard
             </li>
             <li class="flex items-start gap-2">
               <span class="text-secondary-500 mt-1">&#10003;</span>
-              Travelers contact you directly
+              Travellers contact you direct by email, phone or website
             </li>
           </ul>
           <p class="mt-4 text-sm text-gray-600 bg-white/60 rounded-lg px-3 py-2">
-            While other platforms charge 20-30% per booking, FindToursIn charges <strong>0% commission</strong>.
+            Most platforms charge 20-30% per booking. FindToursIn charges <strong>0% commission</strong>.
           </p>
         </div>
       </div>
+    </section>
+
+    <!-- How we vet -->
+    <section class="mb-16">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">How we vet agencies</h2>
+      <p class="text-gray-600 leading-relaxed">
+        Every agency on FindToursIn goes through a verification step before its first listing goes live. We confirm legal registration in the agency’s country, check that liability insurance is in place, scan public reviews on Google and TripAdvisor, and require working contact details (email, phone, website). Verified agencies carry a verification mark on their public profile and on every tour listing they own. New agencies that have not yet passed verification can still list, but their profiles display an unverified state until checks complete.
+      </p>
     </section>
 
     <!-- Stats -->
     <section class="bg-gray-900 text-white rounded-2xl p-12 text-center">
       <div class="grid grid-cols-3 gap-8">
         <div>
-          <p class="text-3xl font-bold">500+</p>
+          <p class="text-3xl font-bold">39</p>
           <p class="mt-1 text-gray-300 text-sm">Tours Listed</p>
         </div>
         <div>
-          <p class="text-3xl font-bold">200+</p>
-          <p class="mt-1 text-gray-300 text-sm">Trusted Agencies</p>
+          <p class="text-3xl font-bold">5</p>
+          <p class="mt-1 text-gray-300 text-sm">Verified Agencies</p>
         </div>
         <div>
-          <p class="text-3xl font-bold">50+</p>
+          <p class="text-3xl font-bold">5</p>
           <p class="mt-1 text-gray-300 text-sm">Countries</p>
         </div>
       </div>
     </section>
+
+    <!-- FAQ -->
+    <section class="mt-16">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Frequently asked questions</h2>
+      <div class="divide-y divide-gray-200 border-y border-gray-200">
+        {aboutFaqs.map((item) => (
+          <details class="group py-5">
+            <summary class="flex items-center justify-between cursor-pointer list-none">
+              <span class="font-medium text-gray-900">{item.q}</span>
+              <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <p class="mt-3 text-gray-600 leading-relaxed">{item.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
   </div>
+
+  {/* AboutPage + Organization + BreadcrumbList + FAQPage schema */}
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "url": "https://www.findtoursin.com/about",
+    "name": "About FindToursIn",
+    "description": "FindToursIn is a 0% commission tour directory across Greece, Italy, Türkiye, Albania and Bulgaria. Travellers contact verified tour agencies directly — no booking fees.",
+    "mainEntity": { "@id": "https://www.findtoursin.com/#organization" },
+  })} />
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.findtoursin.com/" },
+      { "@type": "ListItem", "position": 2, "name": "About", "item": "https://www.findtoursin.com/about" },
+    ],
+  })} />
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": aboutFaqs.map((item) => ({
+      "@type": "Question",
+      "name": item.q,
+      "acceptedAnswer": { "@type": "Answer", "text": item.a },
+    })),
+  })} />
 </PublicLayout>

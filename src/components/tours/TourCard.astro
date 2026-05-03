@@ -1,4 +1,6 @@
 ---
+import { imgUrl, imgSrcset } from '../../lib/image';
+
 interface Props {
   /** Position of this card in the rendered list — used to gate eager image
       loading to roughly the first row above the fold. Cards beyond
@@ -46,6 +48,11 @@ const allImages = (tour.images && tour.images.length > 0)
     : [];
 const hasMultipleImages = allImages.length > 1;
 const cardId = `card-${tour.id}`;
+
+// Card renders ~210–350px wide depending on breakpoint. Two retina widths
+// cover everything from mobile (50vw) to 6-col desktop (16vw).
+const CARD_WIDTHS = [320, 480, 640];
+const CARD_SIZES = '(max-width: 549px) 100vw, (max-width: 949px) 33vw, 20vw';
 ---
 
 <div class="tour-card group" id={cardId}>
@@ -53,20 +60,31 @@ const cardId = `card-${tour.id}`;
   <div class="relative aspect-square overflow-hidden rounded-xl bg-gray-100">
     {/* Images */}
     <a href={`/tours/${tour.slug}`} class="block h-full w-full">
-      <div class="carousel-track flex h-full w-full transition-transform duration-300 ease-out" data-card={cardId}>
+      <div class="carousel-track flex h-full w-full transition-transform duration-300 ease-out" data-card={cardId} data-total={allImages.length}>
         {allImages.length > 0 ? (
-          allImages.map((imgUrl, i) => (
-            <div class="h-full w-full flex-shrink-0">
-              <img
-                src={imgUrl}
-                alt={i === 0 ? tour.name : `${tour.name} - photo ${i + 1}`}
-                width="600"
-                height="600"
-                class="h-full w-full object-cover"
-                loading={i === 0 && isAboveFold ? 'eager' : 'lazy'}
-                decoding="async"
-                fetchpriority={i === 0 && isAboveFold ? 'high' : undefined}
-              />
+          allImages.map((url, i) => (
+            <div
+              class="h-full w-full flex-shrink-0 bg-gray-100"
+              data-slide={i}
+              data-src={i === 0 ? undefined : imgUrl(url, 600)}
+              data-srcset={i === 0 ? undefined : imgSrcset(url, CARD_WIDTHS)}
+              data-sizes={i === 0 ? undefined : CARD_SIZES}
+              data-alt={i === 0 ? undefined : `${tour.name} - photo ${i + 1}`}
+            >
+              {i === 0 && (
+                <img
+                  src={imgUrl(url, 600)}
+                  srcset={imgSrcset(url, CARD_WIDTHS)}
+                  sizes={CARD_SIZES}
+                  alt={tour.name}
+                  width="600"
+                  height="600"
+                  class="h-full w-full object-cover"
+                  loading={isAboveFold ? 'eager' : 'lazy'}
+                  decoding="async"
+                  fetchpriority={isAboveFold ? 'high' : undefined}
+                />
+              )}
             </div>
           ))
         ) : (
@@ -220,6 +238,8 @@ const cardId = `card-${tour.id}`;
       track.addEventListener('touchstart', (e) => {
         startX = (e as TouchEvent).touches[0].clientX;
         isDragging = true;
+        const card = (track as HTMLElement).closest('.tour-card') as HTMLElement | null;
+        if (card) hydrateLazySlides(card);
       }, { passive: true });
 
       track.addEventListener('touchend', (e) => {
@@ -235,6 +255,29 @@ const cardId = `card-${tour.id}`;
     });
   }
 
+  // Cards render only the first image's <img>; other slides are data-only
+  // placeholders. On the first carousel interaction we hydrate the rest.
+  // Saves ~80% of <img> tags on /tours (197 → ~40) without changing layout.
+  function hydrateLazySlides(card: HTMLElement) {
+    const slides = card.querySelectorAll<HTMLElement>('[data-slide]');
+    slides.forEach((slide) => {
+      if (slide.querySelector('img')) return;
+      const src = slide.dataset.src;
+      if (!src) return;
+      const img = document.createElement('img');
+      img.src = src;
+      if (slide.dataset.srcset) img.srcset = slide.dataset.srcset;
+      if (slide.dataset.sizes) img.sizes = slide.dataset.sizes;
+      img.alt = slide.dataset.alt || '';
+      img.width = 600;
+      img.height = 600;
+      img.className = 'h-full w-full object-cover';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      slide.appendChild(img);
+    });
+  }
+
   function slideCarousel(cardId: string, direction: number) {
     const card = document.getElementById(cardId);
     if (!card) return;
@@ -242,7 +285,9 @@ const cardId = `card-${tour.id}`;
     const dots = card.querySelectorAll('[data-dot]');
     if (!track) return;
 
-    const totalSlides = track.children.length;
+    hydrateLazySlides(card);
+
+    const totalSlides = Number(track.dataset.total || track.children.length);
     if (totalSlides <= 1) return;
 
     let currentIndex = parseInt(track.dataset.index || '0');

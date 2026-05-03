@@ -4,6 +4,7 @@ import { getCollection } from 'astro:content';
 import PublicLayout from '../../layouts/PublicLayout.astro';
 import BlogCard from '../../components/blog/BlogCard.astro';
 import { getReadingTime } from '../../lib/utils';
+import { imgUrl, imgSrcset } from '../../lib/image';
 
 // Edge-cache the blog index. Content only changes when a post is added or
 // edited, so a 10-minute s-maxage with day-long stale-while-revalidate
@@ -45,9 +46,16 @@ const categories = [...new Set(sortedPosts.map(p => p.data.category))].sort();
           <div class="aspect-[16/10] md:aspect-auto overflow-hidden bg-gray-100">
             {featuredPost.data.image ? (
               <img
-                src={featuredPost.data.image}
+                src={imgUrl(featuredPost.data.image, 960)}
+                srcset={imgSrcset(featuredPost.data.image, [640, 960, 1280])}
+                sizes="(max-width: 768px) 100vw, 50vw"
                 alt={featuredPost.data.title}
+                width="960"
+                height="600"
                 class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
               />
             ) : (
               <div class="w-full h-full min-h-[280px] bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">

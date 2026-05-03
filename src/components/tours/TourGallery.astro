@@ -1,5 +1,6 @@
 ---
 import { t } from '../../lib/i18n';
+import { imgUrl, imgSrcset } from '../../lib/image';
 
 interface Props {
   images: {
@@ -11,6 +12,16 @@ interface Props {
 
 const { images, locale } = Astro.props;
 const hasImages = images.length > 0;
+
+// Hero left image: full width on mobile, 50% on md+. On 2× retina that
+// caps around 1280px. Right grid thumbs are ~250px each, retina 500px.
+const HERO_WIDTHS = [640, 960, 1280];
+const HERO_SIZES = '(max-width: 768px) 100vw, 50vw';
+const THUMB_WIDTHS = [320, 480];
+const THUMB_SIZES = '(max-width: 768px) 0px, 25vw';
+// Modal images render at the dialog's max-w-5xl ≈ 1024px, retina 2048.
+const MODAL_WIDTHS = [768, 1280, 1920];
+const MODAL_SIZES = '(max-width: 1024px) 100vw, 1024px';
 
 // Hero shows up to 5 images: 1 large + 4 thumbnails. Anything beyond that
 // is hidden in the hero but still rendered inside the modal.
@@ -40,7 +51,9 @@ const showSeeAll = images.length > 1;
         aria-label={`View photo 1 of ${images.length}`}
       >
         <img
-          src={heroImages[0].url}
+          src={imgUrl(heroImages[0].url, 1280)}
+          srcset={imgSrcset(heroImages[0].url, HERO_WIDTHS)}
+          sizes={HERO_SIZES}
           alt={heroImages[0].altText || 'Tour image 1'}
           width="1200"
           height="900"
@@ -67,7 +80,9 @@ const showSeeAll = images.length > 1;
                   aria-label={`View photo ${idx + 1} of ${images.length}`}
                 >
                   <img
-                    src={img.url}
+                    src={imgUrl(img.url, 480)}
+                    srcset={imgSrcset(img.url, THUMB_WIDTHS)}
+                    sizes={THUMB_SIZES}
                     alt={img.altText || `Tour image ${idx + 1}`}
                     width="600"
                     height="450"
@@ -126,7 +141,9 @@ const showSeeAll = images.length > 1;
             {images.map((img, i) => (
               <figure class="overflow-hidden rounded-xl bg-black" data-modal-img data-index={i}>
                 <img
-                  src={img.url}
+                  src={imgUrl(img.url, 1280)}
+                  srcset={imgSrcset(img.url, MODAL_WIDTHS)}
+                  sizes={MODAL_SIZES}
                   alt={img.altText || `Tour photo ${i + 1}`}
                   class="h-auto w-full object-contain"
                   loading="lazy"

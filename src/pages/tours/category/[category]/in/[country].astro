@@ -5,6 +5,7 @@ import TourCard from '../../../../../components/tours/TourCard.astro';
 import { supabase } from '../../../../../lib/supabase';
 import { slugify, getCountryCopy } from '../../../../../lib/destinations';
 import { TOUR_LIST_SELECT, normalizeTour } from '../../../../../lib/tour-helpers';
+import { imgUrl, imgSrcset } from '../../../../../lib/image';
 
 // Public landing — edge-cache 5 min, stale up to a day.
 Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400');
@@ -83,7 +84,17 @@ const faqs = [
 
 <PublicLayout title={pageTitle} description={metaDescription} image={heroImage} noIndex={noIndex}>
   <section class="relative h-[320px] sm:h-[400px] overflow-hidden">
-    <img src={heroImage} alt={`${categoryName} in ${countryName}`} class="absolute inset-0 w-full h-full object-cover" fetchpriority="high" />
+    <img
+      src={imgUrl(heroImage, 1280)}
+      srcset={imgSrcset(heroImage, [640, 960, 1280, 1920])}
+      sizes="100vw"
+      alt={`${categoryName} in ${countryName}`}
+      width="1280"
+      height="380"
+      class="absolute inset-0 w-full h-full object-cover"
+      fetchpriority="high"
+      decoding="async"
+    />
     <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/30 to-black/70"></div>
     <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-end py-10">
       <nav class="text-sm text-white/80 mb-3">

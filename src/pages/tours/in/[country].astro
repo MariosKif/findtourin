@@ -5,6 +5,7 @@ import TourCard from '../../../components/tours/TourCard.astro';
 import { supabase } from '../../../lib/supabase';
 import { slugify, getCountryCopy } from '../../../lib/destinations';
 import { TOUR_LIST_SELECT, normalizeTour } from '../../../lib/tour-helpers';
+import { imgUrl, imgSrcset } from '../../../lib/image';
 
 // Public landing — edge-cache 5 min, stale up to a day.
 Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400');
@@ -88,7 +89,17 @@ const faqs = [
 <PublicLayout title={pageTitle} description={metaDescription} image={copy.heroImage} noIndex={noIndex}>
   <!-- Hero -->
   <section class="relative h-[340px] sm:h-[420px] overflow-hidden">
-    <img src={copy.heroImage} alt={`Tours in ${countryName}`} class="absolute inset-0 w-full h-full object-cover" fetchpriority="high" />
+    <img
+      src={imgUrl(copy.heroImage, 1280)}
+      srcset={imgSrcset(copy.heroImage, [640, 960, 1280, 1920])}
+      sizes="100vw"
+      alt={`Tours in ${countryName}`}
+      width="1280"
+      height="420"
+      class="absolute inset-0 w-full h-full object-cover"
+      fetchpriority="high"
+      decoding="async"
+    />
     <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/30 to-black/70"></div>
     <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-end py-10">
       <nav class="text-sm text-white/80 mb-3">
@@ -130,7 +141,17 @@ const faqs = [
               class="group relative aspect-[4/3] rounded-xl overflow-hidden bg-gray-100"
             >
               {c.sampleImage ? (
-                <img src={c.sampleImage} alt={c.city} class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+                <img
+                  src={imgUrl(c.sampleImage, 480)}
+                  srcset={imgSrcset(c.sampleImage, [320, 480, 640])}
+                  sizes="(max-width: 640px) 50vw, 25vw"
+                  alt={c.city}
+                  width="480"
+                  height="360"
+                  class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 <div class="absolute inset-0 bg-gradient-to-br from-primary-400 to-primary-700"></div>
               )}

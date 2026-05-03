@@ -5,6 +5,7 @@ import TourCard from '../../components/tours/TourCard.astro';
 import { supabase } from '../../lib/supabase';
 import { slugify } from '../../lib/destinations';
 import { TOUR_LIST_SELECT, normalizeTours } from '../../lib/tour-helpers';
+import { imgUrl } from '../../lib/image';
 
 // Public agency profile — edge-cache 5 min, stale up to a day.
 Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400');
@@ -70,7 +71,7 @@ const canonical = `https://www.findtoursin.com/agencies/${slug}`;
         <!-- Avatar -->
         <div class="shrink-0">
           {agency.avatar_url ? (
-            <img src={agency.avatar_url} alt={displayName} class="w-24 h-24 rounded-2xl object-cover bg-gray-100" />
+            <img src={imgUrl(agency.avatar_url, 192)} alt={displayName} width="96" height="96" class="w-24 h-24 rounded-2xl object-cover bg-gray-100" loading="eager" decoding="async" />
           ) : (
             <div class="w-24 h-24 rounded-2xl bg-primary-600 text-white flex items-center justify-center font-heading text-3xl">
               {displayName.charAt(0).toUpperCase()}

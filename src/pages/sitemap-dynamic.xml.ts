@@ -14,8 +14,16 @@ const AGENCY_BLOCKLIST = new Set(['test', 'travel-company-name', 'smoke-travel-c
 const dateOnly = (s: string | undefined | null) =>
   s ? new Date(s).toISOString().slice(0, 10) : undefined;
 
+// Static, hand-curated public pages. Kept here (not in a separate sitemap)
+// so a single sitemap is the source of truth for Search Console.
+const STATIC_PAGES = ['', '/about', '/blog', '/contact', '/pricing', '/tours'];
+
 export const GET: APIRoute = async () => {
-  const urls: { loc: string; lastmod?: string }[] = [];
+  const today = new Date().toISOString().slice(0, 10);
+  const urls: { loc: string; lastmod?: string }[] = STATIC_PAGES.map((p) => ({
+    loc: `${SITE}${p}`,
+    lastmod: today,
+  }));
 
   // Blog posts (collection on disk — always available).
   try {

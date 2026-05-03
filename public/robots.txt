@@ -86,3 +86,4 @@ Disallow: /auth/
 Disallow: /account/
 
 Sitemap: https://www.findtoursin.com/sitemap-index.xml
+Sitemap: https://www.findtoursin.com/sitemap-dynamic.xml

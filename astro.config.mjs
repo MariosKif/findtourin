@@ -3,7 +3,6 @@ import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import vercel from '@astrojs/vercel';
 import mdx from '@astrojs/mdx';
-import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
   site: 'https://www.findtoursin.com',
@@ -13,13 +12,11 @@ export default defineConfig({
   trailingSlash: 'never',
   output: 'server',
   adapter: vercel(),
-  integrations: [mdx(), sitemap({
-    filter: (page) => {
-      const excluded = ['/dashboard', '/admin', '/auth', '/account', '/api'];
-      return !excluded.some(prefix => page.includes(prefix));
-    },
-    serialize: (item) => ({ ...item, lastmod: new Date().toISOString() }),
-  })],
+  // Sitemaps are hand-rolled in src/pages/sitemap-*.ts. The @astrojs/sitemap
+  // integration wrote a static sitemap-index.xml into dist/client/ that
+  // Vercel's CDN served ahead of our SSR route, hiding the dynamic sitemap
+  // from Google.
+  integrations: [mdx()],
   vite: {
     plugins: [tailwindcss()],
   },

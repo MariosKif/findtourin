@@ -1,0 +1,181 @@
+---
+export const prerender = false;
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import FAQSection from '../../components/common/FAQSection.astro';
+import { getCompetitor, COMPETITORS } from '../../lib/seo/competitors';
+import { currentYear } from '../../lib/programmatic';
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
+
+const { slug } = Astro.params;
+if (!slug) return new Response('Not found', { status: 404 });
+
+// Slug format: {competitor}-alternatives
+const expectedSuffix = '-alternatives';
+if (!slug.endsWith(expectedSuffix)) return new Response('Not found', { status: 404 });
+
+const competitorSlug = slug.slice(0, -expectedSuffix.length);
+const target = getCompetitor(competitorSlug);
+if (!target) return new Response('Not found', { status: 404 });
+
+const SITE = 'https://www.findtoursin.com';
+const canonical = `${SITE}/alternatives/${slug}`;
+const year = currentYear();
+const pageTitle = `${target.name} alternatives ${year} — Best tour-booking options`;
+const metaDescription = `Looking for alternatives to ${target.name}? Honest comparison of 5 platforms — including FindToursIn and 4 other options — with their strengths, pricing models, and best use cases.`;
+
+// The alternatives list always positions FindToursIn first (it's our page),
+// but the others are honestly described — fairness is the white-hat rule
+// here. We never pretend competing platforms have weaknesses they don't.
+const others = COMPETITORS.filter((c) => c.slug !== target.slug);
+
+const faqs = [
+  { q: `What\'s the best alternative to ${target.name}?`, a: `The best alternative depends on the destination and what you value: FindToursIn is the lowest-cost option for tours in Greece, Turkey, Italy, Bulgaria, and Albania (no commission); ${others[0]?.name || 'other OTAs'} have larger global catalogues. Match the platform to your trip — there is no single "best" answer.` },
+  { q: `Why look for alternatives to ${target.name}?`, a: `Common reasons: lower prices (commission-based OTAs add 15–30% to the operator\'s base price), more direct contact with the operator, smaller and more vetted inventory, or specialised regional coverage. ${target.name} is excellent at what it does — alternatives exist for travellers with different priorities.` },
+  { q: `Are alternatives to ${target.name} cheaper?`, a: `For the same tour, direct booking with the operator (which is what FindToursIn enables) is typically 15–25% cheaper than booking through ${target.name}. Other commission-based OTAs vary; the price difference is roughly the gap between their commission rate and zero.` },
+  { q: `Do all tour-booking platforms verify their operators?`, a: `Verification varies. Most major OTAs review profile information; few legally verify operator licences. FindToursIn checks the country-required licence before listing as "Verified". For multi-day or remote tours, verification matters; for short walking tours under €100, it matters less.` },
+];
+---
+
+<PublicLayout title={pageTitle} description={metaDescription} canonical={canonical}>
+  <section class="bg-gradient-to-b from-primary-50 to-white border-b border-gray-100">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <nav class="text-sm text-gray-500 mb-6">
+        <a href="/" class="hover:text-primary-600">Home</a>
+        <span class="mx-2">/</span>
+        <a href="/alternatives" class="hover:text-primary-600">Alternatives</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-900">{target.name} alternatives</span>
+      </nav>
+      <h1 class="font-heading text-4xl sm:text-5xl lg:text-6xl font-normal text-gray-900 leading-tight">
+        {target.name} alternatives {year}
+      </h1>
+      <p class="mt-4 text-lg text-gray-700 max-w-2xl" data-speakable="true">
+        {target.name} is one of the most-used tour-booking platforms in the world. If you\'re looking for alternatives — usually for lower prices or more specialised inventory — here are the options worth considering, with what each does best.
+      </p>
+      <p class="mt-3 text-xs text-gray-500">As of {target.lastVerified} · Pricing and commission rates are publicly reported industry estimates.</p>
+    </div>
+  </section>
+
+  <article class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- 1. FindToursIn (us, ranked first) -->
+    <section class="mb-10 rounded-2xl border-2 border-primary-300 bg-primary-50 p-6 sm:p-8">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="inline-flex items-center px-3 py-1 rounded-full bg-primary-700 text-white text-xs font-semibold">#1</span>
+        <h2 class="font-heading text-2xl text-gray-900">FindToursIn</h2>
+      </div>
+      <p class="text-gray-700 leading-relaxed mb-4" data-speakable="true">
+        FindToursIn is a subscription-based marketplace where travellers contact local tour agencies directly. We charge no booking fee and no commission, so the price you see is what the agency set — typically 15–25% lower than the same tour on a commission-based OTA. Coverage is focused: Greece, Turkey, Italy, Bulgaria, Albania.
+      </p>
+      <ul class="grid sm:grid-cols-2 gap-2 text-sm text-gray-700 mb-5">
+        <li>● No booking fee, no commission</li>
+        <li>● Direct operator contact</li>
+        <li>● Vetted local agencies (verified-badge)</li>
+        <li>● Real reviews only (≥3 verified per tour)</li>
+        <li>● Curated SE Europe inventory</li>
+        <li>● English-language platform</li>
+      </ul>
+      <a href="/tours" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors">Browse tours on FindToursIn &rarr;</a>
+    </section>
+
+    <!-- 2..N: other competitors -->
+    {others.map((c, i) => (
+      <section class="mb-10 rounded-2xl border border-gray-200 p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-semibold">#{i + 2}</span>
+          <h2 class="font-heading text-2xl text-gray-900">{c.name}</h2>
+        </div>
+        <p class="text-gray-700 leading-relaxed mb-4">{c.description}</p>
+
+        <div class="grid sm:grid-cols-2 gap-6 mb-5">
+          <div>
+            <p class="text-xs font-semibold text-green-700 uppercase tracking-wider mb-2">Strengths</p>
+            <ul class="space-y-1 text-sm text-gray-700">
+              {c.strengths.slice(0, 4).map((s) => (<li>● {s}</li>))}
+            </ul>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Quick facts</p>
+            <ul class="space-y-1 text-sm text-gray-600">
+              <li>Founded: {c.founded}</li>
+              <li>HQ: {c.hq}</li>
+              <li>Inventory: {c.approximateTourCount}</li>
+              <li>Model: {c.pricingModel}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <a href={`/compare/findtoursin-vs-${c.slug}`} class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:border-primary-400 hover:text-primary-700 transition-colors">FindToursIn vs {c.name} &rarr;</a>
+          <a href={c.url} target="_blank" rel="noopener noreferrer nofollow" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:border-gray-400 transition-colors">Visit {c.name} &rarr;</a>
+        </div>
+      </section>
+    ))}
+
+    <!-- FAQ -->
+    <FAQSection faqs={faqs} />
+
+  </article>
+
+  <!-- Article schema for the page itself + ItemList of the alternatives. -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": pageTitle,
+    "description": metaDescription,
+    "url": canonical,
+    "datePublished": target.lastVerified,
+    "dateModified": target.lastVerified,
+    "lastReviewed": target.lastVerified,
+    "author": { "@id": `${SITE}/#organization` },
+    "publisher": { "@id": `${SITE}/#organization` },
+    "mainEntityOfPage": canonical,
+    "inLanguage": "en",
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["[data-speakable]"],
+    },
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": `Alternatives to ${target.name}`,
+    "numberOfItems": others.length + 1,
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@type": "Organization",
+          "name": "FindToursIn",
+          "url": SITE,
+          "@id": `${SITE}/#organization`,
+        },
+      },
+      ...others.map((c, i) => ({
+        "@type": "ListItem",
+        "position": i + 2,
+        "item": {
+          "@type": "Organization",
+          "name": c.name,
+          "url": c.url,
+        },
+      })),
+    ],
+  })} />
+
+  <!-- BreadcrumbList -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE}/` },
+      { "@type": "ListItem", "position": 2, "name": "Alternatives", "item": `${SITE}/alternatives` },
+      { "@type": "ListItem", "position": 3, "name": `${target.name} alternatives`, "item": canonical },
+    ],
+  })} />
+
+  {/* FAQPage + Speakable schema is emitted by <FAQSection> above. */}
+</PublicLayout>

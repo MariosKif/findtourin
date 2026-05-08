@@ -1,0 +1,219 @@
+---
+export const prerender = false;
+import PublicLayout from '../../../../../layouts/PublicLayout.astro';
+import TourCard from '../../../../../components/tours/TourCard.astro';
+import FAQSection from '../../../../../components/common/FAQSection.astro';
+import { supabase } from '../../../../../lib/supabase';
+import { slugify, getCountryCopy, getCityCopy, getCityIntentCopy } from '../../../../../lib/destinations';
+import { TOUR_LIST_SELECT, normalizeTour } from '../../../../../lib/tour-helpers';
+import { imgUrl, imgSrcset } from '../../../../../lib/image';
+import {
+  isIntentSlug,
+  tourMatchesIntent,
+  shouldIndex,
+  getYearStampedTitle,
+  currentYear,
+  humanIntent,
+  MIN_TOURS_FOR_INDEX,
+} from '../../../../../lib/programmatic';
+
+// Public landing — edge-cache 5 min, stale up to a day.
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400');
+
+const { country: countrySlug, city: citySlug, intent } = Astro.params;
+if (!countrySlug || !citySlug || !intent) return Astro.redirect('/tours');
+
+// First gate: intent must be in our whitelist. Anything else 404s before
+// any DB call so /tours/in/greece/athens/foo never becomes a soft-200.
+if (!isIntentSlug(intent)) return new Response('Not found', { status: 404 });
+
+const { data: allTours } = await supabase
+  .from('tours')
+  .select(TOUR_LIST_SELECT)
+  .eq('status', 'active');
+
+const cityTours = (allTours || []).filter(
+  (t: any) =>
+    t.country && t.city &&
+    slugify(t.country) === countrySlug &&
+    slugify(t.city) === citySlug,
+);
+
+if (cityTours.length === 0) {
+  return new Response('Not found', { status: 404 });
+}
+
+const countryName = cityTours[0].country as string;
+const cityName = cityTours[0].city as string;
+
+// Filter to tours matching this intent.
+const tours = cityTours.filter((t: any) => tourMatchesIntent(t, intent));
+
+// Curated copy for this (city, intent) combo — falls back to a thin stub
+// when no hand-written entry exists. The shouldIndex gate below uses
+// `copy.curated` to suppress the page entirely in that case.
+const intentCopy = getCityIntentCopy(cityName, countryName, intent);
+const cityCopy = getCityCopy(cityName, countryName);
+const countryCopy = getCountryCopy(countryName);
+
+// Second gate: thin-content prevention. If we can't surface ≥3 tours OR
+// we don't have curated copy, this page MUST 404 — never ship a soft-200.
+if (!shouldIndex({ tourCount: tours.length, hasUniqueCopy: intentCopy.curated, minTours: MIN_TOURS_FOR_INDEX })) {
+  return new Response('Not found', { status: 404 });
+}
+
+const tourCount = tours.length;
+const priceFrom = Math.min(...tours.map((t: any) => Number(t.price) || Infinity).filter((n: number) => isFinite(n)));
+const priceMax = Math.max(...tours.map((t: any) => Number(t.price) || 0));
+const priceRange = isFinite(priceFrom) && priceMax > 0
+  ? (priceFrom === priceMax ? `€${priceFrom}` : `€${priceFrom}-€${priceMax}`)
+  : null;
+const heroImage = tours.find((t: any) => t.images?.[0]?.url)?.images?.[0]?.url || countryCopy.heroImage;
+
+const toursGridData = tours
+  .sort((a: any, b: any) => (b.view_count || 0) - (a.view_count || 0))
+  .map(normalizeTour);
+
+const year = currentYear();
+const intentLabel = humanIntent(intent);
+const pageTitle = getYearStampedTitle('intent-city', { country: countryName, city: cityName, intent });
+const metaDescription = `${tourCount} ${intentLabel.toLowerCase()} in ${cityName}, ${countryName} ${year}. ${intentCopy.tagline}. Book directly with local agencies — no booking fees, no commission.`;
+const canonical = `https://www.findtoursin.com/tours/in/${countrySlug}/${citySlug}/${intent}`;
+
+// Merge curated FAQs with a city-context FAQ if curated list is short.
+// FAQs are the strongest AI-Overview citation surface — minimum 3.
+const baseFaqs = intentCopy.faqs.length > 0 ? intentCopy.faqs : [
+  {
+    q: `How many ${intentLabel.toLowerCase()} are available in ${cityName}?`,
+    a: `${tourCount} ${intentLabel.toLowerCase()} are listed in ${cityName}, ${countryName} on FindToursIn, with prices from €${priceFrom}.`,
+  },
+];
+const faqs = baseFaqs;
+---
+
+<PublicLayout
+  title={pageTitle}
+  description={metaDescription}
+  image={heroImage}
+  canonical={canonical}
+>
+  <!-- Hero -->
+  <section class="relative h-[300px] sm:h-[380px] overflow-hidden">
+    <img
+      src={imgUrl(heroImage, 1280)}
+      srcset={imgSrcset(heroImage, [640, 960, 1280, 1920])}
+      sizes="100vw"
+      alt={`${intentLabel} in ${cityName}, ${countryName}`}
+      width="1280"
+      height="380"
+      class="absolute inset-0 w-full h-full object-cover"
+      fetchpriority="high"
+      decoding="async"
+    />
+    <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/30 to-black/70"></div>
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-end py-10">
+      <nav class="text-sm text-white/80 mb-3">
+        <a href="/" class="hover:text-white">Home</a>
+        <span class="mx-2">/</span>
+        <a href="/tours" class="hover:text-white">Tours</a>
+        <span class="mx-2">/</span>
+        <a href={`/tours/in/${countrySlug}`} class="hover:text-white">{countryName}</a>
+        <span class="mx-2">/</span>
+        <a href={`/tours/in/${countrySlug}/${citySlug}`} class="hover:text-white">{cityName}</a>
+        <span class="mx-2">/</span>
+        <span class="text-white">{intentLabel}</span>
+      </nav>
+      <h1 class="font-heading text-4xl sm:text-5xl font-normal text-white leading-tight">
+        {intentLabel} in {cityName} {year}
+      </h1>
+      <p class="mt-3 text-lg text-white/90 max-w-2xl">{intentCopy.tagline}</p>
+      <p class="mt-2 text-sm text-white/80">{tourCount} {tourCount === 1 ? 'tour' : 'tours'} from €{priceFrom}</p>
+    </div>
+  </section>
+
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Curated intro (passage-optimised for AI citations) -->
+    <section class="max-w-3xl mb-12">
+      <p class="text-lg text-gray-700 leading-relaxed" data-speakable="true">{intentCopy.intro}</p>
+      {cityCopy.bestFor.length > 0 && (
+        <div class="mt-6">
+          <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">{cityName} is best for</p>
+          <div class="flex flex-wrap gap-2">
+            {cityCopy.bestFor.map((b) => (
+              <span class="inline-block px-3 py-1.5 rounded-full bg-primary-50 text-primary-700 text-sm font-medium">{b}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+
+    <!-- Tours grid -->
+    <section class="mb-12">
+      <h2 class="font-heading text-2xl font-normal text-gray-900 mb-6">All {intentLabel.toLowerCase()} in {cityName}</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
+        {toursGridData.map((t: any, index: number) => (
+          <TourCard tour={t} index={index} />
+        ))}
+      </div>
+    </section>
+
+    <!-- Cross-link back to city + country hubs -->
+    <section class="grid gap-4 sm:grid-cols-2 mb-12">
+      <a href={`/tours/in/${countrySlug}/${citySlug}`} class="p-6 rounded-2xl bg-gray-50 border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+        <p class="text-sm text-gray-500">All tours in</p>
+        <p class="font-heading text-xl text-gray-900">{cityName} &rarr;</p>
+      </a>
+      <a href={`/tours/in/${countrySlug}`} class="p-6 rounded-2xl bg-gray-50 border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-colors">
+        <p class="text-sm text-gray-500">All tours in</p>
+        <p class="font-heading text-xl text-gray-900">{countryName} &rarr;</p>
+      </a>
+    </section>
+
+    <!-- FAQ (visible + FAQPage JSON-LD with Speakable) -->
+    <FAQSection faqs={faqs} />
+  </div>
+
+  <!-- CollectionPage + ItemList + BreadcrumbList -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": pageTitle,
+    "description": metaDescription,
+    "url": canonical,
+    "about": { "@type": "TouristDestination", "name": `${cityName}, ${countryName}` },
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Place",
+    "name": `${intentLabel} in ${cityName}, ${countryName}`,
+    "address": { "@type": "PostalAddress", "addressLocality": cityName, "addressCountry": countryName },
+    ...(priceRange ? { "priceRange": priceRange } : {}),
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.findtoursin.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Tours", "item": "https://www.findtoursin.com/tours" },
+      { "@type": "ListItem", "position": 3, "name": countryName, "item": `https://www.findtoursin.com/tours/in/${countrySlug}` },
+      { "@type": "ListItem", "position": 4, "name": cityName, "item": `https://www.findtoursin.com/tours/in/${countrySlug}/${citySlug}` },
+      { "@type": "ListItem", "position": 5, "name": intentLabel, "item": canonical },
+    ],
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "numberOfItems": tourCount,
+    "itemListElement": toursGridData.slice(0, 10).map((t: any, i: number) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "url": `https://www.findtoursin.com/tours/${t.slug}`,
+      "name": t.name,
+    })),
+  })} />
+
+  {/* FAQPage + Speakable schema is emitted by <FAQSection> above. */}
+</PublicLayout>

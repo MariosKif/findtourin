@@ -2,10 +2,13 @@
 export const prerender = false;
 import PublicLayout from '../../../../layouts/PublicLayout.astro';
 import TourCard from '../../../../components/tours/TourCard.astro';
+import FAQSection from '../../../../components/common/FAQSection.astro';
 import { supabase } from '../../../../lib/supabase';
 import { slugify, getCountryCopy, getCityCopy } from '../../../../lib/destinations';
 import { TOUR_LIST_SELECT, normalizeTour } from '../../../../lib/tour-helpers';
 import { imgUrl, imgSrcset } from '../../../../lib/image';
+import { getYearStampedTitle, currentYear, INTENT_SLUGS, tourMatchesIntent, MIN_TOURS_FOR_INDEX, humanIntent } from '../../../../lib/programmatic';
+import { getCityIntentCopy } from '../../../../lib/destinations';
 
 // Public landing — edge-cache 5 min, stale up to a day.
 Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400');
@@ -56,9 +59,20 @@ const toursGridData = tours
   .sort((a: any, b: any) => (b.view_count || 0) - (a.view_count || 0))
   .map(normalizeTour);
 
-const pageTitle = `Tours in ${cityName}, ${countryName} — From €${priceFrom}`;
-const metaDescription = `${tourCount} tours in ${cityName}, ${countryName}. ${cityCopy.tagline}. Browse itineraries, compare prices, and contact agencies directly. No booking fees.`;
+const year = currentYear();
+const pageTitle = getYearStampedTitle('city-hub', { country: countryName, city: cityName, priceFrom });
+const metaDescription = `${tourCount} tours in ${cityName}, ${countryName} ${year}. ${cityCopy.tagline}. Browse itineraries, compare prices, and contact agencies directly. No booking fees.`;
 const canonical = `https://www.findtoursin.com/tours/in/${countrySlug}/${citySlug}`;
+
+// Compute which traveler-intent variants are indexable for this city. Only
+// surface internal links to intents where (a) ≥3 tours match AND (b) we
+// have curated copy. Both checks together prevent doorway-page drift.
+const availableIntents = INTENT_SLUGS.filter((intent) => {
+  const matches = tours.filter((t: any) => tourMatchesIntent(t, intent)).length;
+  if (matches < MIN_TOURS_FOR_INDEX) return false;
+  const copy = getCityIntentCopy(cityName, countryName, intent);
+  return copy.curated;
+});
 
 const faqs = [
   {
@@ -108,7 +122,7 @@ const faqs = [
         <span class="text-white">{cityName}</span>
       </nav>
       <h1 class="font-heading text-4xl sm:text-5xl font-normal text-white leading-tight">
-        Tours in {cityName}
+        Things to Do in {cityName} {year}
       </h1>
       <p class="mt-3 text-lg text-white/90 max-w-2xl">{cityCopy.tagline}</p>
       <p class="mt-2 text-sm text-white/80">{tourCount} {tourCount === 1 ? 'tour' : 'tours'} from €{priceFrom}</p>
@@ -163,6 +177,23 @@ const faqs = [
       )}
     </section>
 
+    <!-- Browse by interest (intent variants — only surfaced when curated copy + ≥3 tours exist) -->
+    {availableIntents.length > 0 && (
+      <section class="mb-12">
+        <h2 class="font-heading text-2xl font-normal text-gray-900 mb-6">Browse by interest</h2>
+        <div class="flex flex-wrap gap-3">
+          {availableIntents.map((intent) => (
+            <a
+              href={`/tours/in/${countrySlug}/${citySlug}/${intent}`}
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-primary-200 bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 transition-colors"
+            >
+              {humanIntent(intent)} in {cityName}
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
     <!-- Back to country hub -->
     <section class="mb-12 p-6 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
@@ -174,23 +205,8 @@ const faqs = [
       </a>
     </section>
 
-    <!-- FAQ -->
-    <section class="max-w-3xl mb-12">
-      <h2 class="font-heading text-2xl font-normal text-gray-900 mb-6">Frequently asked questions</h2>
-      <div class="divide-y divide-gray-200 border-y border-gray-200">
-        {faqs.map((item) => (
-          <details class="group py-5">
-            <summary class="flex items-center justify-between cursor-pointer list-none">
-              <span class="font-medium text-gray-900">{item.q}</span>
-              <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <p class="mt-3 text-gray-600 leading-relaxed">{item.a}</p>
-          </details>
-        ))}
-      </div>
-    </section>
+    <!-- FAQ (visible + FAQPage JSON-LD with Speakable) -->
+    <FAQSection faqs={faqs} />
   </div>
 
   <!-- TouristDestination Schema -->
@@ -239,14 +255,5 @@ const faqs = [
     })),
   })} />
 
-  <!-- FAQ Schema -->
-  <script type="application/ld+json" set:html={JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": faqs.map((item) => ({
-      "@type": "Question",
-      "name": item.q,
-      "acceptedAnswer": { "@type": "Answer", "text": item.a },
-    })),
-  })} />
+  {/* FAQPage + Speakable schema is emitted by <FAQSection> above. */}
 </PublicLayout>

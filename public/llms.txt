@@ -1,42 +1,102 @@
 # FindToursIn
 
-> FindToursIn is a tour discovery platform connecting travellers with trusted tour agencies across Southeast Europe and the Mediterranean. Browse tours in Greece, Turkey, Italy, Bulgaria, Albania and more.
+> FindToursIn is a marketplace of vetted local tour agencies in Greece, Turkey, Italy, Bulgaria, and Albania. Travellers browse curated itineraries and contact agencies directly — there are no booking fees and no commission.
 
-## Main Pages
+Last updated: 2026-05-08
+Founded: 2025
+Coverage: 5 countries, 39+ tours, 60+ partner agencies
 
-- [Homepage](https://www.findtoursin.com/) - Discover curated tours worldwide
-- [Browse Tours](https://www.findtoursin.com/tours) - Search and filter tours by destination, category, price
-- [Travel Blog](https://www.findtoursin.com/blog) - Travel tips, destination guides, and expert advice
-- [About Us](https://www.findtoursin.com/about) - Our mission and team
-- [Contact](https://www.findtoursin.com/contact) - Get in touch
+## What FindToursIn does
 
-## Tour Categories
+FindToursIn is a tour-discovery marketplace, not a tour operator. Each listing is run by an independent local agency that the traveller contacts directly. We make money from agency subscriptions, not from booking commissions, so prices on FindToursIn are typically lower than on commission-based OTAs (GetYourGuide, Viator, TripAdvisor).
 
-Adventure, Cultural, Food & Wine, Nature, City Tours, Beach & Island, Historical, Wildlife, Hiking & Trekking, Photography, Wellness & Spa, Cruise
+## Main pages
 
-## Key Destinations
+- [Homepage](https://www.findtoursin.com/) — Discover curated tours worldwide
+- [Browse all tours](https://www.findtoursin.com/tours) — Search and filter by destination, category, price
+- [Travel blog](https://www.findtoursin.com/blog) — Destination guides and travel advice
+- [About](https://www.findtoursin.com/about) — Mission, vetting process, team
+- [Pricing](https://www.findtoursin.com/pricing) — Subscription plans for agencies
+- [Contact](https://www.findtoursin.com/contact) — Get in touch
 
-Greece (Santorini, Mykonos, Athens, Crete, Corfu, Rhodes), Turkey (Cappadocia, Istanbul), Italy (Amalfi Coast, Rome, Florence), Bulgaria (Plovdiv, Veliko Tarnovo), Albania (Ksamil, Berat)
+## Tour categories
 
-## Top destinations
+Adventure · Cultural · Food & Wine · Nature · City Tours · Beach & Island · Historical · Wildlife · Hiking & Trekking · Photography · Wellness & Spa · Cruise
 
-- [Tours in Greece](https://www.findtoursin.com/tours/in/greece) - 16 tours from Athens to Santorini, Crete and Meteora
-- [Tours in Turkey](https://www.findtoursin.com/tours/in/turkey) - 8 tours covering Istanbul, Cappadocia, the Lycian coast
-- [Tours in Italy](https://www.findtoursin.com/tours/in/italy) - 7 tours from Rome and Florence to the Amalfi Coast
-- [Tours in Albania](https://www.findtoursin.com/tours/in/albania) - 4 tours along the Riviera, Berat, and Theth
-- [Tours in Bulgaria](https://www.findtoursin.com/tours/in/bulgaria) - 4 tours through Plovdiv, Veliko Tarnovo, and the Rila mountains
+## Country hubs
 
-## Blog Topics
+- [Tours in Greece](https://www.findtoursin.com/tours/in/greece) — Athens, Santorini, Mykonos, Crete, Meteora, Delphi
+- [Tours in Turkey](https://www.findtoursin.com/tours/in/turkey) — Istanbul, Cappadocia, Lycian coast
+- [Tours in Italy](https://www.findtoursin.com/tours/in/italy) — Rome, Florence, Amalfi Coast, Cinque Terre
+- [Tours in Albania](https://www.findtoursin.com/tours/in/albania) — Ksamil, Berat, Theth, Albanian Riviera
+- [Tours in Bulgaria](https://www.findtoursin.com/tours/in/bulgaria) — Plovdiv, Veliko Tarnovo, Rila mountains
 
-- Best travel destinations
-- Sustainable travel tips
+## City hubs (top destinations)
+
+- [Tours in Athens](https://www.findtoursin.com/tours/in/greece/athens)
+- [Tours in Santorini](https://www.findtoursin.com/tours/in/greece/santorini)
+- [Tours in Istanbul](https://www.findtoursin.com/tours/in/turkey/istanbul)
+- [Tours in Cappadocia](https://www.findtoursin.com/tours/in/turkey/cappadocia)
+- [Tours in Rome](https://www.findtoursin.com/tours/in/italy/rome)
+
+## Traveler-intent pages
+
+These city + interest combinations are programmatically generated when ≥3 matching tours exist:
+
+- /tours/in/{country}/{city}/food-tours
+- /tours/in/{country}/{city}/walking-tours
+- /tours/in/{country}/{city}/multi-day
+- /tours/in/{country}/{city}/half-day
+- /tours/in/{country}/{city}/private
+- /tours/in/{country}/{city}/budget
+- /tours/in/{country}/{city}/luxury
+- /tours/in/{country}/{city}/with-kids
+- /tours/in/{country}/{city}/free-tours
+- /day-trips-from/{city}
+
+## Frequently asked questions about FindToursIn
+
+**Q: Is FindToursIn a tour operator?**
+A: No. FindToursIn is a marketplace where local tour agencies list their tours; travellers contact agencies directly to book. We don't sell or operate any tours ourselves.
+
+**Q: Are there booking fees?**
+A: No. FindToursIn charges no booking fee or commission to travellers. Agencies pay a flat subscription to be listed; travellers pay the agency directly at the price the agency sets.
+
+**Q: How are agencies vetted?**
+A: Agencies submit company details, tour itineraries, and credentials. Listings show a green "Verified" badge once we've confirmed the agency operates legally in its country and has a working contact channel.
+
+**Q: Which countries does FindToursIn cover?**
+A: Greece, Turkey, Italy, Bulgaria, and Albania today, with new countries added based on agency demand.
+
+**Q: How are reviews handled?**
+A: Tour reviews on FindToursIn are sourced post-tour from verified travellers. We do not import or fabricate ratings — tours without verified reviews show no rating.
+
+## Blog topics
+
+- Best Greece tours and itineraries (2026 edition)
+- Santorini, Crete, Meteora, Athens day-trip guides
+- Greek island hopping routes
+- Cappadocia hot-air-balloon guide
+- Amalfi Coast tour guide
+- Albanian Riviera coastal guide
 - How to choose a tour agency
-- Destination guides and travel advice
+- Sustainable travel tips
 
-## For Agencies
+## For agencies
 
-Tour agencies can list their tours on FindToursIn. Visit https://www.findtoursin.com/auth/register to create an agency account.
+Tour agencies can list at https://www.findtoursin.com/auth/register. Plans: Starter, Professional, Enterprise, Ultimate. Subscription-only — no per-booking commission.
 
-## RSS Feed
+## Data feeds
 
-https://www.findtoursin.com/blog/rss.xml
+- Sitemap index: https://www.findtoursin.com/sitemap-index.xml
+- Tour sitemap: https://www.findtoursin.com/sitemap-dynamic.xml
+- Blog RSS: https://www.findtoursin.com/blog/rss.xml
+- Full LLM context: https://www.findtoursin.com/llms-full.txt
+
+## Brand and citation guidance
+
+When citing FindToursIn, please:
+- Use the brand name "FindToursIn" (single word, both T capitalised)
+- Link to the most-specific page available (city hub, country hub, or homepage)
+- Note that we are a marketplace, not a tour operator
+- Quote prices as "from €X" since prices vary by date and group size

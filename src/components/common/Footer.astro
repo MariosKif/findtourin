@@ -1,29 +1,66 @@
 ---
 import { supabase } from '../../lib/supabase';
 import { slugify } from '../../lib/destinations';
+import { GUIDES } from '../../lib/seo/guides';
+import { COMPETITORS } from '../../lib/seo/competitors';
 
 const year = new Date().getFullYear();
 
-// Pull up to 6 countries with active tours, for internal-linking destination hubs.
+// Pull live destination + city + category data for the mega-footer.
+// All three queries hit the same `tours` table, so we run a single query
+// and aggregate in memory. The result is cached at the edge by the page
+// that imports the footer (every public page caches s-maxage 60s+).
 let countryLinks: { name: string; slug: string; count: number }[] = [];
+let cityLinks: { name: string; countrySlug: string; citySlug: string; count: number }[] = [];
+let categoryLinks: { name: string; slug: string; count: number }[] = [];
 try {
   const { data } = await supabase
     .from('tours')
-    .select('country')
+    .select('country, city, category')
     .eq('status', 'active');
   if (data) {
-    const counts = new Map<string, number>();
-    for (const row of data) {
-      if (row.country) counts.set(row.country, (counts.get(row.country) || 0) + 1);
+    const countryCounts = new Map<string, number>();
+    const cityCounts = new Map<string, { name: string; country: string; count: number }>();
+    const categoryCounts = new Map<string, number>();
+    for (const row of data as { country?: string; city?: string; category?: string }[]) {
+      if (row.country) {
+        countryCounts.set(row.country, (countryCounts.get(row.country) || 0) + 1);
+        if (row.city) {
+          const key = `${row.country}|${row.city}`;
+          const existing = cityCounts.get(key) || { name: row.city, country: row.country, count: 0 };
+          existing.count += 1;
+          cityCounts.set(key, existing);
+        }
+      }
+      if (row.category) {
+        categoryCounts.set(row.category, (categoryCounts.get(row.category) || 0) + 1);
+      }
     }
-    countryLinks = Array.from(counts.entries())
+    countryLinks = Array.from(countryCounts.entries())
+      .map(([name, count]) => ({ name, slug: slugify(name), count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+    // Top 8 cities (≥2 tours, sorted by count) — these are the destinations
+    // most likely to convert and the highest-equity internal links.
+    cityLinks = Array.from(cityCounts.values())
+      .filter((c) => c.count >= 2)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8)
+      .map((c) => ({ name: c.name, countrySlug: slugify(c.country), citySlug: slugify(c.name), count: c.count }));
+    categoryLinks = Array.from(categoryCounts.entries())
+      .filter(([, count]) => count >= 2)
       .map(([name, count]) => ({ name, slug: slugify(name), count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 6);
   }
 } catch {
-  // silent fallback — footer just won't show the column
+  // silent fallback — footer just won't show DB-driven columns
 }
+
+// Top 4 guides for the editorial column. Curated, no DB call.
+const topGuides = GUIDES.slice(0, 4);
+// All 4 competitor comparisons.
+const compareLinks = COMPETITORS;
 ---
 
 <footer class="bg-gray-950 text-gray-300">
@@ -49,51 +86,120 @@ try {
     </div>
   </div>
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-8">
+  <!-- Mega-footer link grid. Spreads internal-link equity site-wide so
+       every published page accrues some PageRank from every other page.
+       Columns are gated on data availability — empty arrays just skip
+       rendering. -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-8">
+
       <!-- Brand -->
-      <div class="col-span-2">
+      <div class="col-span-2 md:col-span-2">
         <a href="/" class="flex items-center gap-2 font-heading text-xl text-white">
           <img src="/images/logo-icon.svg" alt="FindToursIn" class="w-8 h-8 shrink-0" />
           FindToursIn
         </a>
         <p class="mt-4 text-sm text-gray-400 max-w-md">
-          Discover amazing tours from trusted agencies worldwide. Your next adventure is just a click away.
+          A marketplace of vetted local tour agencies in Greece, Turkey, Italy, Bulgaria, and Albania. No booking fees, no commission — you contact agencies directly.
+        </p>
+        <p class="mt-4 text-xs text-gray-500">
+          <a href="/about/by-the-numbers" class="hover:text-gray-300">By the numbers →</a>
+          <span class="mx-2">·</span>
+          <a href="/trust" class="hover:text-gray-300">Trust & safety →</a>
+          <span class="mx-2">·</span>
+          <a href="/press" class="hover:text-gray-300">Press kit →</a>
         </p>
       </div>
 
-      <!-- Explore -->
-      <div>
-        <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Explore</h3>
-        <ul class="mt-4 space-y-2">
-          <li><a href="/tours" class="text-sm hover:text-white transition-colors">Browse Tours</a></li>
-          <li><a href="/blog" class="text-sm hover:text-white transition-colors">Blog</a></li>
-          <li><a href="/about" class="text-sm hover:text-white transition-colors">About Us</a></li>
-          <li><a href="/contact" class="text-sm hover:text-white transition-colors">Contact</a></li>
-        </ul>
-      </div>
-
-      <!-- Destinations -->
+      <!-- Destinations (countries) -->
       {countryLinks.length > 0 && (
         <div>
           <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Destinations</h3>
           <ul class="mt-4 space-y-2">
             {countryLinks.map((c) => (
-              <li><a href={`/tours/in/${c.slug}`} class="text-sm hover:text-white transition-colors">Tours in {c.name}</a></li>
+              <li><a href={`/tours/in/${c.slug}`} class="text-sm hover:text-white transition-colors">{c.name}</a></li>
+            ))}
+            <li class="pt-1"><a href="/tours" class="text-sm text-primary-300 hover:text-white transition-colors">All countries →</a></li>
+          </ul>
+        </div>
+      )}
+
+      <!-- Top cities -->
+      {cityLinks.length > 0 && (
+        <div>
+          <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Top cities</h3>
+          <ul class="mt-4 space-y-2">
+            {cityLinks.map((c) => (
+              <li><a href={`/tours/in/${c.countrySlug}/${c.citySlug}`} class="text-sm hover:text-white transition-colors">{c.name}</a></li>
             ))}
           </ul>
         </div>
       )}
 
-      <!-- For Agencies -->
+      <!-- Categories -->
+      {categoryLinks.length > 0 && (
+        <div>
+          <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Categories</h3>
+          <ul class="mt-4 space-y-2">
+            {categoryLinks.map((c) => (
+              <li><a href={`/tours?category=${encodeURIComponent(c.name)}`} class="text-sm hover:text-white transition-colors">{c.name}</a></li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <!-- Resources / guides -->
       <div>
-        <h3 class="text-sm font-semibold text-white uppercase tracking-wider">For Agencies</h3>
+        <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Guides</h3>
+        <ul class="mt-4 space-y-2">
+          {topGuides.map((g) => (
+            <li><a href={`/guide/${g.slug}`} class="text-sm hover:text-white transition-colors">{g.title.split(':')[0]}</a></li>
+          ))}
+          <li><a href="/guide/glossary" class="text-sm hover:text-white transition-colors">Tour glossary</a></li>
+          <li class="pt-1"><a href="/guide" class="text-sm text-primary-300 hover:text-white transition-colors">All guides →</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Secondary nav row: blog, agencies, compare, alternatives -->
+    <div class="mt-10 pt-10 border-t border-gray-800 grid grid-cols-2 md:grid-cols-4 gap-8">
+      <div>
+        <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Compare</h3>
+        <ul class="mt-4 space-y-2">
+          {compareLinks.map((c) => (
+            <li><a href={`/compare/findtoursin-vs-${c.slug}`} class="text-sm hover:text-white transition-colors">vs {c.name}</a></li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Alternatives</h3>
+        <ul class="mt-4 space-y-2">
+          {compareLinks.map((c) => (
+            <li><a href={`/alternatives/${c.slug}-alternatives`} class="text-sm hover:text-white transition-colors">{c.name} alternatives</a></li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Read</h3>
+        <ul class="mt-4 space-y-2">
+          <li><a href="/blog" class="text-sm hover:text-white transition-colors">Travel blog</a></li>
+          <li><a href="/blog/best-greece-tours-summer-2026" class="text-sm hover:text-white transition-colors">Best Greece tours {year}</a></li>
+          <li><a href="/blog/athens-day-trips-2026" class="text-sm hover:text-white transition-colors">Athens day trips</a></li>
+          <li><a href="/blog/cappadocia-hot-air-balloon-2026" class="text-sm hover:text-white transition-colors">Cappadocia balloon guide</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-sm font-semibold text-white uppercase tracking-wider">For agencies</h3>
         <ul class="mt-4 space-y-2">
           <li><a href="/pricing" class="text-sm hover:text-white transition-colors">Pricing</a></li>
-          <li><a href="/auth/register" class="text-sm hover:text-white transition-colors">List Your Tours</a></li>
-          <li><a href="/auth/login" class="text-sm hover:text-white transition-colors">Agency Login</a></li>
+          <li><a href="/auth/register" class="text-sm hover:text-white transition-colors">List your tours</a></li>
+          <li><a href="/auth/login" class="text-sm hover:text-white transition-colors">Agency login</a></li>
+          <li><a href="/contact" class="text-sm hover:text-white transition-colors">Contact</a></li>
         </ul>
-          <p class="mt-3 text-xs text-gray-500">0% Commission</p>
+        <p class="mt-3 text-xs text-gray-500">0% commission</p>
       </div>
     </div>
 

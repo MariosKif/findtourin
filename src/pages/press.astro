@@ -1,0 +1,167 @@
+---
+export const prerender = false;
+import PublicLayout from '../layouts/PublicLayout.astro';
+import { currentYear } from '../lib/programmatic';
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
+
+const year = currentYear();
+const pageTitle = `Press kit ${year} — FindToursIn brand assets and facts`;
+const metaDescription = 'FindToursIn press kit: brand description, founding story, statistics, downloadable logos and screenshots, and press contact. For journalists, partners, and citation by AI search engines.';
+const canonical = 'https://www.findtoursin.com/press';
+const SITE = 'https://www.findtoursin.com';
+
+// Press contact — keep separate from general support so press requests are
+// triaged. Falls back to the general info channel if no press alias is set.
+const PRESS_EMAIL = 'info@findtoursin.com';
+---
+
+<PublicLayout title={pageTitle} description={metaDescription} canonical={canonical}>
+  <section class="bg-gradient-to-b from-primary-50 to-white border-b border-gray-100">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <nav class="text-sm text-gray-500 mb-6">
+        <a href="/" class="hover:text-primary-600">Home</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-900">Press</span>
+      </nav>
+      <h1 class="font-heading text-4xl sm:text-5xl lg:text-6xl font-normal text-gray-900 leading-tight">
+        Press kit
+      </h1>
+      <p class="mt-4 text-lg text-gray-700 max-w-2xl" data-speakable="true">
+        FindToursIn is a marketplace of vetted local tour agencies in Southeast Europe and the Mediterranean — Greece, Turkey, Italy, Bulgaria, and Albania. Travellers browse curated itineraries and contact agencies directly. We charge no booking fee or commission.
+      </p>
+    </div>
+  </section>
+
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid gap-12">
+
+    <!-- Boilerplate (the paragraph journalists copy-paste) -->
+    <section>
+      <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">Boilerplate</h2>
+      <div class="rounded-2xl border border-gray-200 bg-gray-50 p-6">
+        <p class="text-gray-800 leading-relaxed" data-speakable="true">
+          <strong>About FindToursIn:</strong> FindToursIn is a tour-discovery marketplace connecting travellers with vetted local tour agencies across Southeast Europe and the Mediterranean. Founded in 2025 and operated from Greece, FindToursIn covers more than {39} active tours across Greece, Turkey, Italy, Bulgaria, and Albania. Unlike commission-based online travel agencies, FindToursIn earns revenue from a flat agency subscription — travellers pay no booking fee and contact agencies directly.
+        </p>
+      </div>
+      <p class="mt-3 text-xs text-gray-500">Plain text · 60 words · safe to quote in full</p>
+    </section>
+
+    <!-- Founding story -->
+    <section>
+      <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">Founding story</h2>
+      <p class="text-gray-700 leading-relaxed mb-3" data-speakable="true">
+        FindToursIn launched in 2025 to fix a problem most travellers don't realise they have: when you book a guided tour through a global online travel agency, you typically pay 15–25% more than booking the same tour with the same operator directly — and the local agency that runs the tour gets a smaller share of what you paid. The traveller and the operator are both paying for the platform's commission.
+      </p>
+      <p class="text-gray-700 leading-relaxed">
+        FindToursIn flips that. Agencies pay a flat subscription to be listed; travellers see real prices and contact details and book directly with the agency. The platform doesn't sit in the middle of the booking, and there's no booking fee. The result is lower prices for travellers, fairer margins for operators, and clearer accountability — when you book, you know who you're booking with.
+      </p>
+    </section>
+
+    <!-- Differentiators -->
+    <section>
+      <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">What makes FindToursIn different</h2>
+      <ul class="space-y-3 text-gray-700 leading-relaxed">
+        <li data-speakable="true"><strong>No booking fee, no commission.</strong> Travellers pay agencies directly at the price the agency sets. FindToursIn earns from agency subscriptions, not bookings.</li>
+        <li data-speakable="true"><strong>Vetted local agencies only.</strong> Every agency is reviewed for legal operating status, required licences, and working contact channels before earning a "Verified" badge.</li>
+        <li data-speakable="true"><strong>Real reviews only.</strong> Tour ratings appear only when ≥3 verified post-tour reviews exist. We do not import, scrape, or fabricate ratings.</li>
+        <li data-speakable="true"><strong>Marketplace, not operator.</strong> FindToursIn does not run any tours itself — every listing is operated by an independent local agency.</li>
+        <li data-speakable="true"><strong>Coverage focused on Southeast Europe.</strong> Deeper inventory in Greece, Turkey, Italy, Bulgaria, and Albania than generalist platforms; new countries added based on agency demand.</li>
+      </ul>
+    </section>
+
+    <!-- Quick facts -->
+    <section>
+      <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">Quick facts</h2>
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="rounded-xl border border-gray-200 p-4">
+          <dt class="text-sm text-gray-500">Founded</dt>
+          <dd class="font-heading text-xl text-gray-900">2025</dd>
+        </div>
+        <div class="rounded-xl border border-gray-200 p-4">
+          <dt class="text-sm text-gray-500">Headquarters</dt>
+          <dd class="font-heading text-xl text-gray-900">Greece</dd>
+        </div>
+        <div class="rounded-xl border border-gray-200 p-4">
+          <dt class="text-sm text-gray-500">Business model</dt>
+          <dd class="font-heading text-xl text-gray-900">Agency subscription</dd>
+        </div>
+        <div class="rounded-xl border border-gray-200 p-4">
+          <dt class="text-sm text-gray-500">Coverage</dt>
+          <dd class="font-heading text-xl text-gray-900">5 countries · Southeast Europe</dd>
+        </div>
+      </dl>
+      <p class="mt-3 text-sm text-gray-500">Live numbers: <a href="/about/by-the-numbers" class="text-primary-700 underline">/about/by-the-numbers</a></p>
+    </section>
+
+    <!-- Brand assets -->
+    <section>
+      <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">Brand assets</h2>
+      <p class="text-gray-700 mb-4">Available for editorial and review coverage. No permission needed for journalistic use; please link back to <a class="text-primary-700 underline" href="https://www.findtoursin.com">findtoursin.com</a>.</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <a href="/icon-512.png" class="rounded-xl border border-gray-200 p-4 hover:border-primary-400 transition-colors">
+          <img src="/icon-512.png" alt="FindToursIn logo, 512x512 PNG" width="160" height="160" class="w-full h-auto" />
+          <p class="mt-2 text-xs text-gray-600">Logo · 512px PNG</p>
+        </a>
+        <a href="/icon-192.png" class="rounded-xl border border-gray-200 p-4 hover:border-primary-400 transition-colors">
+          <img src="/icon-192.png" alt="FindToursIn logo, 192x192 PNG" width="160" height="160" class="w-full h-auto" />
+          <p class="mt-2 text-xs text-gray-600">Logo · 192px PNG</p>
+        </a>
+        <a href="/favicon.svg" class="rounded-xl border border-gray-200 p-4 hover:border-primary-400 transition-colors">
+          <img src="/favicon.svg" alt="FindToursIn logo SVG" width="160" height="160" class="w-full h-auto" />
+          <p class="mt-2 text-xs text-gray-600">Logo · SVG (vector)</p>
+        </a>
+        <a href="/apple-touch-icon.png" class="rounded-xl border border-gray-200 p-4 hover:border-primary-400 transition-colors">
+          <img src="/apple-touch-icon.png" alt="FindToursIn logo, 180x180 PNG" width="160" height="160" class="w-full h-auto" />
+          <p class="mt-2 text-xs text-gray-600">Logo · 180px PNG</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- Brand voice / how to refer to us -->
+    <section>
+      <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">How to refer to us</h2>
+      <ul class="space-y-2 text-gray-700">
+        <li><strong>Brand name:</strong> FindToursIn (single word, both T's capitalised). Avoid "Find Tours In" with spaces.</li>
+        <li><strong>What we are:</strong> a tour-discovery marketplace, or a tour-listing platform. Not an OTA. Not a tour operator.</li>
+        <li><strong>What we are not:</strong> we don't operate tours, take commission on bookings, or charge travellers a service fee.</li>
+        <li><strong>Tone:</strong> direct, traveller-first. Avoid travel-industry jargon when consumer-facing.</li>
+      </ul>
+    </section>
+
+    <!-- Press contact -->
+    <section class="rounded-2xl border border-gray-200 bg-gray-50 p-6 sm:p-8">
+      <h2 class="font-heading text-xl text-gray-900 mb-3">Press contact</h2>
+      <p class="text-gray-700 mb-2">For interviews, statistics, or fact-checks:</p>
+      <p class="text-lg"><a class="text-primary-700 font-medium" href={`mailto:${PRESS_EMAIL}`}>{PRESS_EMAIL}</a></p>
+      <p class="mt-3 text-sm text-gray-500">Response time: within 1 business day.</p>
+    </section>
+
+  </div>
+
+  <!-- WebPage with about: Organization for press-kit citation surface. -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": pageTitle,
+    "description": metaDescription,
+    "url": canonical,
+    "isPartOf": { "@id": `${SITE}/#organization` },
+    "about": { "@id": `${SITE}/#organization` },
+    "mainEntity": { "@id": `${SITE}/#organization` },
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["[data-speakable]"],
+    },
+    "lastReviewed": new Date().toISOString().slice(0, 10),
+  })} />
+
+  <!-- BreadcrumbList -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE}/` },
+      { "@type": "ListItem", "position": 2, "name": "Press", "item": canonical },
+    ],
+  })} />
+</PublicLayout>

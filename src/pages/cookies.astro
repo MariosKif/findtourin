@@ -1,0 +1,117 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import { currentYear } from '../lib/programmatic';
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
+
+const year = currentYear();
+const lastUpdated = '2026-05-08';
+const SITE = 'https://www.findtoursin.com';
+const canonical = `${SITE}/cookies`;
+const pageTitle = 'Cookie Policy';
+const metaDescription = 'The cookies FindToursIn uses, why we use them, and how to opt out. Plain-English breakdown of our session, analytics, and Stripe cookies.';
+---
+
+<PublicLayout title={pageTitle} description={metaDescription} canonical={canonical}>
+  <article class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <nav class="text-sm text-gray-500 mb-6">
+      <a href="/" class="hover:text-primary-600">Home</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-900">Cookies</span>
+    </nav>
+    <h1 class="font-heading text-4xl sm:text-5xl font-normal text-gray-900 leading-tight">Cookie policy</h1>
+    <p class="mt-3 text-sm text-gray-500">Last updated: {lastUpdated} · Effective {year}</p>
+
+    <section class="mt-8 p-6 rounded-2xl bg-primary-50 border border-primary-100">
+      <h2 class="font-heading text-xl text-gray-900 mb-3">Plain-English summary</h2>
+      <p class="text-gray-800 leading-relaxed" data-speakable="true">
+        FindToursIn sets two cookies for you out of the box: a session cookie if you log in as an agency, and a Google Analytics cookie that counts page views. We don\'t use advertising or retargeting cookies. The Stripe checkout flow sets its own cookies but only if you initiate a subscription payment.
+      </p>
+    </section>
+
+    <div class="prose prose-gray prose-lg max-w-none mt-12">
+
+      <h2>1. What are cookies?</h2>
+      <p>
+        Cookies are small text strings that a website saves in your browser to remember things between visits or across pages. Some are required for the site to work; others are optional and help us understand site performance.
+      </p>
+
+      <h2>2. The cookies FindToursIn sets</h2>
+
+      <h3>2.1 Session cookie (essential)</h3>
+      <p>
+        If you log in as an agency, we set an authentication cookie issued by Supabase. This cookie keeps you signed in while you manage your listings. It expires when you log out or after a period of inactivity (typically 1 hour). Without this cookie, the dashboard cannot work.
+      </p>
+
+      <h3>2.2 Google Analytics 4 cookie (analytics)</h3>
+      <p>
+        Used to count page views and measure how the site performs. The cookie is set under Google\'s domain (<code>_ga</code>). It contains a pseudonymous visitor ID. We don\'t enable Google\'s advertising features and we don\'t use the data for retargeting. You can opt out by installing Google\'s opt-out browser add-on or by clearing the cookie in your browser.
+      </p>
+
+      <h3>2.3 Stripe cookies (only on checkout)</h3>
+      <p>
+        Stripe sets its own cookies when you initiate a subscription payment. These are required for fraud prevention and PCI-compliance. Stripe\'s cookie policy applies to those cookies; we don\'t control them.
+      </p>
+
+      <h2>3. Cookies we don\'t set</h2>
+      <ul>
+        <li>Advertising cookies — none.</li>
+        <li>Retargeting pixels (Facebook, LinkedIn, etc.) — none.</li>
+        <li>Affiliate-network cookies — none.</li>
+        <li>Personalisation cookies — none.</li>
+      </ul>
+
+      <h2>4. How to control cookies</h2>
+      <p>
+        Every modern browser lets you view and clear cookies. Here\'s where:
+      </p>
+      <ul>
+        <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener noreferrer">Chrome cookie settings</a></li>
+        <li><a href="https://support.mozilla.org/en-US/kb/cookies-information-websites-store-on-your-computer" target="_blank" rel="noopener noreferrer">Firefox cookie settings</a></li>
+        <li><a href="https://support.apple.com/guide/safari/manage-cookies-sfri11471/mac" target="_blank" rel="noopener noreferrer">Safari cookie settings</a></li>
+        <li><a href="https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank" rel="noopener noreferrer">Edge cookie settings</a></li>
+      </ul>
+      <p>
+        Clearing the analytics cookie does not affect site functionality; clearing the session cookie will sign you out of the agency dashboard.
+      </p>
+
+      <h2>5. Do Not Track</h2>
+      <p>
+        We honour the Do Not Track header where the browser sends one. When DNT is on, we suppress the analytics cookie automatically; only the essential session cookie is set.
+      </p>
+
+      <h2>6. Changes</h2>
+      <p>
+        We will update this page when our cookie practices change and update the "Last updated" date at the top.
+      </p>
+
+      <h2>7. Contact</h2>
+      <p>
+        Questions about cookies: <a href="mailto:info@findtoursin.com">info@findtoursin.com</a>.
+      </p>
+    </div>
+  </article>
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": pageTitle,
+    "description": metaDescription,
+    "url": canonical,
+    "isPartOf": { "@id": `${SITE}/#organization` },
+    "lastReviewed": lastUpdated,
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["[data-speakable]"],
+    },
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE}/` },
+      { "@type": "ListItem", "position": 2, "name": "Cookies", "item": canonical },
+    ],
+  })} />
+</PublicLayout>

@@ -1,0 +1,136 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import { currentYear } from '../lib/programmatic';
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
+
+const year = currentYear();
+const lastUpdated = '2026-05-08';
+const SITE = 'https://www.findtoursin.com';
+const canonical = `${SITE}/terms`;
+const pageTitle = 'Terms of Service';
+const metaDescription = 'FindToursIn terms of service: how the marketplace works, agency obligations, traveller rights, refund handling between agency and traveller.';
+---
+
+<PublicLayout title={pageTitle} description={metaDescription} canonical={canonical}>
+  <article class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <nav class="text-sm text-gray-500 mb-6">
+      <a href="/" class="hover:text-primary-600">Home</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-900">Terms</span>
+    </nav>
+    <h1 class="font-heading text-4xl sm:text-5xl font-normal text-gray-900 leading-tight">Terms of service</h1>
+    <p class="mt-3 text-sm text-gray-500">Last updated: {lastUpdated} · Effective {year}</p>
+
+    <section class="mt-8 p-6 rounded-2xl bg-primary-50 border border-primary-100">
+      <h2 class="font-heading text-xl text-gray-900 mb-3">Plain-English summary</h2>
+      <p class="text-gray-800 leading-relaxed" data-speakable="true">
+        FindToursIn lists tours from independent agencies. We do not run the tours, take bookings, or process traveller payments. Travellers contact agencies directly; the booking contract is strictly between the traveller and the agency. We work to remove problem listings quickly, but we are not party to disputes between travellers and agencies.
+      </p>
+    </section>
+
+    <div class="prose prose-gray prose-lg max-w-none mt-12">
+
+      <h2>1. The role of FindToursIn</h2>
+      <p>
+        FindToursIn operates a marketplace listing tours offered by independent tour agencies ("Agencies"). We are not a tour operator, not a travel agency in the traditional sense, and not a payment processor for tour bookings. We provide a discovery and contact channel; everything that happens once a traveller contacts an Agency happens between those two parties.
+      </p>
+
+      <h2>2. Acceptable use</h2>
+      <p>You agree not to:</p>
+      <ul>
+        <li>Scrape, mass-download, or systematically copy listings without written permission.</li>
+        <li>Submit false reviews, fake bookings, or impersonate another person or business.</li>
+        <li>Upload content that infringes copyright, defames, harasses, or is unlawful in the country where the tour operates.</li>
+        <li>Attempt to bypass authentication, rate limits, or other technical controls.</li>
+        <li>Use the platform to organise tours that are illegal in the destination country (unlicensed operators, environmentally protected areas without permits, etc.).</li>
+      </ul>
+      <p>We may suspend or remove accounts that violate this section, with or without notice depending on severity.</p>
+
+      <h2>3. For Agencies (listing on FindToursIn)</h2>
+      <p>By listing on FindToursIn, an Agency confirms that:</p>
+      <ul>
+        <li>The Agency is legally permitted to operate tours in its country, including any required licence or permit.</li>
+        <li>All listing content (descriptions, prices, photos) is accurate and the Agency has the rights to publish it.</li>
+        <li>The Agency will respond to traveller enquiries promptly (within 5 business days as a minimum).</li>
+        <li>The Agency will honour booking commitments at the price advertised, and will handle disputes, refunds, and force majeure events according to its own published policy.</li>
+      </ul>
+      <p>
+        Subscription fees for the Agency tier selected are billed monthly or annually via Stripe. Cancellation takes effect at the end of the current billing period; we do not pro-rate refunds for partial months.
+      </p>
+
+      <h2>4. For travellers (browsing and contacting Agencies)</h2>
+      <p>
+        Travellers do not pay FindToursIn for tour bookings. Travellers contract directly with the Agency listed on each tour page; the price, terms, cancellation, and refund policy are set by the Agency. FindToursIn is not party to that contract and is not liable for the Agency\'s performance, cancellation handling, or refund decisions.
+      </p>
+      <p>
+        Before booking, we strongly recommend travellers:
+      </p>
+      <ul>
+        <li>Verify the Agency\'s licence number where required by law in the destination country.</li>
+        <li>Read the Agency\'s cancellation policy in writing before paying.</li>
+        <li>Pay by credit card or platform-protected method that allows dispute resolution.</li>
+        <li>Buy travel insurance for tours over €500.</li>
+      </ul>
+      <p>
+        Our <a href="/guide/booking-tours-safely">booking-tours-safely guide</a> covers this in more depth.
+      </p>
+
+      <h2>5. Reviews</h2>
+      <p>
+        Tour reviews on FindToursIn come from verified post-tour travellers. We do not import reviews from third-party sites or fabricate ratings. Tours without verified reviews show no rating rather than a placeholder. Reviews may be edited or removed if they contain personal attacks, identifiable information about staff, or content unrelated to the tour itself.
+      </p>
+
+      <h2>6. Intellectual property</h2>
+      <p>
+        FindToursIn owns the platform, design, code, and the editorial content (blog posts, guides, comparisons, glossary). Agency-uploaded content (photos, tour descriptions) belongs to the Agency. By uploading, the Agency grants FindToursIn a non-exclusive licence to display the content on the platform and in marketing materials referencing the platform.
+      </p>
+
+      <h2>7. Limitation of liability</h2>
+      <p>
+        To the extent permitted by applicable law, FindToursIn is not liable for any damages, losses, injuries, or other consequences arising from a traveller\'s engagement of an Agency through the platform. Our liability is limited to the subscription fees paid in the previous 12 months for paying Agencies, and to zero for travellers (who pay us nothing).
+      </p>
+      <p>
+        Nothing in this section excludes liability for fraud, gross negligence, or anything that cannot be excluded by law.
+      </p>
+
+      <h2>8. Changes to these terms</h2>
+      <p>
+        We will update this page when our terms change and update the "Last updated" date at the top. Material changes are announced on the homepage for at least 30 days before they take effect. Continued use of the platform after changes take effect constitutes acceptance.
+      </p>
+
+      <h2>9. Governing law</h2>
+      <p>
+        These terms are governed by the laws of Greece. Disputes will be resolved in the courts of the agreed jurisdiction unless local consumer-protection law gives the consumer the right to bring proceedings in their own jurisdiction.
+      </p>
+
+      <h2>10. Contact</h2>
+      <p>
+        Questions about these terms: <a href="mailto:info@findtoursin.com">info@findtoursin.com</a>.
+      </p>
+    </div>
+  </article>
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": pageTitle,
+    "description": metaDescription,
+    "url": canonical,
+    "isPartOf": { "@id": `${SITE}/#organization` },
+    "lastReviewed": lastUpdated,
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["[data-speakable]"],
+    },
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE}/` },
+      { "@type": "ListItem", "position": 2, "name": "Terms", "item": canonical },
+    ],
+  })} />
+</PublicLayout>

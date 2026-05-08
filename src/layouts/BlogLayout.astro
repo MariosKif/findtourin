@@ -41,14 +41,31 @@ const relatedPosts = allPosts
 // docs strongly prefer a named human author with a profile URL over an
 // Organization byline. AI engines (ChatGPT, Perplexity) also prefer
 // Person attribution for citation.
+//
+// Hero image fallback: when a blog post is published before its static
+// hero JPG has been added to public/images/blog/, we fall back to the
+// dynamic OG-image generator using the post title and category. This
+// keeps the BlogPosting schema's `image` field valid (Google's rich-
+// result test fails posts with no image) without requiring authors to
+// upload an image first.
+const ogFallback = `https://www.findtoursin.com/api/og?${new URLSearchParams({
+  title: title.slice(0, 80),
+  subtitle: description.slice(0, 90),
+  eyebrow: category,
+}).toString()}`;
 const absoluteImage = image
   ? (image.startsWith('http') ? image : `https://www.findtoursin.com${image}`)
-  : undefined;
+  : ogFallback;
 
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
   "@id": `${canonicalUrl}#article`,
+  // Both `url` and `mainEntityOfPage` point at the canonical URL. Some
+  // schema validators (and our own scripts/validate-schema.mjs) flag a
+  // BlogPosting without an explicit `url` field even when
+  // mainEntityOfPage is present — adding both is the conservative fix.
+  url: canonicalUrl,
   headline: title,
   description,
   image: absoluteImage
@@ -98,7 +115,7 @@ const breadcrumbLd = {
 };
 ---
 
-<PublicLayout title={title} description={description} image={image}>
+<PublicLayout title={title} description={description} image={absoluteImage}>
   {/* JSON-LD */}
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />
@@ -132,20 +149,21 @@ const breadcrumbLd = {
 
           {/* Hero image. Travel content needs a visual anchor above the
               fold; without one the article opens as a wall of text and
-              loses click-through on social previews. */}
-          {image && (
-            <figure class="mb-6 overflow-hidden rounded-2xl bg-gray-100">
-              <img
-                src={image}
-                alt={title}
-                width="1600"
-                height="900"
-                class="w-full h-auto aspect-[16/9] object-cover"
-                fetchpriority="high"
-                decoding="async"
-              />
-            </figure>
-          )}
+              loses click-through on social previews. When the static
+              hero is missing (frontmatter references a file not yet on
+              disk), `absoluteImage` falls back to the dynamic OG image
+              so the article never opens with a placeholder. */}
+          <figure class="mb-6 overflow-hidden rounded-2xl bg-gray-100">
+            <img
+              src={image || absoluteImage}
+              alt={title}
+              width="1600"
+              height="900"
+              class="w-full h-auto aspect-[16/9] object-cover"
+              fetchpriority="high"
+              decoding="async"
+            />
+          </figure>
 
           <div class="flex items-center gap-4 text-sm text-gray-500 pb-6 border-b border-gray-200">
             <div class="flex items-center gap-2">

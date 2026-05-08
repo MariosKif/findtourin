@@ -1,0 +1,167 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import { currentYear } from '../lib/programmatic';
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
+
+const year = currentYear();
+const lastUpdated = '2026-05-08';
+const SITE = 'https://www.findtoursin.com';
+const canonical = `${SITE}/privacy`;
+const pageTitle = 'Privacy Policy';
+const metaDescription = 'How FindToursIn handles personal data: what we collect, why, who we share it with, your rights under GDPR. Plain-English version below.';
+---
+
+<PublicLayout title={pageTitle} description={metaDescription} canonical={canonical}>
+  <article class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <nav class="text-sm text-gray-500 mb-6">
+      <a href="/" class="hover:text-primary-600">Home</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-900">Privacy</span>
+    </nav>
+    <h1 class="font-heading text-4xl sm:text-5xl font-normal text-gray-900 leading-tight">Privacy policy</h1>
+    <p class="mt-3 text-sm text-gray-500">Last updated: {lastUpdated} · Effective {year}</p>
+
+    <!-- Plain-English summary first; the full policy follows for legal cover. -->
+    <section class="mt-8 p-6 rounded-2xl bg-primary-50 border border-primary-100">
+      <h2 class="font-heading text-xl text-gray-900 mb-3">Plain-English summary</h2>
+      <p class="text-gray-800 leading-relaxed" data-speakable="true">
+        FindToursIn is a marketplace, not a tour operator. We collect the minimum personal data needed to run the platform: account credentials, agency contact details, billing information, and basic analytics. We don\'t sell your data and we don\'t share it with advertisers. Travellers booking a tour deal directly with the agency listed on the page; we don\'t see the booking or payment.
+      </p>
+    </section>
+
+    <div class="prose prose-gray prose-lg max-w-none mt-12">
+
+      <h2>1. Who we are</h2>
+      <p>
+        FindToursIn is a tour-discovery marketplace operated from Greece, available at <a href="https://www.findtoursin.com">https://www.findtoursin.com</a>. Throughout this policy, "we", "us", and "FindToursIn" refer to the operator of this website.
+      </p>
+
+      <h2>2. What data we collect</h2>
+      <p>
+        We collect data only where we have a clear purpose for using it. The categories below describe everything FindToursIn holds about you.
+      </p>
+
+      <h3>2.1 Account data (agencies)</h3>
+      <p>
+        When an agency registers, we store an email address, a hashed password, the agency name, contact phone, country, business description, optional logo, and the subscription plan selected. Travellers do not need to register to browse tours.
+      </p>
+
+      <h3>2.2 Listing data</h3>
+      <p>
+        Agencies upload tour information that becomes public on the site: tour title, description, price, duration, departure city, photos, category. Listings are visible to anyone who visits the page.
+      </p>
+
+      <h3>2.3 Payment data</h3>
+      <p>
+        Agency subscription payments are processed by Stripe. We never see or store full card numbers; we receive only a customer ID and an amount. Stripe\'s privacy policy applies to the card data they process.
+      </p>
+
+      <h3>2.4 Analytics</h3>
+      <p>
+        We use Google Analytics 4 to count page views and measure how the site performs. The analytics signal is pseudonymous: a visitor ID, the page visited, the referring URL, and aggregated location data (country and city only). We do not enable Google\'s advertising features and we do not use data for retargeting.
+      </p>
+
+      <h3>2.5 Server logs</h3>
+      <p>
+        Our hosting provider (Vercel) keeps standard request logs (IP address, request path, response status, user agent) for security and abuse-prevention purposes. Logs are retained for 30 days.
+      </p>
+
+      <h2>3. Why we use it</h2>
+      <ul>
+        <li>To operate the platform — let agencies log in, edit listings, manage subscriptions.</li>
+        <li>To serve listings to travellers.</li>
+        <li>To take subscription payments.</li>
+        <li>To detect and block spam, scraping, or abusive behaviour.</li>
+        <li>To produce aggregate, non-identifying statistics about the platform.</li>
+      </ul>
+      <p>We do not use personal data for advertising, profiling, or sale to third parties.</p>
+
+      <h2>4. Who we share it with</h2>
+      <p>The minimum number of processors required to run the service:</p>
+      <ul>
+        <li><strong>Supabase</strong> — database and authentication. Hosted on AWS in Europe.</li>
+        <li><strong>Vercel</strong> — web hosting and edge network.</li>
+        <li><strong>Stripe</strong> — agency subscription payments.</li>
+        <li><strong>Google Analytics 4</strong> — analytics, with IP truncation enabled.</li>
+        <li><strong>Resend</strong> — transactional email (account verification, password reset, agency notifications).</li>
+      </ul>
+      <p>
+        We do not sell personal data, share it with advertisers, or use it to train machine-learning models.
+      </p>
+
+      <h2>5. How long we keep it</h2>
+      <ul>
+        <li>Active agency accounts: as long as the account is active.</li>
+        <li>Closed agency accounts: deleted within 90 days of closure, except where legal retention applies (e.g. invoices, kept for 7 years for tax purposes).</li>
+        <li>Server logs: 30 days.</li>
+        <li>Analytics: aggregated indefinitely; per-visitor data 14 months (GA4 default).</li>
+      </ul>
+
+      <h2>6. Your rights (GDPR)</h2>
+      <p>
+        If you live in the EU, UK, or other GDPR-equivalent jurisdiction, you have the right to:
+      </p>
+      <ul>
+        <li>Access the personal data we hold about you.</li>
+        <li>Correct any inaccurate data.</li>
+        <li>Delete your account and associated data ("right to be forgotten").</li>
+        <li>Export your data in a portable format.</li>
+        <li>Withdraw consent for analytics at any time (clear your cookies; we will not re-track).</li>
+        <li>Object to processing or request restriction.</li>
+        <li>Lodge a complaint with your national data-protection authority.</li>
+      </ul>
+      <p>
+        To exercise any of these rights, email <a href="mailto:info@findtoursin.com">info@findtoursin.com</a>. We respond within 30 days.
+      </p>
+
+      <h2>7. Cookies</h2>
+      <p>
+        See our <a href="/cookies">cookie policy</a> for the full breakdown. Briefly: we set a session cookie for logged-in agencies, an analytics cookie for GA4, and nothing else.
+      </p>
+
+      <h2>8. Children</h2>
+      <p>
+        FindToursIn is not directed at children under 16. We do not knowingly collect data from minors. If you believe a minor has provided personal data, contact us and we will delete it.
+      </p>
+
+      <h2>9. International transfers</h2>
+      <p>
+        Some of our processors (Stripe, Google) operate in the United States. They process data under Standard Contractual Clauses, the EU\'s legal mechanism for cross-border transfers.
+      </p>
+
+      <h2>10. Changes to this policy</h2>
+      <p>
+        We will update this page when our practices change and update the "Last updated" date at the top. Material changes are announced on the homepage for at least 30 days before they take effect.
+      </p>
+
+      <h2>11. Contact</h2>
+      <p>
+        Privacy questions: <a href="mailto:info@findtoursin.com">info@findtoursin.com</a>.
+      </p>
+    </div>
+  </article>
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": pageTitle,
+    "description": metaDescription,
+    "url": canonical,
+    "isPartOf": { "@id": `${SITE}/#organization` },
+    "lastReviewed": lastUpdated,
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["[data-speakable]"],
+    },
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE}/` },
+      { "@type": "ListItem", "position": 2, "name": "Privacy", "item": canonical },
+    ],
+  })} />
+</PublicLayout>

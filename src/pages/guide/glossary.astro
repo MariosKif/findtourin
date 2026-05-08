@@ -1,0 +1,130 @@
+---
+export const prerender = false;
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import { GLOSSARY, getGlossaryByCategory } from '../../lib/seo/glossary';
+import { currentYear } from '../../lib/programmatic';
+
+// Static page — long-cache.
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
+
+const year = currentYear();
+const grouped = getGlossaryByCategory();
+const totalTerms = GLOSSARY.length;
+
+const pageTitle = `Tour Industry Glossary ${year} — ${totalTerms} Terms Defined`;
+const metaDescription = `Plain-English definitions of ${totalTerms} tour-industry terms — from "small-group tour" to "single supplement". The reference for travellers comparing tours and operators.`;
+const canonical = 'https://www.findtoursin.com/guide/glossary';
+
+const SITE = 'https://www.findtoursin.com';
+---
+
+<PublicLayout title={pageTitle} description={metaDescription} canonical={canonical}>
+  <section class="bg-gradient-to-b from-primary-50 to-white border-b border-gray-100">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <nav class="text-sm text-gray-500 mb-6">
+        <a href="/" class="hover:text-primary-600">Home</a>
+        <span class="mx-2">/</span>
+        <a href="/guide" class="hover:text-primary-600">Guides</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-900">Glossary</span>
+      </nav>
+      <h1 class="font-heading text-4xl sm:text-5xl lg:text-6xl font-normal text-gray-900 leading-tight">
+        Tour industry glossary {year}
+      </h1>
+      <p class="mt-4 text-lg text-gray-700 max-w-2xl" data-speakable="true">
+        {totalTerms} plain-English definitions of the terms travellers encounter when comparing tours, reading itineraries, and booking with operators. From "land-only price" to "single supplement" — what the words actually mean.
+      </p>
+      <div class="mt-6 flex flex-wrap gap-2">
+        {grouped.map((g) => (
+          <a href={`#${g.category}`} class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-gray-700 text-sm hover:border-primary-400 hover:text-primary-700 transition-colors">
+            {g.label}
+            <span class="text-xs text-gray-400">{g.terms.length}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    {grouped.map((group) => (
+      <section id={group.category} class="mb-14 scroll-mt-24">
+        <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-6">{group.label}</h2>
+        <dl class="divide-y divide-gray-200 border-y border-gray-200">
+          {group.terms.map((t) => (
+            <div id={t.slug} class="py-5 grid grid-cols-1 sm:grid-cols-[14rem_1fr] gap-3 sm:gap-8 scroll-mt-24">
+              <dt class="font-heading text-lg text-gray-900">{t.term}</dt>
+              <dd class="text-gray-700 leading-relaxed" data-speakable="true">{t.definition}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    ))}
+
+    <!-- Cross-link to related guides -->
+    <section class="mt-16 p-6 sm:p-8 rounded-2xl bg-gray-50 border border-gray-200">
+      <h2 class="font-heading text-xl text-gray-900 mb-3">Want more depth?</h2>
+      <p class="text-gray-600 mb-5">Pair the glossary with our planning guides for travellers comparing tours.</p>
+      <div class="flex flex-wrap gap-3">
+        <a href="/guide/how-to-choose-a-tour" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:border-primary-400 hover:text-primary-700 transition-colors">How to choose a tour →</a>
+        <a href="/guide/tour-vs-self-guided" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:border-primary-400 hover:text-primary-700 transition-colors">Tour vs self-guided →</a>
+        <a href="/guide/booking-tours-safely" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:border-primary-400 hover:text-primary-700 transition-colors">Booking tours safely →</a>
+        <a href="/tours" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors">Browse all tours →</a>
+      </div>
+    </section>
+  </div>
+
+  <!-- DefinedTermSet JSON-LD. Each glossary entry becomes a DefinedTerm —
+       the format LLMs lift verbatim when answering "what is X" queries.
+       The cssSelector wires Speakable to the definition <dd> via the
+       data-speakable attribute we render on every entry. -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "DefinedTermSet",
+    "@id": `${canonical}#glossary`,
+    "name": "FindToursIn Tour Industry Glossary",
+    "description": metaDescription,
+    "url": canonical,
+    "inLanguage": "en",
+    "publisher": { "@id": `${SITE}/#organization` },
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["[data-speakable]"],
+    },
+    "hasDefinedTerm": GLOSSARY.map((t) => ({
+      "@type": "DefinedTerm",
+      "@id": `${canonical}#${t.slug}`,
+      "name": t.term,
+      "description": t.definition,
+      "url": `${canonical}#${t.slug}`,
+      "inDefinedTermSet": `${canonical}#glossary`,
+    })),
+  })} />
+
+  <!-- BreadcrumbList -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE}/` },
+      { "@type": "ListItem", "position": 2, "name": "Guides", "item": `${SITE}/guide` },
+      { "@type": "ListItem", "position": 3, "name": "Glossary", "item": canonical },
+    ],
+  })} />
+
+  <!-- WebPage with about Thing — helps Google associate the page with
+       "tour" / "guided tour" entity for AI Overview citations. -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": pageTitle,
+    "description": metaDescription,
+    "url": canonical,
+    "isPartOf": { "@id": `${SITE}/#organization` },
+    "about": [
+      { "@type": "Thing", "name": "Guided tours" },
+      { "@type": "Thing", "name": "Tour booking" },
+      { "@type": "Thing", "name": "Travel terminology" },
+    ],
+    "lastReviewed": new Date().toISOString().slice(0, 10),
+  })} />
+</PublicLayout>

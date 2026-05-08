@@ -2,10 +2,12 @@
 export const prerender = false;
 import PublicLayout from '../../../../../layouts/PublicLayout.astro';
 import TourCard from '../../../../../components/tours/TourCard.astro';
+import FAQSection from '../../../../../components/common/FAQSection.astro';
 import { supabase } from '../../../../../lib/supabase';
 import { slugify, getCountryCopy } from '../../../../../lib/destinations';
 import { TOUR_LIST_SELECT, normalizeTour } from '../../../../../lib/tour-helpers';
 import { imgUrl, imgSrcset } from '../../../../../lib/image';
+import { getYearStampedTitle, currentYear } from '../../../../../lib/programmatic';
 
 // Public landing — edge-cache 5 min, stale up to a day.
 Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400');
@@ -56,9 +58,17 @@ const toursGridData = tours
   .sort((a: any, b: any) => (b.view_count || 0) - (a.view_count || 0))
   .map(normalizeTour);
 
-const pageTitle = `${categoryName} in ${countryName} — ${tourCount} Tours from €${priceFrom}`;
-const metaDescription = `${tourCount} ${categoryName.toLowerCase()} tours in ${countryName}. Browse itineraries, compare prices, contact agencies directly. No commission, no booking fees.`;
-const canonical = `https://www.findtoursin.com/tours/category/${categorySlug}/in/${countrySlug}`;
+const year = currentYear();
+const pageTitle = getYearStampedTitle('category-country', { country: countryName, category: categoryName, tourCount, priceFrom });
+const metaDescription = `${tourCount} ${categoryName.toLowerCase()} tours in ${countryName} ${year}. Browse itineraries, compare prices, contact agencies directly. No commission, no booking fees.`;
+// Canonical hardening: when tour count is below the standalone-page threshold,
+// canonicalize to the country hub instead of self. Keeps thin category pages
+// from competing with the stronger country hub for the same query intent.
+const STANDALONE_CATEGORY_MIN = 4;
+const isStandalone = tourCount >= STANDALONE_CATEGORY_MIN;
+const canonical = isStandalone
+  ? `https://www.findtoursin.com/tours/category/${categorySlug}/in/${countrySlug}`
+  : `https://www.findtoursin.com/tours/in/${countrySlug}`;
 
 const faqs = [
   {
@@ -82,7 +92,7 @@ const faqs = [
 ];
 ---
 
-<PublicLayout title={pageTitle} description={metaDescription} image={heroImage} noIndex={noIndex}>
+<PublicLayout title={pageTitle} description={metaDescription} image={heroImage} noIndex={noIndex} canonical={canonical}>
   <section class="relative h-[320px] sm:h-[400px] overflow-hidden">
     <img
       src={imgUrl(heroImage, 1280)}
@@ -107,7 +117,7 @@ const faqs = [
         <span class="text-white">{categoryName}</span>
       </nav>
       <h1 class="font-heading text-4xl sm:text-5xl font-normal text-white leading-tight">
-        {categoryName} in {countryName}
+        {categoryName} in {countryName} {year}
       </h1>
       <p class="mt-3 text-lg text-white/90 max-w-2xl">{tourCount} {tourCount === 1 ? 'tour' : 'tours'} from €{priceFrom} across {cities.length} {cities.length === 1 ? 'location' : 'locations'}</p>
     </div>
@@ -166,23 +176,8 @@ const faqs = [
       </a>
     </section>
 
-    <!-- FAQ -->
-    <section class="max-w-3xl mb-12">
-      <h2 class="font-heading text-2xl font-normal text-gray-900 mb-6">Frequently asked questions</h2>
-      <div class="divide-y divide-gray-200 border-y border-gray-200">
-        {faqs.map((item) => (
-          <details class="group py-5">
-            <summary class="flex items-center justify-between cursor-pointer list-none">
-              <span class="font-medium text-gray-900">{item.q}</span>
-              <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <p class="mt-3 text-gray-600 leading-relaxed">{item.a}</p>
-          </details>
-        ))}
-      </div>
-    </section>
+    <!-- FAQ (visible + FAQPage JSON-LD with Speakable) -->
+    <FAQSection faqs={faqs} />
   </div>
 
   <!-- CollectionPage + ItemList + BreadcrumbList + FAQ -->
@@ -227,13 +222,5 @@ const faqs = [
     })),
   })} />
 
-  <script type="application/ld+json" set:html={JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": faqs.map((item) => ({
-      "@type": "Question",
-      "name": item.q,
-      "acceptedAnswer": { "@type": "Answer", "text": item.a },
-    })),
-  })} />
+  {/* FAQPage + Speakable schema is emitted by <FAQSection> above. */}
 </PublicLayout>

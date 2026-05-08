@@ -1,0 +1,184 @@
+---
+export const prerender = false;
+import PublicLayout from '../../../../../../layouts/PublicLayout.astro';
+import TourCard from '../../../../../../components/tours/TourCard.astro';
+import FAQSection from '../../../../../../components/common/FAQSection.astro';
+import { supabase } from '../../../../../../lib/supabase';
+import { TOUR_LIST_SELECT, normalizeTour } from '../../../../../../lib/tour-helpers';
+import { getNeighborhood } from '../../../../../../lib/seo/neighborhoods';
+import { slugify } from '../../../../../../lib/destinations';
+import { imgUrl, imgSrcset } from '../../../../../../lib/image';
+import { currentYear } from '../../../../../../lib/programmatic';
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
+
+const { country, city, slug } = Astro.params;
+if (!country || !city || !slug) return new Response('Not found', { status: 404 });
+
+const nh = getNeighborhood(country, city, slug);
+if (!nh) return new Response('Not found', { status: 404 });
+
+// Find tours matching the neighborhood keywords. We pull all city tours
+// and filter by name/description containing any of the keywords. Same
+// conservative approach as attractions — better empty than wrong.
+let neighborhoodTours: any[] = [];
+try {
+  const { data } = await supabase
+    .from('tours')
+    .select(TOUR_LIST_SELECT)
+    .eq('status', 'active')
+    .eq('city', nh.city);
+  if (data) {
+    const filtered = (data as any[]).filter((t) => {
+      const haystack = `${t.name || ''} ${t.description || ''}`.toLowerCase();
+      return nh.tourKeywords.some((k) => haystack.includes(k.toLowerCase()));
+    });
+    neighborhoodTours = filtered.slice(0, 8).map(normalizeTour);
+  }
+} catch {
+  // skip silently
+}
+
+const SITE = 'https://www.findtoursin.com';
+const countrySlug = slugify(nh.country);
+const citySlug = slugify(nh.city);
+const canonical = `${SITE}/tours/in/${countrySlug}/${citySlug}/neighborhood/${nh.slug}`;
+const year = currentYear();
+const pageTitle = `${nh.name} ${year} — ${nh.city} Neighbourhood Guide & Tours`;
+const metaDescription = `${nh.name} in ${nh.city}: what to see, why it\'s special, and ${neighborhoodTours.length > 0 ? `${neighborhoodTours.length} tours` : 'guided experiences'} that explore the area. Updated ${nh.updated}.`.slice(0, 158);
+---
+
+<PublicLayout title={pageTitle} description={metaDescription} image={nh.heroImage} canonical={canonical}>
+  <section class="relative h-[300px] sm:h-[400px] overflow-hidden">
+    <img
+      src={imgUrl(nh.heroImage, 1280)}
+      srcset={imgSrcset(nh.heroImage, [640, 960, 1280, 1920])}
+      sizes="100vw"
+      alt={`${nh.name}, ${nh.city}`}
+      width="1280"
+      height="400"
+      class="absolute inset-0 w-full h-full object-cover"
+      fetchpriority="high"
+      decoding="async"
+    />
+    <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/30 to-black/70"></div>
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-end py-10">
+      <nav class="text-sm text-white/80 mb-3">
+        <a href="/" class="hover:text-white">Home</a>
+        <span class="mx-2">/</span>
+        <a href="/tours" class="hover:text-white">Tours</a>
+        <span class="mx-2">/</span>
+        <a href={`/tours/in/${countrySlug}`} class="hover:text-white">{nh.country}</a>
+        <span class="mx-2">/</span>
+        <a href={`/tours/in/${countrySlug}/${citySlug}`} class="hover:text-white">{nh.city}</a>
+        <span class="mx-2">/</span>
+        <span class="text-white">{nh.name}</span>
+      </nav>
+      <h1 class="font-heading text-4xl sm:text-5xl font-normal text-white leading-tight">{nh.name} in {nh.city}</h1>
+      <p class="mt-3 text-lg text-white/90">{nh.country} · Neighbourhood guide {year}</p>
+    </div>
+  </section>
+
+  <article class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- Lead description (speakable) -->
+    <section class="mb-10">
+      <p class="text-lg text-gray-700 leading-relaxed" data-speakable="true">{nh.description}</p>
+    </section>
+
+    <!-- Tour focus -->
+    <section class="mb-10">
+      <h2 class="font-heading text-xl font-normal text-gray-900 mb-3">Why book a tour here</h2>
+      <p class="text-gray-700 leading-relaxed">{nh.tourFocus}</p>
+    </section>
+
+    <!-- Best for -->
+    {nh.bestFor.length > 0 && (
+      <section class="mb-10">
+        <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Best for</p>
+        <div class="flex flex-wrap gap-2">
+          {nh.bestFor.map((b) => (
+            <span class="inline-block px-3 py-1.5 rounded-full bg-primary-50 text-primary-700 text-sm font-medium">{b}</span>
+          ))}
+        </div>
+        {nh.walkingDistance && (
+          <p class="mt-4 text-sm text-gray-500">Typical walking distance: {nh.walkingDistance}</p>
+        )}
+      </section>
+    )}
+
+    <!-- Tours -->
+    {neighborhoodTours.length > 0 ? (
+      <section class="mb-12">
+        <h2 class="font-heading text-2xl font-normal text-gray-900 mb-6">Tours in {nh.name}</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
+          {neighborhoodTours.map((t: any, i: number) => (
+            <TourCard tour={t} index={i} />
+          ))}
+        </div>
+        <p class="mt-4 text-sm text-gray-500">
+          <a href={`/tours/in/${countrySlug}/${citySlug}`} class="text-primary-700 hover:underline">View all tours in {nh.city} &rarr;</a>
+        </p>
+      </section>
+    ) : (
+      <section class="mb-12 p-6 rounded-2xl bg-gray-50 border border-gray-200">
+        <h2 class="font-heading text-xl text-gray-900 mb-2">No {nh.name}-specific tours yet</h2>
+        <p class="text-gray-600 mb-4">We don\'t have any tours focused exclusively on {nh.name} on FindToursIn yet. Most {nh.city} walking tours pass through {nh.name} as part of a broader route.</p>
+        <a href={`/tours/in/${countrySlug}/${citySlug}`} class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors">View all tours in {nh.city} &rarr;</a>
+      </section>
+    )}
+
+    <!-- FAQ -->
+    <FAQSection faqs={nh.faqs} />
+
+    <!-- Cross-link -->
+    <section class="mt-12 p-6 rounded-2xl bg-white border border-gray-200">
+      <h2 class="font-heading text-xl text-gray-900 mb-3">Explore further</h2>
+      <ul class="grid gap-2 sm:grid-cols-2">
+        <li><a href={`/tours/in/${countrySlug}/${citySlug}`} class="text-primary-700 hover:underline">All tours in {nh.city} &rarr;</a></li>
+        <li><a href={`/tours/in/${countrySlug}`} class="text-primary-700 hover:underline">All tours in {nh.country} &rarr;</a></li>
+        <li><a href="/attractions" class="text-primary-700 hover:underline">Top tour attractions &rarr;</a></li>
+        <li><a href="/guide/glossary" class="text-primary-700 hover:underline">Tour-industry glossary &rarr;</a></li>
+      </ul>
+    </section>
+  </article>
+
+  <!-- Place schema with neighborhood details. -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Place",
+    "name": `${nh.name}, ${nh.city}`,
+    "description": nh.description,
+    "url": canonical,
+    "image": nh.heroImage,
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": nh.city,
+      "addressCountry": nh.country,
+    },
+    "containedInPlace": {
+      "@type": "City",
+      "name": nh.city,
+      "containedInPlace": { "@type": "Country", "name": nh.country },
+    },
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["[data-speakable]"],
+    },
+  })} />
+
+  <!-- BreadcrumbList -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE}/` },
+      { "@type": "ListItem", "position": 2, "name": "Tours", "item": `${SITE}/tours` },
+      { "@type": "ListItem", "position": 3, "name": nh.country, "item": `${SITE}/tours/in/${countrySlug}` },
+      { "@type": "ListItem", "position": 4, "name": nh.city, "item": `${SITE}/tours/in/${countrySlug}/${citySlug}` },
+      { "@type": "ListItem", "position": 5, "name": nh.name, "item": canonical },
+    ],
+  })} />
+
+  {/* FAQPage + Speakable schema is emitted by <FAQSection> above. */}
+</PublicLayout>

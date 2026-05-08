@@ -9,7 +9,12 @@ const blog = defineCollection({
     date: z.string(),
     updatedDate: z.string().optional(),
     author: z.string().default('FindToursIn'),
-    image: z.string(),
+    // Hero image. Optional because BlogLayout falls back to a dynamic
+    // OG-generated image when missing, so newly-published posts work
+    // immediately without waiting on static JPG uploads. The blog rules
+    // still mandate a static hero for production (see docs/blog-rules.md);
+    // this just stops the build breaking when the JPG hasn't landed yet.
+    image: z.string().optional(),
     category: z.string().default('Travel Tips'),
     tags: z.array(z.string()).default([]),
     featured: z.boolean().default(false),

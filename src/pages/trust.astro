@@ -1,0 +1,153 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import FAQSection from '../components/common/FAQSection.astro';
+import { currentYear } from '../lib/programmatic';
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
+
+const year = currentYear();
+const lastUpdated = '2026-05-08';
+const SITE = 'https://www.findtoursin.com';
+const canonical = `${SITE}/trust`;
+const pageTitle = 'How We Vet Tour Agencies — Trust & Safety';
+const metaDescription = 'How FindToursIn vets every agency before listing: licence checks, contact verification, ongoing monitoring, and what happens if a tour goes wrong.';
+
+const faqs = [
+  { q: 'How does FindToursIn verify a tour agency?', a: 'Every agency is reviewed for legal operating status (national tour-operator licence where the country requires one), a working contact channel (email and phone), and a real business address. The green "Verified" badge appears on the agency profile only after these checks pass.' },
+  { q: 'What does the green "Verified" badge mean?', a: 'The Verified badge confirms FindToursIn has independently checked the agency\'s licence, contact details, and operating status. Without the badge, the agency is either new to the platform (review in progress) or operates in a country without a licensing requirement.' },
+  { q: 'What happens if a tour goes wrong after I book?', a: 'You contact the agency directly first — they own the booking and the refund decision. If the agency goes dark, file a credit-card chargeback if you paid by card and email FindToursIn at info@findtoursin.com so we can investigate. Confirmed bad-actor agencies are de-listed within 48 hours.' },
+  { q: 'Does FindToursIn offer refunds?', a: 'No — FindToursIn does not process bookings, so we cannot refund payments. Refunds are between you and the agency, governed by the agency\'s published cancellation policy. We strongly recommend reading the policy in writing before paying.' },
+  { q: 'Is it safe to book with a small local agency I have never heard of?', a: 'Generally yes when the agency is verified on FindToursIn. Small local operators often deliver better-quality tours than mass-market OTA listings — they care more about your review because their entire business depends on word of mouth. The Verified badge is the safety net.' },
+  { q: 'How do I check an agency\'s licence myself?', a: 'Each country has its own tour-operator licensing body. In Greece it\'s the Greek National Tourism Organization (GNTO/EOT); in Italy the regional tourist board; in Turkey the Ministry of Culture and Tourism (TURSAB number for travel agencies); in Albania the National Tourism Agency. The agency\'s licence number should appear on their website footer or invoices.' },
+];
+---
+
+<PublicLayout title={pageTitle} description={metaDescription} canonical={canonical}>
+  <article class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <nav class="text-sm text-gray-500 mb-6">
+      <a href="/" class="hover:text-primary-600">Home</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-900">Trust & safety</span>
+    </nav>
+
+    <h1 class="font-heading text-4xl sm:text-5xl font-normal text-gray-900 leading-tight">How we vet tour agencies</h1>
+    <p class="mt-3 text-sm text-gray-500">Last updated: {lastUpdated} · Effective {year}</p>
+
+    <section class="mt-8 p-6 rounded-2xl bg-primary-50 border border-primary-100">
+      <h2 class="font-heading text-xl text-gray-900 mb-3">In one sentence</h2>
+      <p class="text-gray-800 leading-relaxed" data-speakable="true">
+        Every agency on FindToursIn is reviewed for legal operating status, a working contact channel, and a real business address before earning the green "Verified" badge. We don\'t list mystery operators, and we de-list bad actors within 48 hours of confirmed problems.
+      </p>
+    </section>
+
+    <div class="mt-12 space-y-12">
+
+      <section>
+        <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">The four checks every agency passes</h2>
+        <ol class="space-y-5 text-gray-700 leading-relaxed">
+          <li>
+            <p class="font-heading text-lg text-gray-900 mb-1">1. Legal operating status</p>
+            <p data-speakable="true">We confirm the agency is a registered company in its home country. For countries that require a tour-operator licence (Greece, Italy, Turkey, Egypt, Albania, Bulgaria), we verify the licence number against the national tourism authority. Operators that can\'t produce a valid licence don\'t get the Verified badge.</p>
+          </li>
+          <li>
+            <p class="font-heading text-lg text-gray-900 mb-1">2. Working contact channel</p>
+            <p data-speakable="true">We send a verification email and a follow-up message to the phone number listed. Both must respond within 5 business days from a real human, not an auto-responder. Agencies that don\'t respond at this stage will not respond when a traveller has a problem.</p>
+          </li>
+          <li>
+            <p class="font-heading text-lg text-gray-900 mb-1">3. Business address</p>
+            <p data-speakable="true">A registered office address (not just a P.O. box) is required. We cross-check it against the company registry where available.</p>
+          </li>
+          <li>
+            <p class="font-heading text-lg text-gray-900 mb-1">4. Tour content review</p>
+            <p data-speakable="true">Each listing is read for accuracy: prices that match what the agency would charge directly, photos that the agency owns, and itinerary descriptions that match what they actually deliver. Listings flagged as misleading don\'t get published.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section>
+        <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">Ongoing monitoring</h2>
+        <p class="text-gray-700 leading-relaxed mb-4" data-speakable="true">
+          Verification is not one-and-done. Each agency profile is re-reviewed annually and any time we receive a credible traveller complaint. Patterns of unanswered enquiries, refund disputes, or quality drops trigger an investigation; confirmed bad actors are de-listed within 48 hours and barred from re-registering with the same business identity.
+        </p>
+        <p class="text-gray-700 leading-relaxed">
+          Reviews on FindToursIn come only from verified post-tour travellers. We do not import reviews from other platforms or accept agency-supplied reviews. Tours without verified reviews show no rating rather than an artificial one — we do not round up to manufacture social proof.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">What FindToursIn does NOT do</h2>
+        <p class="text-gray-700 mb-4">Being clear about our role is part of being trustworthy. We:</p>
+        <ul class="space-y-3 text-gray-700 leading-relaxed">
+          <li><strong>Do not run any tours ourselves.</strong> Every listing is operated by an independent local agency, not by FindToursIn.</li>
+          <li><strong>Do not process bookings or payments.</strong> Travellers contact agencies directly; the booking contract and money transfer are entirely between traveller and agency.</li>
+          <li><strong>Do not take commission on bookings.</strong> Agencies pay a flat subscription to be listed; the price you see is what the agency receives.</li>
+          <li><strong>Do not act as the refund authority.</strong> Refunds follow the agency\'s published cancellation policy and are between you and the agency.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">If something goes wrong</h2>
+        <p class="text-gray-700 leading-relaxed mb-4" data-speakable="true">
+          First step: contact the agency directly using the email and phone on the tour page. They own the booking and have the authority to issue refunds or rebook. Most issues resolve at this stage.
+        </p>
+        <p class="text-gray-700 leading-relaxed mb-4">
+          If the agency goes silent or refuses a clearly-justified refund: file a credit-card chargeback if you paid by card (most countries allow 60–120 days), then email <a class="text-primary-700 underline" href="mailto:info@findtoursin.com">info@findtoursin.com</a> with the booking details. We investigate every credible complaint and have authority to de-list any agency we cannot verify is still operating in good faith.
+        </p>
+        <p class="text-gray-700 leading-relaxed">
+          For serious issues (consumer fraud, safety problems), file a complaint with the country\'s national tourism authority — they have legal authority FindToursIn doesn\'t. We can provide the agency\'s licence number on request.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">Recommended traveller precautions</h2>
+        <ul class="space-y-3 text-gray-700 leading-relaxed">
+          <li>Read the cancellation policy in writing <em>before</em> paying. Save the email confirmation.</li>
+          <li>Pay by credit card whenever possible — credit cards offer chargeback protection that bank transfers don\'t.</li>
+          <li>For tours over €500 or any with a flight component, buy travel insurance.</li>
+          <li>If something feels off (vague pricing, "free guide" approaches, pressure to wire money), trust the instinct and find a different operator.</li>
+        </ul>
+        <p class="mt-4 text-gray-700 leading-relaxed">
+          Our <a class="text-primary-700 underline" href="/guide/booking-tours-safely">booking-tours-safely guide</a> covers this in more depth, including the four most common tour scams and how to recognise them.
+        </p>
+      </section>
+
+    </div>
+
+    <FAQSection faqs={faqs} />
+
+    <section class="mt-14 p-6 rounded-2xl bg-gray-50 border border-gray-200">
+      <h2 class="font-heading text-xl text-gray-900 mb-3">Questions about an agency?</h2>
+      <p class="text-gray-700 mb-4">Email <a class="text-primary-700 underline" href="mailto:info@findtoursin.com">info@findtoursin.com</a> with the agency name and we will share what we can about their verification status. Response time: 1 business day.</p>
+      <a href="/about/by-the-numbers" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors">FindToursIn by the numbers &rarr;</a>
+    </section>
+  </article>
+
+  <!-- WebPage with about: Organization. Trust pages are exactly what
+       Google's E-E-A-T criteria reward — be explicit about who runs
+       the platform, how they vet, and what their accountability is. -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": pageTitle,
+    "description": metaDescription,
+    "url": canonical,
+    "isPartOf": { "@id": `${SITE}/#organization` },
+    "about": { "@id": `${SITE}/#organization` },
+    "lastReviewed": lastUpdated,
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["[data-speakable]"],
+    },
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE}/` },
+      { "@type": "ListItem", "position": 2, "name": "Trust & safety", "item": canonical },
+    ],
+  })} />
+
+  {/* FAQPage + Speakable schema is emitted by <FAQSection> above. */}
+</PublicLayout>

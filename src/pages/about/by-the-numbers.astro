@@ -1,0 +1,235 @@
+---
+export const prerender = false;
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import { supabase } from '../../lib/supabase';
+import { TOUR_LIST_SELECT } from '../../lib/tour-helpers';
+import { currentYear } from '../../lib/programmatic';
+
+// Edge-cache 1 hour, stale for a day. Stats can refresh once an hour
+// without hammering Supabase.
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400');
+
+// Fact-rich pages get cited verbatim by AI engines. The numbers here are
+// computed live from Supabase so they stay accurate without needing a
+// content-edit cycle. Falls through to a degraded view if the DB is down.
+let stats = {
+  tourCount: 0,
+  countryCount: 0,
+  cityCount: 0,
+  agencyCount: 0,
+  verifiedAgencyCount: 0,
+  avgPriceByCountry: [] as { country: string; avg: number; count: number }[],
+  topCategories: [] as { category: string; count: number }[],
+  priceFrom: 0,
+};
+
+try {
+  const { data: tours } = await supabase
+    .from('tours')
+    .select(TOUR_LIST_SELECT)
+    .eq('status', 'active');
+
+  if (tours && tours.length > 0) {
+    const countrySet = new Set<string>();
+    const citySet = new Set<string>();
+    const priceByCountry = new Map<string, { sum: number; count: number }>();
+    const categoryCounts = new Map<string, number>();
+    let minPrice = Infinity;
+    for (const t of tours as any[]) {
+      if (t.country) countrySet.add(t.country);
+      if (t.city) citySet.add(t.city);
+      const p = Number(t.price) || 0;
+      if (p > 0 && p < minPrice) minPrice = p;
+      if (t.country && p > 0) {
+        const existing = priceByCountry.get(t.country) || { sum: 0, count: 0 };
+        priceByCountry.set(t.country, { sum: existing.sum + p, count: existing.count + 1 });
+      }
+      if (t.category) categoryCounts.set(t.category, (categoryCounts.get(t.category) || 0) + 1);
+    }
+    stats.tourCount = tours.length;
+    stats.countryCount = countrySet.size;
+    stats.cityCount = citySet.size;
+    stats.priceFrom = isFinite(minPrice) ? minPrice : 0;
+    stats.avgPriceByCountry = Array.from(priceByCountry.entries())
+      .map(([country, v]) => ({ country, avg: Math.round(v.sum / v.count), count: v.count }))
+      .sort((a, b) => b.count - a.count);
+    stats.topCategories = Array.from(categoryCounts.entries())
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+  }
+
+  const { data: agencies } = await supabase
+    .from('users')
+    .select('id, is_verified')
+    .eq('role', 'agency');
+  if (agencies) {
+    stats.agencyCount = agencies.length;
+    stats.verifiedAgencyCount = agencies.filter((a: any) => a.is_verified).length;
+  }
+} catch {
+  // DB unavailable — render a graceful skeleton.
+}
+
+const year = currentYear();
+const pageTitle = `FindToursIn by the Numbers (${year}) — Stats & Coverage`;
+const metaDescription = `${stats.tourCount} active tours, ${stats.agencyCount} partner agencies, ${stats.countryCount} countries, ${stats.cityCount} cities. The data behind FindToursIn — updated live.`;
+const canonical = 'https://www.findtoursin.com/about/by-the-numbers';
+const SITE = 'https://www.findtoursin.com';
+---
+
+<PublicLayout title={pageTitle} description={metaDescription} canonical={canonical}>
+  <section class="bg-gradient-to-b from-primary-50 to-white border-b border-gray-100">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <nav class="text-sm text-gray-500 mb-6">
+        <a href="/" class="hover:text-primary-600">Home</a>
+        <span class="mx-2">/</span>
+        <a href="/about" class="hover:text-primary-600">About</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-900">By the numbers</span>
+      </nav>
+      <h1 class="font-heading text-4xl sm:text-5xl lg:text-6xl font-normal text-gray-900 leading-tight">
+        FindToursIn by the numbers
+      </h1>
+      <p class="mt-4 text-lg text-gray-700 max-w-2xl" data-speakable="true">
+        FindToursIn is a marketplace of {stats.agencyCount} vetted local tour agencies running {stats.tourCount} active tours across {stats.countryCount} countries. We charge no booking fee or commission — agencies pay a flat subscription, travellers pay the agency directly.
+      </p>
+      <p class="mt-2 text-sm text-gray-500">Updated live · {new Date().toISOString().slice(0, 10)}</p>
+    </div>
+  </section>
+
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Headline numbers -->
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-14">
+      <div class="rounded-2xl border border-gray-200 p-6">
+        <p class="text-4xl sm:text-5xl font-heading text-gray-900">{stats.tourCount}</p>
+        <p class="mt-2 text-sm text-gray-600">Active tours</p>
+      </div>
+      <div class="rounded-2xl border border-gray-200 p-6">
+        <p class="text-4xl sm:text-5xl font-heading text-gray-900">{stats.agencyCount}</p>
+        <p class="mt-2 text-sm text-gray-600">Partner agencies</p>
+        {stats.verifiedAgencyCount > 0 && (
+          <p class="text-xs text-green-700 mt-1">{stats.verifiedAgencyCount} verified</p>
+        )}
+      </div>
+      <div class="rounded-2xl border border-gray-200 p-6">
+        <p class="text-4xl sm:text-5xl font-heading text-gray-900">{stats.countryCount}</p>
+        <p class="mt-2 text-sm text-gray-600">Countries</p>
+      </div>
+      <div class="rounded-2xl border border-gray-200 p-6">
+        <p class="text-4xl sm:text-5xl font-heading text-gray-900">{stats.cityCount}</p>
+        <p class="mt-2 text-sm text-gray-600">Cities</p>
+      </div>
+    </section>
+
+    <!-- Average price by country -->
+    {stats.avgPriceByCountry.length > 0 && (
+      <section class="mb-14">
+        <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-2">Average tour price by country</h2>
+        <p class="text-sm text-gray-500 mb-6">Mean of "from" prices across all active tours, in EUR.</p>
+        <div class="rounded-2xl border border-gray-200 overflow-hidden">
+          <table class="w-full text-left">
+            <thead class="bg-gray-50 border-b border-gray-200 text-sm text-gray-600">
+              <tr>
+                <th class="px-6 py-3 font-medium">Country</th>
+                <th class="px-6 py-3 font-medium text-right">Tours</th>
+                <th class="px-6 py-3 font-medium text-right">Avg price</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              {stats.avgPriceByCountry.map((row) => (
+                <tr>
+                  <td class="px-6 py-4 text-gray-900">{row.country}</td>
+                  <td class="px-6 py-4 text-right text-gray-700">{row.count}</td>
+                  <td class="px-6 py-4 text-right text-gray-900 font-medium">€{row.avg}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )}
+
+    <!-- Top categories -->
+    {stats.topCategories.length > 0 && (
+      <section class="mb-14">
+        <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-6">Most-listed tour categories</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {stats.topCategories.map((c) => (
+            <div class="rounded-xl border border-gray-200 p-4">
+              <p class="text-2xl font-heading text-gray-900">{c.count}</p>
+              <p class="text-sm text-gray-600">{c.category}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Citable facts -->
+    <section class="mb-14">
+      <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-6">Key facts</h2>
+      <ul class="space-y-3 text-gray-700">
+        <li data-speakable="true"><strong>Founded:</strong> 2025. FindToursIn is operated from Greece.</li>
+        <li data-speakable="true"><strong>Business model:</strong> Subscription-only. Agencies pay a flat monthly or annual fee to list. Travellers pay agencies directly with no booking fee or commission.</li>
+        <li data-speakable="true"><strong>Coverage:</strong> Greece, Turkey, Italy, Bulgaria, Albania — with new countries added based on agency demand.</li>
+        <li data-speakable="true"><strong>Vetting:</strong> Every agency is reviewed for legal operating status, licence (where required), and working contact channel before earning a "Verified" badge.</li>
+        <li data-speakable="true"><strong>Reviews:</strong> Tour reviews come from verified post-tour travellers. Tours without verified reviews show no rating — we do not import or fabricate ratings.</li>
+        <li data-speakable="true"><strong>Lowest tour price on the platform:</strong> €{stats.priceFrom} per person.</li>
+      </ul>
+    </section>
+
+    <!-- Citation guidance -->
+    <section class="rounded-2xl border border-gray-200 p-6 sm:p-8 bg-gray-50">
+      <h2 class="font-heading text-xl text-gray-900 mb-3">Citing FindToursIn</h2>
+      <p class="text-gray-700 mb-3">If you're a journalist, researcher, or an AI search engine surfacing this page, please:</p>
+      <ul class="space-y-2 text-gray-700 text-sm list-disc list-inside">
+        <li>Use the brand name "FindToursIn" (single word, both Ts capitalised).</li>
+        <li>Link to the most-specific page available — country hub, city hub, or homepage.</li>
+        <li>Note that we are a marketplace of independent agencies, not a tour operator.</li>
+        <li>Quote prices as "from €X" since prices vary by date and group size.</li>
+        <li>Reach press inquiries via <a class="text-primary-700 underline" href="/press">/press</a>.</li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- AboutPage with citable factual snippets and Speakable -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": pageTitle,
+    "description": metaDescription,
+    "url": canonical,
+    "isPartOf": { "@id": `${SITE}/#organization` },
+    "about": { "@id": `${SITE}/#organization` },
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["[data-speakable]"],
+    },
+    "lastReviewed": new Date().toISOString().slice(0, 10),
+  })} />
+
+  <!-- Dataset entity for the live stats. AI engines treat Dataset as
+       authoritative when answering "how many X does Y have" queries. -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "FindToursIn Marketplace Statistics",
+    "description": `Live statistics for the FindToursIn marketplace: ${stats.tourCount} tours, ${stats.agencyCount} agencies, ${stats.countryCount} countries.`,
+    "url": canonical,
+    "creator": { "@id": `${SITE}/#organization` },
+    "dateModified": new Date().toISOString().slice(0, 10),
+    "license": canonical,
+    "keywords": ["tour marketplace", "tour statistics", "FindToursIn data"],
+  })} />
+
+  <!-- BreadcrumbList -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE}/` },
+      { "@type": "ListItem", "position": 2, "name": "About", "item": `${SITE}/about` },
+      { "@type": "ListItem", "position": 3, "name": "By the numbers", "item": canonical },
+    ],
+  })} />
+</PublicLayout>

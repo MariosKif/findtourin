@@ -1,0 +1,87 @@
+---
+export const prerender = false;
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import { ITINERARIES } from '../../lib/seo/itineraries';
+import { currentYear } from '../../lib/programmatic';
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
+
+const year = currentYear();
+const pageTitle = `Tour itineraries ${year} — Day-by-day plans`;
+const metaDescription = `${ITINERARIES.length} curated multi-day tour itineraries — Greece, Turkey, Italy. Day-by-day plans with timings, suggested tours, and 2026 cost guidance.`;
+const canonical = 'https://www.findtoursin.com/itineraries';
+const SITE = 'https://www.findtoursin.com';
+
+// Group by country for the index layout.
+const byCountry = ITINERARIES.reduce((acc, i) => {
+  if (!acc[i.country]) acc[i.country] = [];
+  acc[i.country].push(i);
+  return acc;
+}, {} as Record<string, typeof ITINERARIES>);
+const countries = Object.keys(byCountry).sort();
+---
+
+<PublicLayout title={pageTitle} description={metaDescription} canonical={canonical}>
+  <section class="bg-gradient-to-b from-primary-50 to-white border-b border-gray-100">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <nav class="text-sm text-gray-500 mb-6">
+        <a href="/" class="hover:text-primary-600">Home</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-900">Itineraries</span>
+      </nav>
+      <h1 class="font-heading text-4xl sm:text-5xl lg:text-6xl font-normal text-gray-900 leading-tight">
+        Tour itineraries
+      </h1>
+      <p class="mt-4 text-lg text-gray-700 max-w-2xl" data-speakable="true">
+        {ITINERARIES.length} day-by-day multi-day plans across {countries.length} countries. Editorial picks with timings, base cities, suggested tours from FindToursIn, and 2026 cost guidance.
+      </p>
+    </div>
+  </section>
+
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    {countries.map((country) => (
+      <section class="mb-12">
+        <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-6">{country}</h2>
+        <div class="grid gap-4 sm:grid-cols-2">
+          {byCountry[country].sort((a, b) => a.days - b.days).map((i) => (
+            <a href={`/itineraries/${i.countrySlug}/${i.days}-days`} class="group rounded-2xl border border-gray-200 p-6 hover:border-primary-400 hover:shadow-md transition-all">
+              <h3 class="font-heading text-xl text-gray-900 group-hover:text-primary-700">{i.title}</h3>
+              <p class="mt-2 text-sm text-gray-600 leading-relaxed">{i.tagline}</p>
+              <p class="mt-3 text-xs text-gray-500">{i.days} days · From €{i.costRange.from} per person · Updated {i.updated}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": pageTitle,
+    "description": metaDescription,
+    "url": canonical,
+    "isPartOf": { "@id": `${SITE}/#organization` },
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "numberOfItems": ITINERARIES.length,
+    "itemListElement": ITINERARIES.map((i, idx) => ({
+      "@type": "ListItem",
+      "position": idx + 1,
+      "url": `${SITE}/itineraries/${i.countrySlug}/${i.days}-days`,
+      "name": i.title,
+    })),
+  })} />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE}/` },
+      { "@type": "ListItem", "position": 2, "name": "Itineraries", "item": canonical },
+    ],
+  })} />
+</PublicLayout>

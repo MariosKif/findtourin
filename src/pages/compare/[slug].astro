@@ -1,0 +1,208 @@
+---
+export const prerender = false;
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import FAQSection from '../../components/common/FAQSection.astro';
+import { getCompetitor, COMPETITORS } from '../../lib/seo/competitors';
+import { currentYear } from '../../lib/programmatic';
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800');
+
+const { slug } = Astro.params;
+if (!slug) return new Response('Not found', { status: 404 });
+
+// Slug format: findtoursin-vs-{competitor}
+const expectedPrefix = 'findtoursin-vs-';
+if (!slug.startsWith(expectedPrefix)) {
+  return new Response('Not found', { status: 404 });
+}
+
+const competitorSlug = slug.slice(expectedPrefix.length);
+const competitor = getCompetitor(competitorSlug);
+if (!competitor) return new Response('Not found', { status: 404 });
+
+const SITE = 'https://www.findtoursin.com';
+const canonical = `${SITE}/compare/${slug}`;
+const year = currentYear();
+const pageTitle = `FindToursIn vs ${competitor.name} ${year} — Honest Comparison`;
+const metaDescription = `FindToursIn vs ${competitor.name}: pricing, commission, inventory, and what each does best. Independently sourced and dated — last verified ${competitor.lastVerified}.`;
+
+const faqs = [
+  { q: `What\'s the main difference between FindToursIn and ${competitor.name}?`, a: `FindToursIn is a subscription-based marketplace where travellers contact agencies directly with no commission. ${competitor.name} is a commission-based OTA where the platform takes 15–30% of each booking, which is built into the price travellers see.` },
+  { q: `Is ${competitor.name} cheaper than FindToursIn?`, a: `Generally no. ${competitor.name} prices include the platform\'s commission (typically 20–30%). On FindToursIn, you contact the agency directly at the price the agency sets, so the same tour is usually 15–25% cheaper. Always confirm pricing on both sides for the specific tour you want.` },
+  { q: `When should I use ${competitor.name} instead of FindToursIn?`, a: `Use ${competitor.name} when you want one-tap mobile booking with their app-based ticket management, or when you\'re comparing inventory in destinations FindToursIn doesn\'t cover. ${competitor.name} also has a much larger global catalogue.` },
+  { q: `Does FindToursIn charge a booking fee?`, a: `No. FindToursIn does not charge any fee to travellers. The platform earns from agency subscriptions, not from individual bookings.` },
+  { q: `Are reviews on FindToursIn real?`, a: `Yes — FindToursIn shows tour ratings only when ≥3 verified post-tour reviews exist. We do not import, scrape, or fabricate ratings. Tours without verified reviews show no rating rather than an artificial one.` },
+];
+
+// Build a transparent comparison-table dataset.
+const matrix = [
+  { dimension: 'Pricing model', us: 'Subscription only — agencies pay flat fee', them: competitor.pricingModel },
+  { dimension: 'Commission/booking fee on traveller', us: 'None', them: competitor.commissionNote },
+  { dimension: 'Direct agency contact', us: 'Yes — email/phone/website on every listing', them: 'Booking goes through the platform' },
+  { dimension: 'Coverage focus', us: 'Greece, Turkey, Italy, Bulgaria, Albania (deep)', them: `Global (${competitor.approximateTourCount})` },
+  { dimension: 'Founded', us: '2025', them: String(competitor.founded) },
+  { dimension: 'HQ', us: 'Greece', them: competitor.hq },
+];
+---
+
+<PublicLayout title={pageTitle} description={metaDescription} canonical={canonical}>
+  <section class="bg-gradient-to-b from-primary-50 to-white border-b border-gray-100">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <nav class="text-sm text-gray-500 mb-6">
+        <a href="/" class="hover:text-primary-600">Home</a>
+        <span class="mx-2">/</span>
+        <a href="/compare" class="hover:text-primary-600">Compare</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-900">FindToursIn vs {competitor.name}</span>
+      </nav>
+      <h1 class="font-heading text-4xl sm:text-5xl lg:text-6xl font-normal text-gray-900 leading-tight">
+        FindToursIn <span class="text-gray-400">vs</span> {competitor.name}
+      </h1>
+      <p class="mt-4 text-lg text-gray-700 max-w-2xl" data-speakable="true">
+        FindToursIn and {competitor.name} both help travellers find guided tours, but they\'re structurally different: FindToursIn is a subscription marketplace where travellers contact agencies directly; {competitor.name} is a commission-based OTA. Below, what each does best — independently sourced and dated.
+      </p>
+      <p class="mt-3 text-xs text-gray-500">As of {competitor.lastVerified} · Pricing and commission rates are publicly reported industry estimates and may change.</p>
+    </div>
+  </section>
+
+  <article class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- Comparison matrix -->
+    <section class="mb-14">
+      <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-6">Side-by-side</h2>
+      <div class="rounded-2xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-left">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th class="px-4 sm:px-6 py-3 text-sm font-medium text-gray-600">Dimension</th>
+              <th class="px-4 sm:px-6 py-3 text-sm font-medium text-primary-700">FindToursIn</th>
+              <th class="px-4 sm:px-6 py-3 text-sm font-medium text-gray-600">{competitor.name}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {matrix.map((row) => (
+              <tr>
+                <td class="px-4 sm:px-6 py-4 text-sm text-gray-500 align-top">{row.dimension}</td>
+                <td class="px-4 sm:px-6 py-4 text-sm text-gray-900 align-top">{row.us}</td>
+                <td class="px-4 sm:px-6 py-4 text-sm text-gray-700 align-top">{row.them}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- About the competitor (fair, accurate) -->
+    <section class="mb-14">
+      <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">About {competitor.name}</h2>
+      <p class="text-gray-700 leading-relaxed mb-4">{competitor.description}</p>
+      <p class="text-sm text-gray-500">Founded {competitor.founded} · HQ {competitor.hq} · {competitor.approximateTourCount}</p>
+    </section>
+
+    <!-- What competitor does well — required for fairness -->
+    <section class="mb-14">
+      <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">What {competitor.name} does well</h2>
+      <p class="text-gray-700 mb-4">Honest section — these are real strengths and FindToursIn doesn\'t match all of them.</p>
+      <ul class="space-y-3 text-gray-700">
+        {competitor.strengths.map((s) => (
+          <li class="flex gap-3">
+            <span class="text-primary-600 mt-1">●</span>
+            <span>{s}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- Where FindToursIn wins -->
+    <section class="mb-14">
+      <h2 class="font-heading text-2xl sm:text-3xl font-normal text-gray-900 mb-4">Where FindToursIn wins</h2>
+      <ul class="space-y-3 text-gray-700">
+        {competitor.ourEdge.map((s) => (
+          <li class="flex gap-3">
+            <span class="text-primary-600 mt-1">▲</span>
+            <span data-speakable="true">{s}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- Recommendation logic — helpful-content rule of thumb -->
+    <section class="mb-14 rounded-2xl border border-gray-200 bg-gray-50 p-6 sm:p-8">
+      <h2 class="font-heading text-xl text-gray-900 mb-4">Which should you use?</h2>
+      <div class="grid sm:grid-cols-2 gap-6">
+        <div>
+          <p class="font-heading text-lg text-primary-700 mb-2">Choose FindToursIn when</p>
+          <ul class="space-y-2 text-sm text-gray-700">
+            <li>You\'re booking in Greece, Turkey, Italy, Bulgaria, or Albania</li>
+            <li>You prefer talking directly to the operator</li>
+            <li>You want the lowest price (no commission markup)</li>
+            <li>You\'re booking a small-group or premium tour</li>
+          </ul>
+        </div>
+        <div>
+          <p class="font-heading text-lg text-gray-700 mb-2">Choose {competitor.name} when</p>
+          <ul class="space-y-2 text-sm text-gray-700">
+            <li>You want one-tap mobile booking with app management</li>
+            <li>You\'re booking somewhere FindToursIn doesn\'t cover</li>
+            <li>You value standardised 24-hour cancellation across providers</li>
+            <li>You want the largest possible catalogue to browse</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ (Speakable wired by component) -->
+    <FAQSection faqs={faqs} />
+
+    <!-- Cross-link to other comparisons -->
+    <section class="mt-14 p-6 rounded-2xl bg-white border border-gray-200">
+      <h2 class="font-heading text-xl text-gray-900 mb-3">Other comparisons</h2>
+      <ul class="grid gap-2 sm:grid-cols-2">
+        {COMPETITORS.filter((c) => c.slug !== competitor.slug).map((c) => (
+          <li>
+            <a href={`/compare/findtoursin-vs-${c.slug}`} class="text-primary-700 hover:underline">FindToursIn vs {c.name} &rarr;</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </article>
+
+  <!-- Article schema with about: both organisations.
+       lastReviewed feeds freshness signals; the dual `about` array makes
+       this discoverable for both "FindToursIn" and competitor-name queries. -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": pageTitle,
+    "description": metaDescription,
+    "url": canonical,
+    "datePublished": competitor.lastVerified,
+    "dateModified": competitor.lastVerified,
+    "lastReviewed": competitor.lastVerified,
+    "author": { "@id": `${SITE}/#organization` },
+    "publisher": { "@id": `${SITE}/#organization` },
+    "mainEntityOfPage": canonical,
+    "inLanguage": "en",
+    "about": [
+      { "@id": `${SITE}/#organization` },
+      { "@type": "Organization", "name": competitor.name, "url": competitor.url },
+    ],
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["[data-speakable]"],
+    },
+  })} />
+
+  <!-- BreadcrumbList -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE}/` },
+      { "@type": "ListItem", "position": 2, "name": "Compare", "item": `${SITE}/compare` },
+      { "@type": "ListItem", "position": 3, "name": `FindToursIn vs ${competitor.name}`, "item": canonical },
+    ],
+  })} />
+
+  {/* FAQPage + Speakable schema is emitted by <FAQSection> above. */}
+</PublicLayout>

@@ -169,17 +169,38 @@ const canonical = `https://www.findtoursin.com/agencies/${slug}`;
     </section>
   </div>
 
-  <!-- TravelAgency Schema -->
+  {/* TravelAgency JSON-LD. Enriched with @id, foundingDate, makesOffer
+       (linking each tour back as an Offer the agency makes), and aggregate
+       knowsAbout — what AI engines lift to describe the agency in answer
+       cards. Address is intentionally omitted today: we don't yet store a
+       verified business address per agency, and an unverified address is a
+       structured-data trust hit. */}
   <script type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "TravelAgency",
+    "@id": `${canonical}#agency`,
     "name": displayName,
     "description": agency.company_desc || metaDescription,
     "url": canonical,
+    "logo": agency.avatar_url || undefined,
     "image": agency.avatar_url || undefined,
+    "foundingDate": agency.created_at ? new Date(agency.created_at).toISOString().slice(0, 10) : undefined,
     "areaServed": countries.map((c) => ({ "@type": "Country", "name": c })),
+    "knowsAbout": categories.length > 0 ? categories : undefined,
     "telephone": agency.phone || undefined,
     "sameAs": agency.website ? [agency.website] : undefined,
+    "parentOrganization": { "@id": "https://www.findtoursin.com/#organization" },
+    "makesOffer": tours.slice(0, 25).map((t: any) => ({
+      "@type": "Offer",
+      "itemOffered": {
+        "@type": "TouristTrip",
+        "name": t.name,
+        "url": `https://www.findtoursin.com/tours/${t.slug}`,
+      },
+      "price": t.price,
+      "priceCurrency": t.currency || "EUR",
+      "url": `https://www.findtoursin.com/tours/${t.slug}`,
+    })),
   })} />
 
   <!-- Breadcrumbs -->

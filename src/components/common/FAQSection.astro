@@ -1,0 +1,78 @@
+---
+// Shared FAQ section. Renders the visible accordion AND emits the FAQPage
+// JSON-LD with SpeakableSpecification — so every FAQ on the site is voice-
+// assistant-readable and AI-Overview-citable from one place.
+//
+// Why Speakable matters: pages with FAQPage + Speakable schema are
+// significantly more likely to appear as voice answers and as Google AI
+// Overview citations (Speakable was originally News-only but now applies
+// broadly to passage answers via the cssSelector form).
+//
+// Why we stamp `data-speakable` on the first sentence only: LLMs and voice
+// engines lift one passage. Tagging the whole answer dilutes the signal.
+// The first sentence is rewritten in copy to be a self-contained direct
+// answer (≤ 30 words) — that's what the engines quote.
+
+interface FAQ {
+  q: string;
+  a: string;
+}
+
+interface Props {
+  faqs: FAQ[];
+  /** Heading text. Default "Frequently asked questions". */
+  heading?: string;
+  /** When true, suppresses the FAQPage JSON-LD — for pages where another
+   *  block already emits it (e.g. legacy inline schema). Default false. */
+  suppressSchema?: boolean;
+}
+
+const { faqs, heading = 'Frequently asked questions', suppressSchema = false } = Astro.props as Props;
+
+// Split each answer into its first sentence (the "speakable" passage) and
+// the remainder. We tag the first sentence only — see top of file for why.
+function splitFirstSentence(s: string): { first: string; rest: string } {
+  const m = s.match(/^([^.!?]+[.!?])(\s+)(.*)$/s);
+  if (!m) return { first: s, rest: '' };
+  return { first: m[1], rest: m[3] };
+}
+
+const split = faqs.map((f) => ({ ...f, ...splitFirstSentence(f.a) }));
+---
+
+{faqs.length > 0 && (
+  <section class="max-w-3xl mb-12">
+    <h2 class="font-heading text-2xl font-normal text-gray-900 mb-6">{heading}</h2>
+    <div class="divide-y divide-gray-200 border-y border-gray-200">
+      {split.map((item) => (
+        <details class="group py-5">
+          <summary class="flex items-center justify-between cursor-pointer list-none">
+            <span class="font-medium text-gray-900">{item.q}</span>
+            <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </summary>
+          <p class="mt-3 text-gray-600 leading-relaxed">
+            <span data-speakable="true">{item.first}</span>{item.rest && (<>{' '}{item.rest}</>)}
+          </p>
+        </details>
+      ))}
+    </div>
+  </section>
+)}
+
+{!suppressSchema && faqs.length > 0 && (
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["[data-speakable]"],
+    },
+    "mainEntity": faqs.map((item) => ({
+      "@type": "Question",
+      "name": item.q,
+      "acceptedAnswer": { "@type": "Answer", "text": item.a },
+    })),
+  })} />
+)}

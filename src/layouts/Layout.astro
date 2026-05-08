@@ -1,11 +1,23 @@
 ---
 import '../styles/global.css';
+import WebVitals from '../components/common/WebVitals.astro';
+import { ClientRouter } from 'astro:transitions';
 
 interface Props {
   title?: string;
   description?: string;
   image?: string;
   noIndex?: boolean;
+  /** Optional explicit canonical override. Pages where the canonical
+      should NOT be self (e.g. a thin category page that should fold into
+      its country hub) pass an absolute URL here. When omitted, canonical
+      is derived from the current pathname. */
+  canonical?: string;
+  /** Optional subtitle for the auto-generated OG image. Falls back to the
+      meta description when omitted. */
+  ogSubtitle?: string;
+  /** Optional eyebrow text on the OG image. Defaults to "findtoursin.com". */
+  ogEyebrow?: string;
   /** Optional rich page-view payload — passed straight to gtag() so
       individual pages (e.g. tour detail) can attach slug/price/currency
       to the GA4 page_view event without a custom dimension config. */
@@ -15,18 +27,60 @@ interface Props {
 const {
   title = 'FindToursIn',
   description = 'Discover amazing tours worldwide. Browse curated travel experiences from trusted agencies.',
-  image = '/images/hero-bg.jpg',
+  image,
   noIndex = false,
+  canonical,
+  ogSubtitle,
+  ogEyebrow,
   gaPageData,
 } = Astro.props;
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const canonicalURL = canonical
+  ? new URL(canonical)
+  : new URL(Astro.url.pathname, Astro.site);
 const fullTitle = title === 'FindToursIn' ? title : `${title} | FindToursIn`;
+
+// OG image resolution. If a page passes an explicit image (e.g. blog hero,
+// tour photo), use it. Otherwise auto-generate a per-page card via /api/og
+// with the title + a sensible subtitle. The auto-generated path is the
+// site-wide default — every page now ships a unique social card without
+// per-page wiring.
+function buildOgUrl(t: string, sub: string, eyebrow: string): string {
+  const params = new URLSearchParams({
+    title: t.slice(0, 80),
+    subtitle: sub.slice(0, 90),
+    eyebrow: eyebrow.slice(0, 50),
+  });
+  return `/api/og?${params.toString()}`;
+}
+
+const resolvedImage = image
+  ? image
+  : buildOgUrl(
+      title === 'FindToursIn' ? 'Find tours from trusted local agencies' : title,
+      ogSubtitle || description,
+      ogEyebrow || 'findtoursin.com',
+    );
+
+// OG/Twitter image must be absolute. Convert relative paths to absolute
+// against the site URL.
+const absoluteOgImage = resolvedImage.startsWith('http')
+  ? resolvedImage
+  : new URL(resolvedImage, Astro.site).toString();
 
 // GA4 measurement ID. Honour PUBLIC_GA_MEASUREMENT_ID at build time so a
 // future swap to a different property is one Vercel env-var change, not a
 // code edit. Falls back to the original hardcoded ID for backward-compat.
 const GA_ID = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || 'G-JEX5ES946C';
+
+// Search-engine ownership verification tags. Each only renders when the
+// corresponding env var is set, so they can be added one at a time as
+// the user claims ownership in each console. PUBLIC_ prefix means Astro
+// inlines the value at build; no runtime fetch.
+const GOOGLE_VERIFICATION = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION || '';
+const BING_VERIFICATION = import.meta.env.PUBLIC_BING_SITE_VERIFICATION || '';
+const YANDEX_VERIFICATION = import.meta.env.PUBLIC_YANDEX_VERIFICATION || '';
+const PINTEREST_VERIFICATION = import.meta.env.PUBLIC_PINTEREST_VERIFICATION || '';
 ---
 
 <!doctype html>
@@ -49,7 +103,23 @@ const GA_ID = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || 'G-JEX5ES946C';
           // Pass per-page enrichment (tour slug / price / etc) through the
           // initial config call so the first page_view carries the data
           // and we don't fire two events per page.
-          gtag('config', GA_ID, gaPageData ? { ...gaPageData } : {});
+          // `send_page_view: false` because View Transitions navigations
+          // don't trigger a fresh `config` call — instead we manually
+          // fire `page_view` on every astro:page-load (including the
+          // initial one, see listener below).
+          gtag('config', GA_ID, { ...(gaPageData || {}), send_page_view: false });
+
+          // Fire page_view on every Astro page-load event. This covers
+          // both the initial render and subsequent View-Transition-based
+          // navigations, so per-page GA4 metrics stay accurate when the
+          // SPA-style routing kicks in.
+          document.addEventListener('astro:page-load', function () {
+            window.gtag && window.gtag('event', 'page_view', {
+              page_location: location.href,
+              page_path: location.pathname + location.search,
+              page_title: document.title,
+            });
+          });
 
           // Outbound + contact-channel click tracking. Captures any click
           // on an http(s) link to a different host, plus mailto: and tel:
@@ -92,6 +162,7 @@ const GA_ID = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || 'G-JEX5ES946C';
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="alternate" type="application/rss+xml" title="FindToursIn Blog" href="/blog/rss.xml" />
+    <link rel="alternate" type="application/feed+json" title="FindToursIn Blog (JSON Feed)" href="/blog/feed.json" />
     {/* Preload the homepage hero JPG only when this Layout is rendering the
         homepage. On every other page (tour detail, blog, pricing, about)
         the hero never displays, so preloading it cost ~1.3 MB of wasted
@@ -100,6 +171,28 @@ const GA_ID = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || 'G-JEX5ES946C';
       <link rel="preload" as="image" href="/images/hero-bg.jpg" fetchpriority="high" />
     )}
     <link rel="canonical" href={canonicalURL} />
+    {/* Hreflang self-references. Site is English-only today; declaring
+        en + x-default future-proofs us for el/it/es/de/pt expansion
+        (Greek matters for Greece-tour queries from .gr searches) and
+        prevents Google from inferring the wrong default language. */}
+    <link rel="alternate" hreflang="en" href={canonicalURL} />
+    <link rel="alternate" hreflang="x-default" href={canonicalURL} />
+
+    {/* Astro View Transitions — SPA-like cross-page navigation using
+        the native browser View Transitions API. Pages now slide rather
+        than reload, which improves perceived performance and INP. The
+        `astro:page-load` listener below re-fires the GA4 page_view
+        event on transition so analytics integrity is preserved. */}
+    <ClientRouter />
+    {/* Search-engine ownership verification. Each tag renders only when
+        the corresponding PUBLIC_*_VERIFICATION env var is set. Adding
+        them is the prerequisite for claiming the property in each
+        console (Search Console, Bing Webmaster Tools, Yandex Webmaster,
+        Pinterest). */}
+    {GOOGLE_VERIFICATION && <meta name="google-site-verification" content={GOOGLE_VERIFICATION} />}
+    {BING_VERIFICATION && <meta name="msvalidate.01" content={BING_VERIFICATION} />}
+    {YANDEX_VERIFICATION && <meta name="yandex-verification" content={YANDEX_VERIFICATION} />}
+    {PINTEREST_VERIFICATION && <meta name="p:domain_verify" content={PINTEREST_VERIFICATION} />}
     <meta name="generator" content={Astro.generator} />
 
     <!-- Primary Meta Tags -->
@@ -112,14 +205,94 @@ const GA_ID = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || 'G-JEX5ES946C';
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={new URL(image, Astro.site)} />
+    <meta property="og:image" content={absoluteOgImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="FindToursIn" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content={canonicalURL} />
     <meta property="twitter:title" content={fullTitle} />
     <meta property="twitter:description" content={description} />
-    <meta property="twitter:image" content={new URL(image, Astro.site)} />
+    <meta property="twitter:image" content={absoluteOgImage} />
+
+    {/* Site-wide WebSite JSON-LD with SearchAction. Tells Google we
+        have a working internal search at /tours?search={q}, which
+        unlocks the sitelinks search box rich result — a search field
+        embedded directly in the SERP listing. Only fires on the
+        homepage to avoid the duplicated-entity warning Search Console
+        otherwise raises. */}
+    {Astro.url.pathname === '/' && (
+      <script type="application/ld+json" set:html={JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": "https://www.findtoursin.com/#website",
+        "url": "https://www.findtoursin.com",
+        "name": "FindToursIn",
+        "description": "Tour-discovery marketplace connecting travellers with vetted local tour agencies in Greece, Turkey, Italy, Bulgaria, and Albania.",
+        "publisher": { "@id": "https://www.findtoursin.com/#organization" },
+        "inLanguage": "en",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://www.findtoursin.com/tours?search={search_term_string}",
+          },
+          "query-input": "required name=search_term_string",
+        },
+      })} />
+    )}
+
+    {/* Site-wide Organization JSON-LD. The same @id is used everywhere so
+        Google de-duplicates this entity across every page render. Enriched
+        with contactPoint, sameAs, foundingDate, and slogan — the fields
+        AI engines lift to describe the brand in answer cards. */}
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": "https://www.findtoursin.com/#organization",
+      "name": "FindToursIn",
+      "alternateName": "Find Tours In",
+      "url": "https://www.findtoursin.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.findtoursin.com/icon-512.png",
+        "width": 512,
+        "height": 512,
+      },
+      "slogan": "Find your next tour from trusted local agencies — no booking fees, no commission.",
+      "description": "FindToursIn is a marketplace of vetted local tour agencies in Greece, Turkey, Italy, Bulgaria, and Albania. Browse itineraries and contact agencies directly — we charge no booking fee or commission.",
+      "foundingDate": "2025",
+      "areaServed": [
+        { "@type": "Country", "name": "Greece" },
+        { "@type": "Country", "name": "Turkey" },
+        { "@type": "Country", "name": "Italy" },
+        { "@type": "Country", "name": "Bulgaria" },
+        { "@type": "Country", "name": "Albania" },
+      ],
+      "knowsAbout": [
+        "Guided tours",
+        "Tour agencies",
+        "Travel itineraries",
+        "Cultural tours",
+        "Food tours",
+        "Walking tours",
+        "Day trips",
+        "Multi-day tours",
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "info@findtoursin.com",
+        "availableLanguage": ["English"],
+      },
+      "sameAs": [
+        // Populate with verified social profiles as they go live; the
+        // empty array is harmless and the field self-documents intent.
+      ],
+    })} />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -128,6 +301,7 @@ const GA_ID = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || 'G-JEX5ES946C';
   </head>
   <body class="min-h-screen bg-white text-gray-900 antialiased">
     <slot />
+    <WebVitals />
 
     <!-- Global <img> error fallback. If a remote image (Unsplash, Supabase
          storage, agency upload, etc.) fails to load we paint a neutral

@@ -4,12 +4,131 @@
     {
       "path": "/api/cron/expire-subscriptions",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/seo-health",
+      "schedule": "30 3 * * *"
     }
   ],
   "redirects": [
     {
       "source": "/:path+/",
       "destination": "/:path+",
+      "permanent": true
+    },
+    {
+      "source": "/tour/:slug",
+      "destination": "/tours/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/destination/:slug",
+      "destination": "/tours/in/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/destinations/:slug",
+      "destination": "/tours/in/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/agency/:slug",
+      "destination": "/agencies/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/guides/:slug",
+      "destination": "/guide/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/itinerary/:path*",
+      "destination": "/itineraries/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/attraction/:path*",
+      "destination": "/attractions/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/news",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/articles/:slug",
+      "destination": "/blog/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/article/:slug",
+      "destination": "/blog/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/post/:slug",
+      "destination": "/blog/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/posts/:slug",
+      "destination": "/blog/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/sitemap",
+      "destination": "/sitemap-index.xml",
+      "permanent": true
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap-index.xml",
+      "permanent": true
+    },
+    {
+      "source": "/feed",
+      "destination": "/blog/rss.xml",
+      "permanent": true
+    },
+    {
+      "source": "/rss",
+      "destination": "/blog/rss.xml",
+      "permanent": true
+    },
+    {
+      "source": "/rss.xml",
+      "destination": "/blog/rss.xml",
+      "permanent": true
+    },
+    {
+      "source": "/contact-us",
+      "destination": "/contact",
+      "permanent": true
+    },
+    {
+      "source": "/about-us",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/login",
+      "destination": "/auth/login",
+      "permanent": true
+    },
+    {
+      "source": "/register",
+      "destination": "/auth/register",
+      "permanent": true
+    },
+    {
+      "source": "/signup",
+      "destination": "/auth/register",
+      "permanent": true
+    },
+    {
+      "source": "/sign-up",
+      "destination": "/auth/register",
       "permanent": true
     }
   ],

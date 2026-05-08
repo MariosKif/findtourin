@@ -5,10 +5,13 @@ import TourGallery from '../../components/tours/TourGallery.astro';
 import TourInfo from '../../components/tours/TourInfo.astro';
 import AgencyContactCard from '../../components/tours/AgencyContactCard.astro';
 import TourCard from '../../components/tours/TourCard.astro';
+import FAQSection from '../../components/common/FAQSection.astro';
 import { supabase } from '../../lib/supabase';
 import { getDemoTourBySlug, DEMO_REVIEWS } from '../../lib/demo-tours';
-import { slugify } from '../../lib/destinations';
+import { slugify, getCityIntentCopy, getDayTripCopy } from '../../lib/destinations';
 import { TOUR_LIST_SELECT, normalizeTour } from '../../lib/tour-helpers';
+import { getVerifiedReviewsForTour, ratingSchemaFragment } from '../../lib/reviews';
+import { INTENT_SLUGS, tourMatchesIntent, MIN_TOURS_FOR_INDEX, humanIntent } from '../../lib/programmatic';
 
 // Public tour detail — edge-cache 2 min (shorter; tour content can change),
 // stale up to a day while revalidating in background.
@@ -85,6 +88,15 @@ try {
 
 const reviews = DEMO_REVIEWS[slug] || [];
 
+// Verified reviews from Supabase. Returns null today (table not provisioned)
+// and lights up rich-snippet AggregateRating + Review schema automatically
+// when ≥3 verified rows land. Synthetic reviews are NOT used — they're a
+// manual-action trigger.
+const verifiedReviewBundle = tour?.id && !String(tour.id).startsWith('demo-')
+  ? await getVerifiedReviewsForTour(supabase, tour.id)
+  : null;
+const ratingFragment = ratingSchemaFragment(verifiedReviewBundle);
+
 const tourWithAgency = {
   ...tour,
   agencyName: agency?.company_name || agency?.name || null,
@@ -123,6 +135,39 @@ const faqs = [
 
 const countrySlug = tour.country ? slugify(tour.country) : null;
 const citySlug = tour.city ? slugify(tour.city) : null;
+
+// Compute related internal-link surfaces for the "More to explore" block.
+// Same gating as the templated routes themselves — we never link to a page
+// that would 404 (intent page without ≥3 tours, day-trip page without
+// curated copy, etc.). The query above already pulled all city tours via
+// the `relatedTours` candidates list, but for accurate intent counts we
+// need the full city slice — fetch a lean count here.
+let availableIntents: typeof INTENT_SLUGS[number][] = [];
+let dayTripEligible = false;
+if (tour.country && tour.city && countrySlug && citySlug) {
+  try {
+    const { data: cityTours } = await supabase
+      .from('tours')
+      .select('category, duration_days, price, description, name')
+      .eq('status', 'active')
+      .eq('country', tour.country)
+      .eq('city', tour.city);
+    if (cityTours && cityTours.length >= MIN_TOURS_FOR_INDEX) {
+      availableIntents = INTENT_SLUGS.filter((intent) => {
+        const matches = cityTours.filter((t: any) => tourMatchesIntent(t, intent)).length;
+        if (matches < MIN_TOURS_FOR_INDEX) return false;
+        return getCityIntentCopy(tour.city, tour.country, intent).curated;
+      });
+      const dayTripCount = cityTours.filter((t: any) => {
+        const d = typeof t.duration_days === 'number' ? t.duration_days : null;
+        return d !== null && d <= 1;
+      }).length;
+      dayTripEligible = dayTripCount >= MIN_TOURS_FOR_INDEX && getDayTripCopy(tour.city).curated;
+    }
+  } catch {
+    // DB unavailable — skip the related-links block silently.
+  }
+}
 
 // Meta description: 155 chars, cut on the last whole-word boundary so we
 // don't ship a description that ends mid-clause ("…connecting the").
@@ -192,23 +237,10 @@ const metaDesc = truncateDesc(tour.description);
       </aside>
     </div>
 
-    <!-- FAQ -->
-    <section class="mt-16 max-w-3xl">
-      <h2 class="font-heading text-2xl font-normal text-gray-900 mb-6">Frequently asked questions</h2>
-      <div class="divide-y divide-gray-200 border-y border-gray-200">
-        {faqs.map((item) => (
-          <details class="group py-5">
-            <summary class="flex items-center justify-between cursor-pointer list-none">
-              <span class="font-medium text-gray-900">{item.q}</span>
-              <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <p class="mt-3 text-gray-600 leading-relaxed">{item.a}</p>
-          </details>
-        ))}
-      </div>
-    </section>
+    <!-- FAQ (visible + FAQPage JSON-LD with Speakable) -->
+    <div class="mt-16">
+      <FAQSection faqs={faqs} />
+    </div>
 
     <!-- Related tours -->
     {relatedTours.length > 0 && (
@@ -225,6 +257,36 @@ const metaDesc = truncateDesc(tour.description);
           {relatedTours.map((t) => (
             <TourCard tour={t} eagerThreshold={0} />
           ))}
+        </div>
+      </section>
+    )}
+
+    <!-- More to explore — surfaces the city hub, day-trip page, and
+         intent variants when they're eligible. Pure internal-linking
+         hub-and-spoke; every link points at a page that already passes
+         shouldIndex(). -->
+    {countrySlug && citySlug && (availableIntents.length > 0 || dayTripEligible) && (
+      <section class="mt-16">
+        <h2 class="font-heading text-2xl font-normal text-gray-900 mb-6">
+          More to explore in {tour.city}
+        </h2>
+        <div class="flex flex-wrap gap-3">
+          <a href={`/tours/in/${countrySlug}/${citySlug}`} class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-primary-200 bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 transition-colors">
+            All tours in {tour.city} &rarr;
+          </a>
+          {dayTripEligible && (
+            <a href={`/day-trips-from/${citySlug}`} class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-primary-200 bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 transition-colors">
+              Day trips from {tour.city} &rarr;
+            </a>
+          )}
+          {availableIntents.slice(0, 5).map((intent) => (
+            <a href={`/tours/in/${countrySlug}/${citySlug}/${intent}`} class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:border-primary-400 hover:text-primary-700 transition-colors">
+              {humanIntent(intent)} in {tour.city}
+            </a>
+          ))}
+          <a href={`/tours/in/${countrySlug}`} class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:border-primary-400 hover:text-primary-700 transition-colors">
+            All tours in {tour.country} &rarr;
+          </a>
         </div>
       </section>
     )}
@@ -263,6 +325,9 @@ const metaDesc = truncateDesc(tour.description);
             },
           } : {}),
         },
+        // AggregateRating + Review[] only fires when ≥3 verified reviews
+        // exist. Empty object spread when reviews aren't ready.
+        ...ratingFragment,
       },
       {
         "@type": "TouristTrip",
@@ -300,14 +365,41 @@ const metaDesc = truncateDesc(tour.description);
     ],
   })} />
 
-  <!-- FAQ Schema -->
-  <script type="application/ld+json" set:html={JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": faqs.map((item) => ({
-      "@type": "Question",
-      "name": item.q,
-      "acceptedAnswer": { "@type": "Answer", "text": item.a },
-    })),
-  })} />
+  {/* FAQPage + Speakable schema is emitted by <FAQSection> above. */}
+
+  {/* ImageObject for the hero — only when the tour has a real image.
+       Helps Google Images understand the photo as the canonical hero
+       and lets it appear in image rich results for queries like
+       "[tour name] photo". */}
+  {images.length > 0 && images[0]?.url && (
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "ImageObject",
+      "contentUrl": images[0].url,
+      "url": images[0].url,
+      "name": images[0].alt_text || images[0].altText || tour.name,
+      "caption": images[0].alt_text || images[0].altText || tour.name,
+      "representativeOfPage": true,
+      ...(tourWithAgency.agencyName ? {
+        "creator": { "@type": "TravelAgency", "name": tourWithAgency.agencyName },
+      } : {}),
+      "license": `https://www.findtoursin.com/tours/${tour.slug}`,
+    })} />
+  )}
+
+  {/* VideoObject — only when the DB row carries a video URL. We never
+       fabricate one. Surfaces the tour in Google Video search and AI
+       Overview video carousels. */}
+  {tour.video_url && (
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      "name": tour.name,
+      "description": metaDesc || tour.description,
+      "thumbnailUrl": images[0]?.url || "https://www.findtoursin.com/images/hero-bg.jpg",
+      "contentUrl": tour.video_url,
+      "uploadDate": tour.updated_at ? new Date(tour.updated_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+      "publisher": { "@id": "https://www.findtoursin.com/#organization" },
+    })} />
+  )}
 </PublicLayout>

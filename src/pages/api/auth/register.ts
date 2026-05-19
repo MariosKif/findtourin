@@ -61,6 +61,24 @@ export const POST: APIRoute = async (context) => {
       console.error('Profile creation error:', profileError);
     }
 
+    // Auto-grant Ultimate plan to every new agency. Billing is paused — agencies
+    // can post tours once an admin flips is_approved to true.
+    let autoGrantedPlan: string | null = null;
+    if ((role || 'user') === 'agency') {
+      const { error: subError } = await supabase.from('subscriptions').insert({
+        user_id: authData.user.id,
+        plan_id: 'ultimate',
+        source: 'auto_grant',
+        is_active: true,
+        started_at: new Date().toISOString(),
+      });
+      if (subError) {
+        console.error('register: auto-grant ultimate failed', subError);
+      } else {
+        autoGrantedPlan = 'ultimate';
+      }
+    }
+
     // Optional discount-code redemption (agency role only)
     let activatedPlan: string | null = null;
     let codeFailedReason: string | null = null;
@@ -146,7 +164,7 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    return json({ success: true, role: role || 'user', activatedPlan, codeFailedReason });
+    return json({ success: true, role: role || 'user', activatedPlan, autoGrantedPlan, codeFailedReason });
   } catch (error: any) {
     console.error('Registration error:', error);
     return json({ error: 'Registration failed' }, 500);

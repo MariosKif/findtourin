@@ -1,4 +1,8 @@
 -- scripts/migrations/2026-05-19-agency-approval-and-ultimate-default.sql
+-- Apply atomically — wraps the whole migration in a single transaction so a
+-- failure in any step rolls back the others.
+begin;
+
 -- 1. Add admin-approval gate for agencies (separate from public is_verified badge)
 alter table users
   add column if not exists is_approved boolean not null default false;
@@ -21,8 +25,10 @@ alter table subscriptions
     check (source in ('discount_code', 'stripe', 'auto_grant'));
 
 -- 4. Grant Ultimate to every existing agency that doesn't already hold an
---    active subscription. Skips anyone with a current code-granted or Stripe
---    sub so we don't double-grant.
+--    active subscription. The NOT EXISTS predicate mirrors the
+--    `subscriptions_one_active_per_user` partial unique index exactly
+--    (is_active=true, no expires_at refinement) so the INSERT cannot
+--    collide with the index on logically-expired-but-not-yet-swept rows.
 insert into subscriptions (user_id, plan_id, source, is_active, started_at)
 select u.id, 'ultimate', 'auto_grant', true, now()
 from users u
@@ -31,5 +37,6 @@ where u.role = 'agency'
     select 1 from subscriptions s
     where s.user_id = u.id
       and s.is_active = true
-      and (s.expires_at is null or s.expires_at > now())
   );
+
+commit;

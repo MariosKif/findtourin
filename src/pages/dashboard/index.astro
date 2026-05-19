@@ -66,6 +66,11 @@ const statusColors: Record<string, string> = {
 ---
 
 <DashboardLayout title="Dashboard">
+  {user?.role === 'agency' && !user.is_approved && (
+    <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <strong class="font-semibold">Pending admin approval.</strong> Once approved you will be able to publish tours. We will email you when you're approved.
+    </div>
+  )}
   {activated && (
     <div class="mb-6 rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800 flex items-start gap-3">
       <svg class="w-5 h-5 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

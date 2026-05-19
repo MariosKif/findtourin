@@ -124,6 +124,7 @@ if (!user) return Astro.redirect('/auth/login');
           </ul>
 
           {/* CTA Button */}
+          {/* paused 2026-05-19 — Stripe billing suspended
           <form method="POST" action="/api/stripe/checkout-plan" class="mt-auto">
             <input type="hidden" name="planId" value={plan.id} />
             <input type="hidden" name="billingPeriod" value="monthly" class="billing-period-input" />
@@ -139,6 +140,10 @@ if (!user) return Astro.redirect('/auth/login');
               Get Started
             </button>
           </form>
+          */}
+          <div class="mt-auto rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Paid billing is paused. Every agency is on the Ultimate plan while we finalise our payments rollout.
+          </div>
         </div>
       );
     })}
@@ -341,12 +346,13 @@ if (!user) return Astro.redirect('/auth/login');
   }
 
   function resetCard(card: Element) {
-    const form = card.querySelector('form') as HTMLFormElement | null;
+    // paused 2026-05-19 — form removed; Stripe action no longer exists
+    // const form = card.querySelector('form') as HTMLFormElement | null;
     const btn = card.querySelector('button[type="submit"]') as HTMLButtonElement | null;
-    if (form) form.action = '/api/stripe/checkout-plan';
+    // if (form) form.action = '/api/stripe/checkout-plan'; // paused 2026-05-19
     if (btn) btn.textContent = 'Get Started';
-    const hidden = form?.querySelector<HTMLInputElement>('input[name="discountCode"]');
-    hidden?.remove();
+    // const hidden = form?.querySelector<HTMLInputElement>('input[name="discountCode"]');
+    // hidden?.remove();
   }
 
   async function applyCode() {

@@ -48,7 +48,10 @@ const activePlan = user.role === 'agency' ? await getActivePlanForUser(user.id) 
           <h3 class="text-2xl font-bold text-gray-900">{activePlan?.plan?.name || 'No active plan'}</h3>
           {activePlan && (
             <p class="text-sm text-gray-500 mt-1">
-              {activePlan.source === 'discount_code' ? 'Granted via code' : activePlan.source === 'stripe' ? 'Active Stripe subscription' : 'Default tier (no active subscription)'}
+              {activePlan.source === 'discount_code' ? 'Granted via code'
+                : activePlan.source === 'auto_grant' ? 'Included plan (billing paused)'
+                : activePlan.source === 'stripe' ? 'Included plan (billing paused)'
+                : 'Default tier'}
             </p>
           )}
           <p class="text-gray-500 mt-1">€{activePlan?.plan ? (activePlan.plan.monthlyPriceCents / 100).toFixed(2) : '0.00'} / month</p>

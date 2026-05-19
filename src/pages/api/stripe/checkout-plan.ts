@@ -1,3 +1,17 @@
+import type { APIRoute } from 'astro';
+
+export const prerender = false;
+
+// Billing is paused — Stripe checkout is disabled.
+// Restore the original implementation when payments come back online.
+export const POST: APIRoute = async () =>
+  new Response(
+    JSON.stringify({ error: 'Billing is currently paused.' }),
+    { status: 503, headers: { 'Content-Type': 'application/json' } },
+  );
+
+/*
+=== ORIGINAL IMPLEMENTATION (paused 2026-05-19) ===
 // src/pages/api/stripe/checkout-plan.ts
 // Creates a Stripe Checkout Session in subscription mode for an agency plan.
 // Authenticated agency/admin only — unauthenticated users are redirected to
@@ -82,3 +96,4 @@ export const POST: APIRoute = async (context) => {
     return json({ error: err?.message || 'Failed to create checkout session' }, 500);
   }
 };
+*/

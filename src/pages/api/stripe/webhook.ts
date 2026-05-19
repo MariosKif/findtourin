@@ -1,4 +1,19 @@
 import type { APIRoute } from 'astro';
+
+export const prerender = false;
+
+// Webhook is paused — Stripe is offline. Return 200 so Stripe's retry queue
+// doesn't pile up if any test webhook reaches us; log the event for visibility.
+export const POST: APIRoute = async ({ request }) => {
+  console.warn('Stripe webhook hit while billing is paused', {
+    headers: Object.fromEntries(request.headers),
+  });
+  return new Response(null, { status: 200 });
+};
+
+/*
+=== ORIGINAL IMPLEMENTATION (paused 2026-05-19) ===
+import type { APIRoute } from 'astro';
 import { supabase } from '../../../lib/supabase';
 import { stripe, verifyWebhookSignature } from '../../../lib/stripe';
 
@@ -129,3 +144,4 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 };
+*/

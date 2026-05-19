@@ -46,6 +46,10 @@ export const POST: APIRoute = async (context) => {
     if (!user) return json({ error: 'Unauthorized' }, 401);
     if (user.role !== 'agency' && user.role !== 'admin') return json({ error: 'Forbidden' }, 403);
 
+    if (user.role === 'agency' && !user.is_approved) {
+      return json({ error: 'Your agency account is pending admin approval. You will be notified once approved.' }, 403);
+    }
+
     // Plan-cap gate — admins are exempt so they can create tours for testing
     // and on behalf of agencies during onboarding.
     if (user.role === 'agency') {
@@ -95,7 +99,7 @@ export const POST: APIRoute = async (context) => {
       end_date: endDate || null,
       duration_days: durationDays || null,
       max_participants: maxParticipants || null,
-      status: 'pending_payment',
+      status: 'active',
       stripe_payment_id: null,
       images: [],
     };

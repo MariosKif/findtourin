@@ -74,14 +74,14 @@ export async function getActivePlanForUser(userId: string): Promise<ActivePlan> 
 
 /**
  * Count tours that occupy a "slot" against the agency's plan cap.
- * 'active' and 'pending_payment' both count; 'deleted' and 'inactive' do not.
+ * Only 'active' tours count; 'deleted' and 'inactive' do not.
  */
 export async function countLiveListings(agencyId: string): Promise<number> {
   const { count, error } = await supabase
     .from('tours')
     .select('id', { count: 'exact', head: true })
     .eq('agency_id', agencyId)
-    .in('status', ['active', 'pending_payment']);
+    .eq('status', 'active');
   if (error) {
     throw new Error(`Failed to count tours: ${error.message}`);
   }

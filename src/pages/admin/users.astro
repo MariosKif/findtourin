@@ -26,6 +26,7 @@ const allUsers = data || [];
             <th class="text-left px-4 py-3 font-medium text-gray-600">Email</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">Role</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">Verified</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Approved</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">Joined</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
           </tr>
@@ -52,11 +53,19 @@ const allUsers = data || [];
                   {u.is_verified ? 'Yes' : 'No'}
                 </Badge>
               </td>
+              <td class="px-4 py-3">
+                <Badge variant={u.is_approved ? 'success' : 'neutral'} size="sm">
+                  {u.is_approved ? 'Approved' : 'Pending'}
+                </Badge>
+              </td>
               <td class="px-4 py-3 text-gray-500 text-xs">{formatDate(u.created_at)}</td>
               <td class="px-4 py-3">
                 <div class="flex gap-2">
                   <button class="verify-btn text-xs text-primary-600 hover:underline" data-user-id={u.id} data-verified={String(!u.is_verified)}>
                     {u.is_verified ? 'Unverify' : 'Verify'}
+                  </button>
+                  <button class="approve-btn text-xs text-green-600 hover:underline" data-user-id={u.id} data-approved={String(!u.is_approved)}>
+                    {u.is_approved ? 'Revoke' : 'Approve'}
                   </button>
                   <button class="delete-user-btn text-xs text-red-600 hover:underline" data-user-id={u.id}>
                     Delete
@@ -92,6 +101,20 @@ const allUsers = data || [];
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ isVerified: verified }),
+        });
+        if (res.ok) location.reload();
+      });
+    });
+
+    document.querySelectorAll('.approve-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        const userId = target.dataset.userId;
+        const approved = target.dataset.approved === 'true';
+        const res = await fetch(`/api/admin/users/${userId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isApproved: approved }),
         });
         if (res.ok) location.reload();
       });

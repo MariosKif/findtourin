@@ -42,6 +42,7 @@ export const PUT: APIRoute = async (context) => {
   const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
   if (body.role !== undefined) updateData.role = body.role;
   if (body.isVerified !== undefined) updateData.is_verified = body.isVerified;
+  if (body.isApproved !== undefined) updateData.is_approved = body.isApproved;
 
   const { data: updated, error } = await supabase
     .from('users')
